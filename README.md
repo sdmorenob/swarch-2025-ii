@@ -1,6 +1,6 @@
 # Laboratorio 1: Arquitectura Monolítica
 
-[cite_start]Este documento presenta los entregables para el Laboratorio 1, enfocados en el diseño de un sistema de software simple utilizando un estilo arquitectónico monolítico[cite: 5].
+Este documento presenta los entregables para el Laboratorio 1, enfocados en el diseño de un sistema de software simple utilizando un estilo arquitectónico monolítico.
 
 ---
 
