@@ -61,11 +61,11 @@ graph TD
     L1 -- "Mapean tablas de" --> DB
 ```
 
-* [cite_start]**Templates**: Capa de presentación (vistas en HTML) que se muestra al usuario[cite: 15, 34].
-* [cite_start]**Controllers**: Reciben las peticiones HTTP, validan la entrada y coordinan la respuesta, utilizando la capa de servicios[cite: 15, 31].
-* [cite_start]**Services**: Contienen la lógica de negocio principal y orquestan las operaciones, desacoplando los controladores de los detalles del acceso a datos[cite: 15, 29].
-* [cite_start]**Repositories**: Encapsulan la lógica de acceso a datos, realizando las consultas a la base de datos[cite: 15, 27].
-* [cite_start]**Models**: Definen la estructura de los datos y las relaciones, mapeando directamente las tablas de la base de datos[cite: 15, 25].
+* **Templates**: Capa de presentación (vistas en HTML) que se muestra al usuario[cite: 15, 34].
+* **Controllers**: Reciben las peticiones HTTP, validan la entrada y coordinan la respuesta, utilizando la capa de servicios[cite: 15, 31].
+* **Services**: Contienen la lógica de negocio principal y orquestan las operaciones, desacoplando los controladores de los detalles del acceso a datos[cite: 15, 29].
+* **Repositories**: Encapsulan la lógica de acceso a datos, realizando las consultas a la base de datos[cite: 15, 27].
+* **Models**: Definen la estructura de los datos y las relaciones, mapeando directamente las tablas de la base de datos[cite: 15, 25].
 
 ---
 
