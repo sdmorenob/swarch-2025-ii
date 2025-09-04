@@ -20,7 +20,7 @@ El sistema está compuesto por:
 —
 
 ##  Representación gráfica de la arquitectura
-![diagrama](/diagrama.drawio.png)
+![diagrama](/laboratories/laboratory_1/julvargasgu-ggonzalezbo/diagrama.png)
 
 —
 
