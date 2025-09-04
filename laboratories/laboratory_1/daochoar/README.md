@@ -1,11 +1,3 @@
-Perfecto 🙌 Ya vi la instrucción del **4.1 Deliverable**:
-
-> * Gráfica de la estructura del sistema
-> * Descripción de cinco (5) propiedades del sistema
-
-Aquí te dejo un **README.md** ya armado que cumple con ese punto:
-
-````markdown
 # Laboratory 1 – Deliverable
 
 ## 1. Graphical Representation of the System Structure
