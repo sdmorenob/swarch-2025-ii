@@ -1,5 +1,7 @@
 # Laboratorio 1 Arquitectura de software: Sistema Flask + MySQL con Docker
 
+Cristian Machado
+
 ---
 
 ## 1. Diagrama de Despliegue (PlantUML)
