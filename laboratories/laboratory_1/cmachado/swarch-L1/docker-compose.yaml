@@ -1,0 +1,25 @@
+
+services:
+  swarch-mo:
+    build: .
+    ports:
+      - "5000:5000"
+    depends_on:
+      - swarch-db
+    environment:
+      - MYSQL_USER=swarch
+      - MYSQL_PASSWORD=123
+      - MYSQL_HOST=swarch-db
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=swarch_db
+      - SECRET_KEY=f#59*PfORd4&l_0?
+
+  swarch-db:
+    image: mysql:8.0
+    environment:
+      - MYSQL_DATABASE=swarch_db
+      - MYSQL_PASSWORD=123
+      - MYSQL_USER=swarch
+      - MYSQL_ROOT_PASSWORD=123
+    ports:
+      - "3306:3306"
