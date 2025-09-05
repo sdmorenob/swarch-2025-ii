@@ -22,15 +22,11 @@ Diseñar, construir, desplegar y validar un sistema monolítico por capas (Flask
 
 #### 1. Portabilidad
 El uso de Docker hace el sistema portable: el mismo entorno se ejecuta en cualquier plataforma (Docker Desktop, servidores o nube) sin conflictos de dependencias.
-
 #### 2. Mantenibilidad
 El diseño por capas del monolito facilita el mantenimiento. La separación de responsabilidades permite modificar o añadir funcionalidades sin afectar otras partes del código.
-
 #### 3. Escalabilidad
 Aunque es un monolito, Docker habilita la escalabilidad horizontal: se pueden levantar múltiples instancias para distribuir la carga y atender más usuarios.
-
 #### 4. Usabilidad
 La interfaz web en Flask es intencionalmente simple: rutas claras y formularios directos hacen el uso intuitivo para el usuario.
-
 #### 5. Disponibilidad
 Hoy el sistema puede caer si un contenedor falla; sin embargo, la arquitectura en Docker permite incorporar orquestadores (p. ej., reinicios automáticos/monitoreo) para mejorar la disponibilidad.
