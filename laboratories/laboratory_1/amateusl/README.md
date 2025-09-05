@@ -6,6 +6,9 @@ Implementar un sistema monolítico por capas, basado en Flask y MySQL, y contene
 ---
 ##  Diagramas de Arquitectura
 
+## Diagrama De Componentes
+
+<img width="612" height="569" alt="DiagramaDeComponentes drawio" src="https://github.com/user-attachments/assets/daefbee2-953c-4d46-bc9c-eaeaef2b4d6b" />
 
 
 ##Propiedades Arquitectónicas del Sistema
