@@ -9,12 +9,12 @@ Diseñar, construir, desplegar y validar un sistema monolítico por capas (Flask
 
 #### 1. **Diagrama de Despliegue** 
 
-<img width="3840" height="861" alt="diagram_deploy" src="https://github.com/user-attachments/assets/28a88eb8-a7a2-43bb-9d0e-41c0472c6d9f" /> 
+<img width="3840" height="861" alt="deploy_diagram" src="https://github.com/user-attachments/assets/28a88eb8-a7a2-43bb-9d0e-41c0472c6d9f" /> 
 Este diagrama muestra la arquitectura física del sistema, representando la infraestructura de Docker. Ilustra cómo el monolito de Flask (swarch-mo) y la base de datos MySQL (swarch-db) se ejecutan en contenedores separados, interconectados dentro de una red de Docker, y cómo la aplicación es accesible a través del puerto 5000.
 
 
 #### 2. **Diagrama de Componentes**
- <img width="2414" height="3840" alt="Untitled diagram _ Mermaid Chart-2025-09-04-232829" src="https://github.com/user-attachments/assets/57ebabf6-9262-49c3-89b1-f76f62be40b7" />
+ <img width="2414" height="3840" alt="Component_diagram" src="https://github.com/user-attachments/assets/57ebabf6-9262-49c3-89b1-f76f62be40b7" />
 Este diagrama ilustra la arquitectura lógica del monolito. Detalla la estructura en capas del sistema (Controllers, Services, Repositories, Models, Templates) y las dependencias que existen entre ellas, mostrando el flujo de la lógica de negocio, desde el cliente hasta la base de datos a través del ORM SQLAlchemy.
 
 
@@ -30,3 +30,12 @@ Docker habilita la escalabilidad horizontal: se pueden levantar múltiples insta
 La interfaz web en Flask es intencionalmente simple: rutas claras y formularios directos hacen el uso intuitivo para el usuario.
 #### 5. Desplegabilidad
 Todo el sistema se levanta con un solo comando (`docker compose up --build`) y puede reconstruirse limpio cuando se necesite (`docker compose down -v`). Esto facilita ejecutar la solución en cualquier máquina de forma consistente.
+
+### Evidencias.
+![Imagen de WhatsApp 2025-09-04 a las 19 32 20_1c64d522](https://github.com/user-attachments/assets/324d62dc-4974-4390-9a8e-935a1b68fbf9)
+![Imagen de WhatsApp 2025-09-04 a las 19 32 48_7b2794d3](https://github.com/user-attachments/assets/fb52e87f-f10f-4891-be95-47d75256e2a5)
+![Imagen de WhatsApp 2025-09-04 a las 19 33 19_987945e9](https://github.com/user-attachments/assets/88ffa278-af51-48b7-a315-0fd40e390003)
+![Imagen de WhatsApp 2025-09-04 a las 19 34 29_44a23541](https://github.com/user-attachments/assets/e6e9b90d-eacc-44cf-9657-80bce5f9a688)
+
+
+
