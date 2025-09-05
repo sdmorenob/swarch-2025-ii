@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>New Book</h2>
+<form method="post">
+  <label>Title</label>
+  <input name="title" required>
+  <label>Author</label>
+  <input name="author" required>
+  <label>Published year</label>
+  <input name="published_year" type="number">
+  <label>Genre</label>
+  <select name="genre_id" required>
+    {% for g in genres %}
+      <option value="{{ g.id }}">{{ g.name }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit">Create</button>
+</form>
+{% endblock %}
