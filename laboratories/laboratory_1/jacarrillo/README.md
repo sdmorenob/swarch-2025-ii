@@ -10,12 +10,12 @@ Diseñar, construir, desplegar y validar un sistema monolítico por capas (Flask
 #### 1. **Diagrama de Despliegue** 
 
 <img width="3840" height="861" alt="diagram_deploy" src="https://github.com/user-attachments/assets/28a88eb8-a7a2-43bb-9d0e-41c0472c6d9f" /> 
-**Este diagrama muestra la arquitectura física del sistema, representando la infraestructura de Docker. Ilustra cómo el monolito de Flask (swarch-mo) y la base de datos MySQL (swarch-db) se ejecutan en contenedores separados, interconectados dentro de una red de Docker, y cómo la aplicación es accesible a través del puerto 5000.**
+Este diagrama muestra la arquitectura física del sistema, representando la infraestructura de Docker. Ilustra cómo el monolito de Flask (swarch-mo) y la base de datos MySQL (swarch-db) se ejecutan en contenedores separados, interconectados dentro de una red de Docker, y cómo la aplicación es accesible a través del puerto 5000.
 
 
 #### 2. **Diagrama de Componentes**
  <img width="2414" height="3840" alt="Untitled diagram _ Mermaid Chart-2025-09-04-232829" src="https://github.com/user-attachments/assets/57ebabf6-9262-49c3-89b1-f76f62be40b7" />
-**Este diagrama ilustra la arquitectura lógica del monolito. Detalla la estructura en capas del sistema (Controllers, Services, Repositories, Models, Templates) y las dependencias que existen entre ellas, mostrando el flujo de la lógica de negocio, desde el cliente hasta la base de datos a través del ORM SQLAlchemy.**
+Este diagrama ilustra la arquitectura lógica del monolito. Detalla la estructura en capas del sistema (Controllers, Services, Repositories, Models, Templates) y las dependencias que existen entre ellas, mostrando el flujo de la lógica de negocio, desde el cliente hasta la base de datos a través del ORM SQLAlchemy.
 
 
 ### Propiedades del Sistema
