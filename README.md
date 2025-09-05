@@ -9,7 +9,8 @@ Diseñar, construir, desplegar y validar un sistema monolítico por capas (Flask
 
 #### 1. **Diagrama de Despliegue** 
 
-**Insertar imagen aqui** 
+**<img width="3840" height="861" alt="diagram_deploy" src="https://github.com/user-attachments/assets/28a88eb8-a7a2-43bb-9d0e-41c0472c6d9f" />
+** 
 **Descripción:**
 
 
