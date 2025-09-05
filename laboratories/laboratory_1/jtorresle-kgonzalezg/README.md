@@ -96,6 +96,9 @@ These five system properties work together to create a robust, maintainable, and
 
 ## Test
 
+<img width="877" height="399" alt="Captura de pantalla 2025-09-04 194316" src="https://github.com/user-attachments/assets/73b36257-4a3d-4f1b-8536-302b8d55e8c4" />
+
+<img width="1042" height="346" alt="Captura de pantalla 2025-09-04 194307" src="https://github.com/user-attachments/assets/799ee5f6-9623-49f8-b52f-940d10ec2eed" />
 
 
 ---
@@ -106,46 +109,18 @@ These five system properties work together to create a robust, maintainable, and
 
 The following diagram illustrates the layered architecture of the swarch-L1 library management system:
 
-```
-┌─────────────────────────────────┐
-│     Templates (Jinja2)         │
-│   base.html • book/* •         │
-│        genre/*                 │
-└─────────────┬───────────────────┘
-              │
-              ▼
-┌─────────────────────────────────┐
-│   Controllers (Blueprints)     │
-│  book_controller.py •          │
-│  genre_controller.py           │
-└─────────────┬───────────────────┘
-              │
-              ▼
-┌─────────────────────────────────┐
-│         Services               │
-│   book_service.py •            │
-│   genre_service.py             │
-└─────────────┬───────────────────┘
-              │
-              ▼
-┌─────────────────────────────────┐
-│       Repositories             │
-│  book_repository.py •          │
-│  genre_repository.py           │
-└─────────────┬───────────────────┘
-              │
-              ▼
-┌─────────────────────────────────┐
-│    Models (SQLAlchemy)         │
-│   Book • LiteraryGenre         │
-└─────────────┬───────────────────┘
-              │
-              ▼
-      ┌───────────────┐
-      │     MySQL     │
-      │ literary_genres│
-      │     books     │
-      └───────────────┘
+```mermaid
+%%{init: {'flowchart': {'htmlLabels': true}} }%%
+flowchart TB
+  TPL["Templates (Jinja2)<br/>base.html · book/* · genre/*"]
+  CTRL["Controllers (Blueprints)<br/>book_controller.py<br/>genre_controller.py"]
+  SRV["Services<br/>book_service.py<br/>genre_service.py"]
+  REPO["Repositories<br/>book_repository.py<br/>genre_repository.py"]
+  MODEL["Models (SQLAlchemy)<br/>Book · LiteraryGenre"]
+  DB[("MySQL<br/>literary_genres · books")]
+
+  TPL --> CTRL --> SRV --> REPO --> MODEL --> DB
+
 ```
 
 **Architecture Description:**
