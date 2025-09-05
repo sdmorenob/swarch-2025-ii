@@ -6,12 +6,20 @@ Implementar un sistema monolítico por capas, basado en Flask y MySQL, y contene
 ---
 ##  Diagramas de Arquitectura
 
-## Diagrama De Componentes
+1. **Diagrama De Componentes**
 
 <img width="612" height="569" alt="DiagramaDeComponentes drawio" src="https://github.com/user-attachments/assets/daefbee2-953c-4d46-bc9c-eaeaef2b4d6b" />
 
+El diagrama representa la organización en capas (Templates, Controllers, Services, Repositories y Models) y cómo se comunican entre sí. El flujo comienza con el usuario en el navegador web, pasa por los controladores que gestionan las peticiones, atraviesa la lógica de negocio en los servicios, continúa hacia los repositorios encargados del acceso a datos y finalmente llega a los modelos, los cuales interactúan directamente con la base de datos MySQL mediante SQLAlchemy.
 
-##Propiedades Arquitectónicas del Sistema
+2. **Diagrama De Despliegue**
+   
+<img width="681" height="106" alt="DiagramaDeDespliegue drawio" src="https://github.com/user-attachments/assets/50ae7333-36ed-4967-88bb-cc6acbf51128" />
+
+Este diagrama de despliegue ilustra la ejecución del sistema en contenedores Docker. La aplicación monolítica Flask se expone en http://localhost:5000 y se comunica con un contenedor independiente que ejecuta MySQL, el cual gestiona la persistencia de los datos.
+
+
+## Propiedades Arquitectónicas del Sistema
 
 1. ** Modularidad**
 	La arquitectura monolítica está organizada en capas internas , lo cual  permite aislar responsabilidades y reduce el acoplamiento interno.
@@ -29,6 +37,14 @@ Implementar un sistema monolítico por capas, basado en Flask y MySQL, y contene
    La base de datos MySQL y el uso de SQLAlchemy aseguran persistencia y consistencia de la información, preservando las relaciones entre libros y géneros.
 
 ---
+
+## Evidencias
+
+![evidencia1](https://github.com/user-attachments/assets/4de76cb0-a267-4fe8-a561-402129c979bb)
+
+![photo_5030625362387776411_y](https://github.com/user-attachments/assets/70856162-26b5-457c-a761-c9d64099c51c)
+
+
 
 
 
