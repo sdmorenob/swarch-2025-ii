@@ -21,7 +21,7 @@ Este diagrama de despliegue ilustra la ejecución del sistema en contenedores Do
 
 ## Propiedades Arquitectónicas del Sistema
 
-1. ** Modularidad**
+1. **Modularidad**
 	La arquitectura monolítica está organizada en capas internas , lo cual  permite aislar responsabilidades y reduce el acoplamiento interno.
 
 2. **Mantenibilidad**  
