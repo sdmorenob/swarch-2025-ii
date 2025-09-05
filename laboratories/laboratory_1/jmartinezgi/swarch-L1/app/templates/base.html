@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Library</title>
+</head>
+<body>
+  <h1>📚 Library</h1>
+  <nav>
+    <a href="/books/">Books</a> | <a href="/books/create">New Book</a> |
+    <a href="/genres/">Genres</a> | <a href="/genres/create">New Genre</a>
+  </nav>
+  <hr>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for cat, msg in messages %}
+        <p><strong>{{ cat }}:</strong> {{ msg }}</p>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</body>
+</html>
