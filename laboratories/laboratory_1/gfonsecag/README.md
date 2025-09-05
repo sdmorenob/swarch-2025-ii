@@ -2,7 +2,7 @@
 
 ## 📊 Graphical representation of the system structure(s)
 
-![System Structure](02e9fdff-40f8-4a7e-bb5c-d57a85fdd85d.png)
+<img width="1097" height="253" alt="image" src="https://github.com/user-attachments/assets/373d8bfb-716b-41ff-91d7-287261a51312" />
 
 ------------------------------------------------------------------------
 
