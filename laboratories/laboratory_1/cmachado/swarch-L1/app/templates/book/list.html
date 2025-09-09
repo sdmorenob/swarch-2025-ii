@@ -1,0 +1,11 @@
+{% extends "base.html" %} {% block content %}
+<h2>Books</h2>
+<ul>
+  {% for b in books %}
+  <li>
+    {{ b.title }} — {{ b.author }} ({{ b.published_year or '—' }}) [{{
+    b.genre.name }}]
+  </li>
+  {% endfor %}
+</ul>
+{% endblock %}
