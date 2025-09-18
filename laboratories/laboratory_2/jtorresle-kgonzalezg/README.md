@@ -8,9 +8,8 @@
 
 ```mermaid
 graph TB
-    %% Componentes externos con estereotipo UML 2.0
+    %% Cliente externo
     Browser["«component»<br/>Cliente<br/>{navegador web}"]
-    SysExt1["«component»<br/>Sistema Externo<br/>{servicio externo}"]
     
     %% Componentes internos del sistema
     Frontend["«component»<br/>Frontend<br/>{events_frontend}"]
@@ -27,15 +26,13 @@ graph TB
     Campus -->|"⚬ gRPC_Request"| Recommendations
     Campus -->|"⚬ SQL_Query"| EventDB
     Recommendations -->|"⚬ NoSQL_Query"| RecommendationDB
-    Campus -.->|"◐ API_Request"| SysExt1
     
     %% Interfaces proporcionadas (lollipop ⚬) y requeridas (socket ◐)
     %% Assembly connectors según UML 2.0
     
     %% Agrupación por subsistemas
-    subgraph External["«subsystem» Sistemas Externos"]
+    subgraph External["«subsystem» Cliente Externo"]
         Browser
-        SysExt1
     end
     
     subgraph Internal["«subsystem» Sistema Campus Events"]
@@ -143,13 +140,12 @@ El sistema utiliza **2 tipos de bases de datos**:
 
 **A. ¿Cuántos conectores tiene el sistema?**
 
-El sistema tiene **5 conectores principales**:
+El sistema tiene **4 conectores principales**:
 
 1. **HTTP/HTTPS** (Browser ↔ Frontend)
 2. **REST API** (Frontend ↔ Campus)
 3. **gRPC** (Campus ↔ Recommendations)
-4. **R2DBC** (Campus ↔ Event-db)
-5. **Motor/PyMongo** (Recommendations ↔ Recommendation-db)
+4. **Database Connectors** (Campus ↔ Event-db y Recommendations ↔ Recommendation-db)
 
 **B. ¿Qué tipos de conectores se utilizan?**
 
