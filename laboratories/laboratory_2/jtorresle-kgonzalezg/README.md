@@ -135,50 +135,96 @@ El sistema tiene **5 conectores principales**:
 
 **En el proyecto Spring (campus), ¿cuál es la mala práctica vista con los modelos de entidad de BD?**
 
-**Respuesta:** La mala práctica identificada es el **uso inconsistente de convenciones de nomenclatura en las columnas de base de datos**.
+**Respuesta:** La mala práctica principal identificada es **usar las entidades de base de datos directamente como modelos de API/dominio** (persistence models = exposure models).
 
 **Evidencia:**
 
 ```java
-// En CampusEvent.java
+// En CampusEventController.java
+@RestController
+@RequestMapping("/v1")
+public class CampusEventController {
+    
+    @GetMapping("/events")
+    public Flux<CampusEvent> getEvents() {  // ❌ Retorna entidad directamente
+        return campusEventService.getEvents();
+    }
+
+    @GetMapping("/events/recommendations")
+    public Flux<CampusEvent> getRecommendedEvents(...) {  // ❌ Retorna entidad directamente
+        return campusEventService.getRecommendedEvents(userId, limit);
+    }
+}
+
+// En CampusEvent.java - Entidad de BD expuesta como API
 @Table("campus_event")
 public record CampusEvent(
-  @Id @Column("caev_id") Long id,  // ❌ Prefijo críptico "caev_"
-  String title,                    // ✅ Sin mapeo explícito
-  String description,              // ✅ Sin mapeo explícito  
-  String location,                 // ✅ Sin mapeo explícito
-  @Column("event_date") LocalDateTime eventDate // ✅ Snake_case apropiado
-)
-
-// En User.java
-@Table("user")
-public record User(
-  @Id @Column("user_id") Long id,  // ✅ Convención clara
-  String name,                     // ✅ Sin mapeo explícito
-  String email                     // ✅ Sin mapeo explícito
-)
-
-// En Rsvp.java  
-@Table("rsvp")
-public record Rsvp(
-  @Id @Column("rsvp_id") Long id,  // ✅ Convención clara
-  @Column("user_id") Long userId,  // ✅ Convención clara
-  @Column("caev_id") Long eventId, // ❌ Prefijo críptico inconsistente
-  // ...
+    @Id @Column("caev_id") Long id,           // ❌ Detalles de BD expuestos
+    String title,
+    String description,
+    String location,
+    @Column("event_date") LocalDateTime eventDate  // ❌ Nombres de columnas expuestos
 )
 ```
 
-**Problemas identificados:**
+**¿Por qué es problemático?**
 
-1. **Prefijo críptico "caev_"**: No es descriptivo ni sigue convenciones estándar
-2. **Inconsistencia**: Mezcla prefijos crípticos con convenciones claras
-3. **Mantenibilidad**: Dificulta la comprensión del esquema de base de datos
-4. **Estándares**: No sigue convenciones de nomenclatura de Spring Data
+1. **Fuerte acoplamiento**: Cualquier cambio en la BD rompe el API
+2. **Filtración de detalles**: Nombres de columnas (`caev_id`, `event_date`) se exponen en el API
+3. **Evolución limitada**: Dificulta versionado y evolución del contrato público
+4. **Validación ausente**: No hay validaciones específicas para el API
+5. **Modelos anémicos**: Empuja hacia anti-patrones de agregados
+
+**Problemas adicionales identificados:**
+
+1. **Nombre de tabla reservado**: `@Table("user")` puede chocar con palabras reservadas de SQL
+2. **Auditoría inconsistente**: Uso de `@ReadOnlyProperty` en lugar de `@CreatedDate`/`@LastModifiedDate`
+3. **Nomenclatura inconsistente**: Mezcla de `snake_case` y campos sin `@Column` explícito
+4. **Prefijo críptico**: `caev_id` no es descriptivo
 
 **Solución recomendada:**
-- Usar convenciones consistentes como `campus_event_id` en lugar de `caev_id`
-- Mantener nomenclatura descriptiva y uniforme en todo el proyecto
-- Seguir convenciones estándar de snake_case para columnas de base de datos
+
+```java
+// 1. Separar capas con DTOs
+public record CampusEventResponse(
+    Long id,
+    String title,
+    String description,
+    String location,
+    LocalDateTime eventDate
+) {
+    // Validaciones con jakarta.validation si es necesario
+}
+
+// 2. Controlador usando DTOs
+@GetMapping("/events")
+public Flux<CampusEventResponse> getEvents() {
+    return campusEventService.getEvents()
+        .map(this::toResponse);  // Mapeo explícito
+}
+
+// 3. Entidad solo para persistencia
+@Table("campus_events")  // Evitar nombres reservados
+public record CampusEvent(
+    @Id @Column("campus_event_id") Long id,  // Nomenclatura descriptiva
+    String title,
+    String description,
+    String location,
+    @Column("event_date") LocalDateTime eventDate,
+    @CreatedDate LocalDateTime createdAt,    // Auditoría apropiada
+    @LastModifiedDate LocalDateTime updatedAt
+)
+
+// 4. Habilitar auditoría
+@EnableJdbcAuditing  // En lugar de @ReadOnlyProperty
+```
+
+**Beneficios de la separación:**
+- **Estabilidad del API**: Cambios en BD no afectan contratos públicos
+- **Validación específica**: DTOs con validaciones apropiadas para cada contexto
+- **Evolución independiente**: Versionado y cambios sin romper compatibilidad
+- **Seguridad**: Control sobre qué datos se exponen
+- **Mantenibilidad**: Responsabilidades claras entre capas
 
 ---
 
