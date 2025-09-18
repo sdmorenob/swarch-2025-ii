@@ -4,43 +4,48 @@
 
 ## Component-and-Connector View
 
-### Diagrama de Arquitectura (Notación Semi-formal)
+### Diagrama de Arquitectura (Notación Semi-formal UML)
 
 ```mermaid
 graph TB
-    subgraph "Client Layer"
-        Browser[Web Browser]
-    end
+    %% External Systems
+    Browser["<<Client>><br/>navegador"]
+    SysExt1["<<Sistema Externo>><br/>sistema_externo"]
     
-    subgraph "Presentation Layer"
-        Frontend[Frontend<br/>Vue.js + Nginx<br/>Port: 80]
-    end
+    %% Main System Components
+    Frontend["<<Componente>><br/>events_frontend"]
+    Campus["<<Componente>><br/>campus_service"]
+    Recommendations["<<Componente>><br/>recommendations_service"]
     
-    subgraph "Business Logic Layer"
-        Campus[Campus Service<br/>Spring Boot + WebFlux<br/>Port: 8080]
-        Recommendations[Recommendations Service<br/>FastAPI + gRPC<br/>Port: 8000]
-    end
+    %% Databases
+    EventDB["<<Base de Datos>><br/>event_database"]
+    RecommendationDB["<<Base de Datos>><br/>recommendation_database"]
     
-    subgraph "Data Layer"
-        EventDB[(Event Database<br/>MySQL 8.0<br/>Port: 3307)]
-        RecommendationDB[(Recommendation Database<br/>MongoDB 6<br/>Port: 27017)]
-    end
+    %% Connectors with UML notation
+    Browser ---|HTTP/HTTPS| Frontend
+    Frontend ---|REST| Campus
+    Campus ---|gRPC| Recommendations
+    Campus ---|R2DBC| EventDB
+    Recommendations ---|Motor| RecommendationDB
+    Campus ---|REST| SysExt1
     
-    %% Connectors
-    Browser -.->|HTTP/HTTPS| Frontend
-    Frontend -.->|REST API<br/>HTTP| Campus
-    Campus -.->|gRPC<br/>Synchronous| Recommendations
-    Campus -.->|R2DBC<br/>Reactive SQL| EventDB
-    Recommendations -.->|Motor<br/>Async MongoDB| RecommendationDB
+    %% Component details as notes
+    Frontend -.- FrontendNote["Vue.js 3 + Vite<br/>Puerto: 80<br/>Stateless"]
+    Campus -.- CampusNote["Spring Boot + WebFlux<br/>Puerto: 8080<br/>Stateless"]
+    Recommendations -.- RecommendationsNote["FastAPI + gRPC Server<br/>Puerto: 8000<br/>Stateless"]
+    EventDB -.- EventDBNote["MySQL 8.0<br/>Puerto: 3307<br/>Stateful"]
+    RecommendationDB -.- RecommendationDBNote["MongoDB 6<br/>Puerto: 27017<br/>Stateful"]
     
-    %% Styling
-    classDef component fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef database fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef connector stroke:#ff6f00,stroke-width:2px,stroke-dasharray: 5 5
+    %% Styling for UML appearance
+    classDef component fill:#ffeaa7,stroke:#2d3436,stroke-width:2px
+    classDef database fill:#fab1a0,stroke:#2d3436,stroke-width:2px
+    classDef external fill:#74b9ff,stroke:#2d3436,stroke-width:2px
+    classDef note fill:#ddd,stroke:#999,stroke-width:1px,stroke-dasharray: 3 3
     
     class Frontend,Campus,Recommendations component
     class EventDB,RecommendationDB database
-```
+    class Browser,SysExt1 external
+    class FrontendNote,CampusNote,RecommendationsNote,EventDBNote,RecommendationDBNote note
 
 ---
 
