@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package reco;
+
+service Recommendation {
+  rpc Recommend (RecommendRequest) returns (RecommendResponse);
+}
+
+message RecommendRequest {
+  int32 user_id = 1;
+  int32 limit = 2;
+}
+
+message RecommendResponse {
+  repeated int32 event_ids = 1;
+}

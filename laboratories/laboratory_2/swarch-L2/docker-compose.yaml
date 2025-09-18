@@ -1,0 +1,48 @@
+services:
+
+  campus:
+    build: ./campus
+    ports:
+    - "8080:8080"
+    environment:
+      DB_HOST: event-db
+      DB_PORT: 3306
+      DB_USERNAME: app
+      DB_PASSWORD: 123
+    restart: on-failure
+    depends_on:
+    - recommendations
+    - event-db
+
+  recommendations:
+    build: ./recommendations
+    ports:
+    - "8000:8000"
+    restart: on-failure
+    environment:
+      MONGO_USERNAME: app
+      MONGO_PASSWORD: 123
+      MONGO_HOSTNAME: recommendation-db
+      MONGO_PORT: 27017
+      MONGO_DB: recommendations_db
+    depends_on:
+    - recommendation-db
+
+  event-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: 123
+      MYSQL_DATABASE: events_db
+      MYSQL_USER: app
+      MYSQL_PASSWORD: 123
+    ports:
+    - "3306:3306"
+
+  recommendation-db:
+    image: mongo:6
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: app
+      MONGO_INITDB_ROOT_PASSWORD: 123
+      MONGO_INITDB_DATABASE: recommendations_db
+    ports:
+    - "27017:27017"
