@@ -68,4 +68,4 @@ No se definieron colas de mensajes ni otros conectores asíncronos en el `docker
 ---
 
 ## Component-and-Connector View using semi-formal notation.
-![Component-and-Connector View](./components.png)
+![Component-and-Connector View](./Components.png)
