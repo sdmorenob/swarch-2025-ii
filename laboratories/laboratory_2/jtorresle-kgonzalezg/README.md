@@ -46,6 +46,7 @@ graph TB
     class EventDB,RecommendationDB database
     class Browser,SysExt1 external
     class FrontendNote,CampusNote,RecommendationsNote,EventDBNote,RecommendationDBNote note
+```
 
 ---
 
