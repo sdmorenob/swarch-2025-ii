@@ -4,49 +4,85 @@
 
 ## Component-and-Connector View
 
-### Diagrama de Arquitectura (Notación Semi-formal UML)
+### Diagrama de Componentes y Conectores (UML 2.0)
 
 ```mermaid
 graph TB
-    %% External Systems
-    Browser["<<Client>><br/>navegador"]
-    SysExt1["<<Sistema Externo>><br/>sistema_externo"]
+    %% Componentes externos con estereotipo UML 2.0
+    Browser["«component»<br/>Cliente<br/>{navegador web}"]
+    SysExt1["«component»<br/>Sistema Externo<br/>{servicio externo}"]
     
-    %% Main System Components
-    Frontend["<<Componente>><br/>events_frontend"]
-    Campus["<<Componente>><br/>campus_service"]
-    Recommendations["<<Componente>><br/>recommendations_service"]
+    %% Componentes internos del sistema
+    Frontend["«component»<br/>Frontend<br/>{events_frontend}"]
+    Campus["«component»<br/>Campus Service<br/>{campus_service}"]
+    Recommendations["«component»<br/>Recommendations<br/>{recommendations_service}"]
     
-    %% Databases
-    EventDB["<<Base de Datos>><br/>event_database"]
-    RecommendationDB["<<Base de Datos>><br/>recommendation_database"]
+    %% Componentes de persistencia
+    EventDB["«component»<br/>Event Database<br/>{MySQL 8.0}"]
+    RecommendationDB["«component»<br/>Recommendation DB<br/>{MongoDB 6}"]
     
-    %% Connectors with UML notation
-    Browser ---|HTTP/HTTPS| Frontend
-    Frontend ---|REST| Campus
-    Campus ---|gRPC| Recommendations
-    Campus ---|R2DBC| EventDB
-    Recommendations ---|Motor| RecommendationDB
-    Campus ---|REST| SysExt1
+    %% Puertos e interfaces (UML 2.0)
+    Browser -->|"⚬ HTTP_Request"| Frontend
+    Frontend -->|"⚬ REST_Request"| Campus
+    Campus -->|"⚬ gRPC_Request"| Recommendations
+    Campus -->|"⚬ SQL_Query"| EventDB
+    Recommendations -->|"⚬ NoSQL_Query"| RecommendationDB
+    Campus -.->|"◐ API_Request"| SysExt1
     
-    %% Component details as notes
-    Frontend -.- FrontendNote["Vue.js 3 + Vite<br/>Puerto: 80<br/>Stateless"]
-    Campus -.- CampusNote["Spring Boot + WebFlux<br/>Puerto: 8080<br/>Stateless"]
-    Recommendations -.- RecommendationsNote["FastAPI + gRPC Server<br/>Puerto: 8000<br/>Stateless"]
-    EventDB -.- EventDBNote["MySQL 8.0<br/>Puerto: 3307<br/>Stateful"]
-    RecommendationDB -.- RecommendationDBNote["MongoDB 6<br/>Puerto: 27017<br/>Stateful"]
+    %% Interfaces proporcionadas (lollipop ⚬) y requeridas (socket ◐)
+    %% Assembly connectors según UML 2.0
     
-    %% Styling for UML appearance
-    classDef component fill:#ffeaa7,stroke:#2d3436,stroke-width:2px
-    classDef database fill:#fab1a0,stroke:#2d3436,stroke-width:2px
-    classDef external fill:#74b9ff,stroke:#2d3436,stroke-width:2px
-    classDef note fill:#ddd,stroke:#999,stroke-width:1px,stroke-dasharray: 3 3
+    %% Agrupación por subsistemas
+    subgraph External["«subsystem» Sistemas Externos"]
+        Browser
+        SysExt1
+    end
     
-    class Frontend,Campus,Recommendations component
-    class EventDB,RecommendationDB database
+    subgraph Internal["«subsystem» Sistema Campus Events"]
+        Frontend
+        Campus
+        Recommendations
+        EventDB
+        RecommendationDB
+    end
+    
+    %% Component details as deployment specifications
+    Frontend -.- FrontendNote["«deployment spec»<br/>Vue.js 3 + Vite<br/>Puerto: 80<br/>Stateless"]
+    Campus -.- CampusNote["«deployment spec»<br/>Spring Boot + WebFlux<br/>Puerto: 8080<br/>Stateless"]
+    Recommendations -.- RecommendationsNote["«deployment spec»<br/>FastAPI + gRPC Server<br/>Puerto: 8000<br/>Stateless"]
+    EventDB -.- EventDBNote["«deployment spec»<br/>MySQL 8.0<br/>Puerto: 3307<br/>Stateful"]
+    RecommendationDB -.- RecommendationDBNote["«deployment spec»<br/>MongoDB 6<br/>Puerto: 27017<br/>Stateful"]
+    
+    %% Estilos UML 2.0 compatibles
+    classDef component fill:#ffffff,stroke:#000000,stroke-width:2px
+    classDef external fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef internal fill:#fff8e1,stroke:#f57c00,stroke-width:2px
+    classDef database fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef note fill:#f5f5f5,stroke:#757575,stroke-width:1px,stroke-dasharray: 3 3
+    
     class Browser,SysExt1 external
+    class Frontend,Campus,Recommendations internal
+    class EventDB,RecommendationDB database
     class FrontendNote,CampusNote,RecommendationsNote,EventDBNote,RecommendationDBNote note
 ```
+
+### Justificación UML 2.0
+
+Este diagrama cumple con los estándares UML 2.0 para diagramas de componentes por las siguientes razones:
+
+**Elementos UML 2.0 Implementados:**
+
+1. **Estereotipos de Componentes**: Uso de `«component»` según la notación UML 2.0
+2. **Subsistemas**: Agrupación con `«subsystem»` para organizar componentes relacionados
+3. **Interfaces Proporcionadas**: Símbolo ⚬ (lollipop) representa interfaces que el componente proporciona
+4. **Interfaces Requeridas**: Símbolo ◐ (socket) representa interfaces que el componente requiere
+5. **Assembly Connectors**: Conectores que unen interfaces proporcionadas con interfaces requeridas
+6. **Especificaciones de Despliegue**: Uso de `«deployment spec»` para detalles técnicos
+
+**Diferencias con UML 1.x:**
+- UML 2.0 introduce la notación con estereotipos `«component»` en lugar de los rectángulos con iconos de UML 1.x
+- Los puertos y interfaces están claramente diferenciados según la especificación UML 2.0
+- Los assembly connectors siguen la semántica de UML 2.0 para conectar servicios proporcionados con servicios requeridos
 
 ---
 
