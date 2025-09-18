@@ -21,11 +21,11 @@ graph TB
     RecommendationDB["«component»<br/>Recommendation DB<br/>{MongoDB 6}"]
     
     %% Puertos e interfaces (UML 2.0)
-    Browser -->|"⚬ HTTP_Request"| Frontend
-    Frontend -->|"⚬ REST_Request"| Campus
-    Campus -->|"⚬ gRPC_Request"| Recommendations
-    Campus -->|"⚬ SQL_Query"| EventDB
-    Recommendations -->|"⚬ NoSQL_Query"| RecommendationDB
+    Browser -->|"⚬ HTTP/HTTPS"| Frontend
+    Frontend -->|"⚬ REST API"| Campus
+    Campus -->|"⚬ gRPC"| Recommendations
+    Campus -->|"⚬ R2DBC"| EventDB
+    Recommendations -->|"⚬ Motor"| RecommendationDB
     
     %% Interfaces proporcionadas (lollipop ⚬) y requeridas (socket ◐)
     %% Assembly connectors según UML 2.0
