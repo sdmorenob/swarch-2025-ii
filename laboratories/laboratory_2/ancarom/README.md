@@ -55,7 +55,7 @@ Todos los conectores identificados en este sistema operan de manera **síncrona*
 
 El siguiente diagrama muestra la relación entre los componentes y los conectores que los unen, utilizando una notación semi-formal.
 
-![Diagrama de Componentes y Conectores](/image.png)
+![Diagrama de Componentes y Conectores](image.png)
 
 ---
 
