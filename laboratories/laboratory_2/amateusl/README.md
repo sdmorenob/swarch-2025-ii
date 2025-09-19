@@ -7,6 +7,63 @@ ________________________________________________________________________________
 
 <img width="931" height="901" alt="UmlLab2 drawio" src="https://github.com/user-attachments/assets/14c0b95c-7e44-431d-8834-cf4db526260c" />
 
+## Descripción del Diagrama UML
+
+El diagrama muestra la arquitectura de un sistema de recomendaciones y eventos, detallando **componentes**, **bases de datos** y **conectores** principales.
+
+### 1. Cliente / Navegador
+- **Actor principal** que interactúa a través de **HTTP/HTTPS**.
+- Accede a la aplicación web desde un navegador.
+
+### 2. Capa de Presentación (Frontend)
+- **events_frontend**: 
+  - Desarrollado con **Vue 3 + Vite**.
+  - Desplegado en el **puerto 80**.
+  - **Stateless** (no mantiene estado en el servidor).
+  - Se comunica con el backend mediante **REST**.
+
+### 3. Capa de Servicios (Backend)
+- **Campus Service**:
+  - Implementado con **Spring Boot + WebFlux**.
+  - Escucha en el **puerto 8080**.
+  - Es **stateless**.
+  - Recibe las peticiones REST del frontend y las procesa.
+  - Se conecta a la base de datos de recomendaciones por **JDBC/R2DBC**.
+  - Se comunica con el servicio de recomendaciones vía **gRPC o REST**.
+
+- **Recomendations**:
+  - Servicio que procesa la lógica de recomendaciones.
+  - Expuesto por **gRPC (puerto 8000)**.
+  - Puede ser accedido también vía REST.
+
+### 4. Bases de Datos
+- **recomendation_database**:
+  - Motor: **MySQL 8.0**.
+  - **Stateful** (mantiene estado persistente).
+  - Host en **3307**.
+  - Acceso a través de **JDBC/R2DBC**.
+
+- **event_database**:
+  - Base de datos para almacenar información de eventos.
+  - Accedida mediante **Mongo Conector**.
+  - **Stateful** (persistencia de datos).
+
+- **MongoDB**:
+  - Repositorio físico que respalda `event_database`.
+  - Gestiona los documentos de eventos de forma persistente.
+
+### 5. Conectores Utilizados
+- **HTTP/HTTPS**: comunicación entre el cliente y el frontend.
+- **REST**: comunicación entre frontend y backend, y también como alternativa entre servicios.
+- **gRPC**: comunicación eficiente entre `Campus Service` y `Recomendations`.
+- **JDBC/R2DBC**: acceso reactivo o tradicional a MySQL.
+- **Mongo Conector**: acceso a la base de datos de eventos en MongoDB.
+
+### 6. Naturaleza de los componentes
+- **Stateless**: `events_frontend`, `Campus Service`, `Recomendations` (la lógica no guarda estado en memoria entre peticiones).
+- **Stateful**: las bases de datos (`recomendation_database`, `event_database`) mantienen datos persistentes.
+
+---
 
 **ANÁLISIS DE COMPONENTES**
 
@@ -43,11 +100,19 @@ Se utilizan los siguientes 2 tipos de bases de datos:
 
 | Componente | Tipo  | Razón |
 | ----- | :---: | :---: |
-| **frontend** | **stateless** | **Solo sirve archivos estáticos o reenvía solicitudes; no guarda sesiones ni datos persistentes.** |
-| **campus** | **stateless** | **Contiene la lógica de negocio; la persistencia se realiza en las bases de datos.** |
-| **recommendations** | **stateless** | **Ejecuta la lógica de recomendaciones; los datos se guardan en MongoDB.** |
+| **frontend** | stateless | Solo sirve archivos estáticos o reenvía solicitudes; no guarda sesiones ni datos persistentes. |
+| **campus** | stateless | Contiene la lógica de negocio; la persistencia se realiza en las bases de datos. |
+| **recommendations** | stateless | Ejecuta la lógica de recomendaciones; los datos se guardan en MongoDB.|
 
-___________________________________________________________________________________--__--
+| Componente            | Tipo (stateful/stateless) | Descripción                                                  |
+|-----------------------|---------------------------|--------------------------------------------------------------|
+| **event-db (MySQL)**      | **stateful**    | Almacena de forma permanente datos relacionales de los eventos. |
+| **recommendation-db (Mongo)** | Con estado (stateful)     | Guarda de forma persistente los documentos de recomendaciones. |
+
+
+_____________________________________________________________________________________________________________________________________________________
+
+
 **Análisis de Conectores**
 
 **3.5 Respuestas sobre Conectores**
