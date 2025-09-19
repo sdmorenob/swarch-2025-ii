@@ -1,7 +1,7 @@
 # Laboratorio 2 - Vista de Componentes y Conectores
-
-![Vista de Componentes y Conectores usando notación semi-formal](image.png)
-
+Nombres: Cristhian Alarcón Florido y Daniel Ochoa
+## Vista de Componentes y Conectores usando notación semi-formal
+![alt text](image-2.png)
 ## Descripción de los Componentes y Conectores Identificados
 
 ### Componentes
