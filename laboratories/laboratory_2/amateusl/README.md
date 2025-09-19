@@ -1,6 +1,12 @@
-Nombre:Anderson Steven Mateus Lopez
-_____________________________________________________________________________________________________________________________________________________-
+**Nombre:** Anderson Steven Mateus Lopez
+_____________________________________________________________________________________________________________________________________________________
 **Component-and-Connector View**
+_____________________________________________________________________________________________________________________________________________________
+
+**Diagrama de Componentes y Conectores**
+
+<img width="931" height="901" alt="UmlLab2 drawio" src="https://github.com/user-attachments/assets/14c0b95c-7e44-431d-8834-cf4db526260c" />
+
 
 **ANÁLISIS DE COMPONENTES**
 
@@ -10,18 +16,18 @@ ________________________________________________________________________________
 
 Se pueden evidenciar 5 componentes, los cuales están de manera ordenada en el archivo .yaml :
 
-1. Frontend \- Interfaz de usuario  
-2. Campus   
-3. Recommendations \- Servicio de recomendaciones  
-4. Event-db \- Base de datos de eventos (MySQL)  
-5. Recommendation-db \- Base de datos de recomendaciones (MongoDB)
+**1.** Frontend \- Interfaz de usuario  
+**2.** Campus   
+**3.** Recommendations \- Servicio de recomendaciones  
+**4.** Event-db \- Base de datos de eventos (MySQL)  
+**5.** Recommendation-db \- Base de datos de recomendaciones (MongoDB)
 
 **B.¿Qué tipos de bases de datos están presentes en el sistema?**
 
 Se utilizan los siguientes 2 tipos de bases de datos:
 
-1. MySQL 8.0 – Base de datos Relacional event-db).  
-2. MongoDB 6 – Base de dados NoSQL orientada a documentos (recommendation-db).
+**1.** MySQL 8.0 – Base de datos Relacional event-db).  
+**2.** MongoDB 6 – Base de dados NoSQL orientada a documentos (recommendation-db).
 
 **C. ¿Cuál es el alcance de cada componente dentro de la arquitectura?**
 
@@ -52,7 +58,7 @@ ________________________________________________________________________________
 
 1. **HTTP/HTTPS :** Participan Navegador ↔ Frontend y en si permite que los usuarios accedan a la aplicación web.  
 2. **REST API:** Participan Frontend ↔ Campus y en sí se evidencia en cuanto al front, ya que, Invoca endpoints expuestos por el backend campus mediante peticiones REST.  
-3. **gRPC:**Participan Campus ↔ Recommendations; Campus consulta a recommendations usando gRPC  
+3. **gRPC:** Participan Campus ↔ Recommendations; Campus consulta a recommendations usando gRPC  
      
 4. **R2DBC:** Participan Campus ↔ Event-db (MySQL) ;Campus se conecta a la base de datos event-db (MySQL) mediante R2DBC.  
 5. **PyMongo:** Participan Recommendations ↔ Recommendation-db (MongoDB) ,recommendations interactúa con la base de datos documental recommendation-db utilizando controladores de MongoDB
@@ -71,15 +77,15 @@ ________________________________________________________________________________
 
 **Conectores Síncronos:**
 
-1. **HTTP/HTTPS**  
-2. **REST API**  
-3. **gRPC**  
+**1.** HTTP/HTTPS  
+**2.** REST API  
+**3.** gRPC  
    
 
 **Conectores Asíncronos:**
 
-1. **R2DBC**  
-2. **PyMongo**
+**1.** R2DBC 
+**2.** PyMongo
 
 **Pregunta Bonus**
 
@@ -91,9 +97,9 @@ Los controladores como CampusEventController, UserController y RsvpController de
 
 Lo anterior es un problema debido a que:
 
-1. Las entidades pueden contener campos que no deberían ser visibles para el cliente, como contraseñas (incluso hasheadas)  
-2. Limita la capacidad de evolucionar la API y el esquema de la base de datos de forma independiente.   
-3. El cliente puede recibir más datos de los que necesita para una vista en concreto.
+**1.** Las entidades pueden contener campos que no deberían ser visibles para el cliente, como contraseñas (incluso hasheadas)  
+**2.** Limita la capacidad de evolucionar la API y el esquema de la base de datos de forma independiente.   
+**3.** El cliente puede recibir más datos de los que necesita para una vista en concreto.
 
 **¿Posible solución?**
 
@@ -103,51 +109,51 @@ En vez de devolver las entidades directamente, crea modelos específicos para la
 
 Lo anterior ayuda a que : 
 
-1. Los DTOS pueden incorporar anotaciones de validación.  
-2. Cada capa (presentación, negocio y datos) evoluciona de forma independiente.  
-3. La API no depende del detalle de la base de datos.
+**1.** Los DTOS pueden incorporar anotaciones de validación.  
+**2.** Cada capa (presentación, negocio y datos) evoluciona de forma independiente.  
+**3.** La API no depende del detalle de la base de datos.
 
 **Descripción de Componentes y Conectores**
 
 ### **1\. Frontend (Vue.js \+ Nginx)**
 
-* **Stack: Vue 3 con Vite para la construcción y Nginx como servidor de archivos estáticos.**
+* **Stack:** Vue 3 con Vite para la construcción y Nginx como servidor de archivos estáticos.
 
-* **Rol: Proporciona la interfaz que usan los usuarios para consultar y visualizar los eventos recomendados.**
+* **Rol:** Proporciona la interfaz que usan los usuarios para consultar y visualizar los eventos recomendados.
 
-* **Detalles: Es una aplicación de una sola página (SPA) con comportamiento reactivo que consume los servicios del backend mediante peticiones REST.**
+* **Detalles:** Es una aplicación de una sola página (SPA) con comportamiento reactivo que consume los servicios del backend mediante peticiones REST.
 
 ### **2\. Campus (Spring Boot)**
 
-* **Stack: Spring Boot 3 con WebFlux, R2DBC y cliente gRPC.**
+* **Stack:** Spring Boot 3 con WebFlux, R2DBC y cliente gRPC.
 
-* **Rol: Actúa como la API central que administra la información de eventos y coordina las interacciones con los demás servicios.**
+* **Rol:** Actúa como la API central que administra la información de eventos y coordina las interacciones con los demás servicios.
 
-* **Detalles: Arquitectura totalmente reactiva, incluida la comunicación con el servicio de recomendaciones.**
+* **Detalles:** Arquitectura totalmente reactiva, incluida la comunicación con el servicio de recomendaciones.
 
 ### **3\. Recommendations (FastAPI \+ gRPC)**
 
-* **Stack: FastAPI, gRPC y el controlador asíncrono Motor para MongoDB.**
+* **Stack:** FastAPI, gRPC y el controlador asíncrono Motor para MongoDB.
 
-* **Rol: Servicio especializado en generar sugerencias de eventos a partir de modelos o algoritmos de aprendizaje automático.**
+* **Rol:** Servicio especializado en generar sugerencias de eventos a partir de modelos o algoritmos de aprendizaje automático.
 
-* **Detalles: Destaca por su alto rendimiento y por la comunicación eficiente entre microservicios gracias a gRPC.**
+* **Detalles:** Destaca por su alto rendimiento y por la comunicación eficiente entre microservicios gracias a gRPC.
 
 ### **4\. Base de Datos de Eventos (MySQL)**
 
-* **Tecnología: MySQL 8.0.**
+* **Tecnología:** MySQL 8.0.
 
-* **Rol: Guarda de forma persistente la información estructurada de eventos, usuarios y confirmaciones de asistencia (RSVP).**
+* **Rol: Guarda de forma persistente la información estructurada de eventos, usuarios y confirmaciones de asistencia (RSVP).
 
-* **Detalles: Ofrece propiedades ACID, ideal para operaciones transaccionales.**
+* **Detalles:** Ofrece propiedades ACID, ideal para operaciones transaccionales.**
 
 ### **5\. Base de Datos de Recomendaciones (MongoDB)**
 
-* **Tecnología: MongoDB 6\.**
+* **Tecnología:** MongoDB 6\.
 
-* **Rol: Almacena los datos utilizados para las recomendaciones de eventos.**
+* **Rol:** Almacena los datos utilizados para las recomendaciones de eventos.
 
-* **Detalles: Es un sistema NoSQL, flexible y con buena capacidad de escalado horizontal.**
+* **Detalles:** Es un sistema NoSQL, flexible y con buena capacidad de escalado horizontal.
 
 | Conector | Descripción |
 | ----- | ----- |
