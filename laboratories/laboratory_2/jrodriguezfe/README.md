@@ -1,5 +1,6 @@
-# LABORATORIO 2
-
+# [SWARCH-L2] LABORATORIO 2 
+---
+Integrantes: Julian David Rodriguez Fernandez
 ---
 
 ## 3.4 Preguntas
