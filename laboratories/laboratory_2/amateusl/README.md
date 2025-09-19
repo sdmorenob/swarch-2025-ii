@@ -104,7 +104,7 @@ Se utilizan los siguientes 2 tipos de bases de datos:
 | **campus** | stateless | Contiene la lógica de negocio; la persistencia se realiza en las bases de datos. |
 | **recommendations** | stateless | Ejecuta la lógica de recomendaciones; los datos se guardan en MongoDB.|
 
-| Componente            | Tipo (stateful/stateless) | Descripción                                                  |
+| Componente            | Tipo  | Razón                                         |
 |-----------------------|---------------------------|--------------------------------------------------------------|
 | **event-db (MySQL)**      | **stateful**    | Almacena de forma permanente datos relacionales de los eventos. |
 | **recommendation-db (Mongo)** | **stateful**     | Guarda de forma persistente los documentos de recomendaciones. |
