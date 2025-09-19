@@ -41,6 +41,7 @@ Se utilizan los siguientes 2 tipos de bases de datos:
 | **campus** | **stateless** | **Contiene la lógica de negocio; la persistencia se realiza en las bases de datos.** |
 | **recommendations** | **stateless** | **Ejecuta la lógica de recomendaciones; los datos se guardan en MongoDB.** |
 
+___________________________________________________________________________________--__--
 **Análisis de Conectores**
 
 **3.5 Respuestas sobre Conectores**
@@ -86,6 +87,8 @@ La mala práctica consiste en exponer directamente las entidades de la base de d
 
 Los controladores como CampusEventController, UserController y RsvpController devuelven los objetos que se mapean directamente a las tablas de tu base de datos.
 
+<img width="716" height="399" alt="image" src="https://github.com/user-attachments/assets/b8e199cb-1efb-4727-8548-1603f8a5d9a1" />
+
 Lo anterior es un problema debido a que:
 
 1. Las entidades pueden contener campos que no deberían ser visibles para el cliente, como contraseñas (incluso hasheadas)  
@@ -94,7 +97,7 @@ Lo anterior es un problema debido a que:
 
 **¿Posible solución?**
 
-![][image1]
+<img width="940" height="608" alt="image" src="https://github.com/user-attachments/assets/869462ae-845d-417f-8426-8a67fc7a4960" />
 
 En vez de devolver las entidades directamente, crea modelos específicos para la API (DTOs o “data transfer objects”) y traduce entre ellos y las entidades de persistencia.
 
