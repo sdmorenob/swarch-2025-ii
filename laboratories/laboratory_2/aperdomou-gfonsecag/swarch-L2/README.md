@@ -6,16 +6,17 @@
 
 ### 3.4 Preguntas
 
-**A. ¿Cuántos componentes forman parte del sistema?**  
-El sistema está compuesto por 5 elementos principales:
+**A. ¿Cuántos componentes conforman el sistema?**
 
-- Interfaz `events-fe` (Vite + Vue)
-- Servicio backend `campus` (Spring Boot)
-- Cliente (navegador web)
-- Servicio backend `recommendations` (Python)
-- Bases de datos:
-  - `campus_db` (MySQL)
-  - `recommendations_db` (MongoDB)
+| Componente              | Tecnología/Descripción            |
+|--------------------------|-----------------------------------|
+| Cliente (Navegador)      | Interfaz utilizada por el usuario |
+| Frontend `events-fe`     | Vite + Vue                       |
+| Backend `campus`         | Spring Boot                      |
+| Backend `recommendations`| Python                           |
+| `campus_db`              | MySQL (base de datos relacional) |
+| `recommendations_db`     | MongoDB (base de datos NoSQL)    |
+
 
 **B. ¿Qué tipos de bases de datos se emplean?**
 
@@ -70,6 +71,11 @@ En el backend de Campus se detecta que las entidades **JPA** se exponen directam
 Esto representa una mala práctica, ya que mezcla la lógica de persistencia con la capa de presentación y puede revelar información sensible.  
 La mejor opción es implementar **DTO** o modelos específicos para la comunicación en la API.
 
+
+<img width="1420" height="1221" alt="Diagrama en blanco" src="https://github.com/user-attachments/assets/e92432f0-68cb-4067-81ea-f9a164be6e97" />
+
 ### Evidencia
 
-![Recommended Events Screenshot](C:\Users\Andrés Felipe\Downloads\evidencia.png)
+<img width="1067" height="688" alt="image" src="https://github.com/user-attachments/assets/2c23ba37-d688-4461-a71d-6219bd0ae8f4" />
+
+
