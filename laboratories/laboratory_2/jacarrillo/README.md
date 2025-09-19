@@ -4,7 +4,7 @@
 
 ### 📌 Diagrama de Componentes y Conectores (Notación Semi-formal)
 
-![Diagram_of_components_lab2](https://github.com/user-attachments/assets/5f03a3f8-0603-48ed-af3e-c21f81f5872b)
+<img width="324" height="374" alt="lab2_diagram_UML" src="https://github.com/user-attachments/assets/b5a8d4ff-879d-4944-a8cf-925cf5e5eaa6" />
 
 ---
 
