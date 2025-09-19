@@ -106,8 +106,8 @@ Se utilizan los siguientes 2 tipos de bases de datos:
 
 | Componente            | Tipo  | Razón                                         |
 |-----------------------|---------------------------|--------------------------------------------------------------|
-| **event-db (MySQL)**      | **stateful**    | Almacena de forma permanente datos relacionales de los eventos. |
-| **recommendation-db (Mongo)** | **stateful**     | Guarda de forma persistente los documentos de recomendaciones. |
+| **event-db (MySQL)**      | stateful   | Almacena de forma permanente datos relacionales de los eventos. |
+| **recommendation-db (Mongo)** | stateful     | Guarda de forma persistente los documentos de recomendaciones. |
 
 
 _____________________________________________________________________________________________________________________________________________________
