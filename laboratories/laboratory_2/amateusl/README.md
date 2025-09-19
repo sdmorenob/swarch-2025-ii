@@ -91,7 +91,7 @@ Se utilizan los siguientes 2 tipos de bases de datos:
 | Component | Scope |
 | ----- | ----- |
 | **frontend** | Presenta la interfaz web para el usuario |
-| campus | Gestiona la lógica de eventos y se comunica con event-db (MySQL) y con recommendations. |
+| **campus** | Gestiona la lógica de eventos y se comunica con event-db (MySQL) y con recommendations. |
 | **recommendations** | Entrega recomendaciones de eventos; utiliza recommendation-db (MongoDB) como su base de datos. |
 | **event-db** | Almacenamiento relacional y estructurado. |
 | **recommendation-db** | Almacenamiento no relacional/documental para los datos de recomendaciones. |
@@ -107,7 +107,7 @@ Se utilizan los siguientes 2 tipos de bases de datos:
 | Componente            | Tipo (stateful/stateless) | Descripción                                                  |
 |-----------------------|---------------------------|--------------------------------------------------------------|
 | **event-db (MySQL)**      | **stateful**    | Almacena de forma permanente datos relacionales de los eventos. |
-| **recommendation-db (Mongo)** | Con estado (stateful)     | Guarda de forma persistente los documentos de recomendaciones. |
+| **recommendation-db (Mongo)** | **stateful**     | Guarda de forma persistente los documentos de recomendaciones. |
 
 
 _____________________________________________________________________________________________________________________________________________________
@@ -132,11 +132,11 @@ ________________________________________________________________________________
 
 | Conector | Tipo | Protocolo |
 | ----- | ----- | ----- |
-| HTTP/HTTPS | Request-Response | HTTP/1.1, HTTP/2 |
-| REST API | Request-Response | HTTP \+ JSON |
-| gRPC | RPC | HTTP/2 \+ Protocol Buffers |
-| R2DBC | Database Connector | MySQL Protocol |
-| PyMongo | Database Connector | MongoDB Wire Protocol |
+| **HTTP/HTTPS** | Request-Response | HTTP/1.1, HTTP/2 |
+| **REST API** | Request-Response | HTTP \+ JSON |
+| **gRPC** | RPC | HTTP/2 \+ Protocol Buffers |
+| **R2DBC** | Database Connector | MySQL Protocol |
+| **PyMongo** | Database Connector | MongoDB Wire Protocol |
 
 **C. ¿Los conectores son síncronos o asíncronos?**
 
@@ -150,6 +150,7 @@ ________________________________________________________________________________
 **Conectores Asíncronos:**
 
 **1.** R2DBC 
+
 **2.** PyMongo
 
 **Pregunta Bonus**
