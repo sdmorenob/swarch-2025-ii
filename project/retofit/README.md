@@ -66,8 +66,7 @@ El sistema es una aplicación para ayudar y hacer un seguimiento a los ejercicio
 ---
 #### Vista C&C
 ---
-![Vista arquitectónica del proyecto](/WhatsApp%20Image%202025-10-01%20at%209.21.09%20PM.jpeg)
-![alt text](image.png)
+![Vista arquitectónica del proyecto](image.png)
 #### Descripción de los estilos arquitectónicos usados
 ---
 
