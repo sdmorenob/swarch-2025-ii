@@ -1,14 +1,15 @@
-# Laboratory 4 – Architectural Patterns
+# Laboratory 4 - Architectural Patterns
 
-Curso: Software Architecture 2025-II
+**Course:** Software Architecture – 2025-II  
+**Date:** October 14  
+**Names:** Kevin Julian Gonzalez Guerra, Javier Andres Carrillo Carrasco, Jorge Andrés Torres Leal 
 
-Fecha: 14 de octubre
+---
 
-Equipo: Javier Andrés Carrillo Carrasco, Kevin Julian Gonzalez Guerra, Jorge Andrés Torres Leal
+## 1. Objective
 
-## 1. Objetivo
+Comprender y aplicar los **patrones arquitectónicos de resiliencia, comunicación y despliegue** documentados por **Chris Richardson** en *Microservices Patterns*.  
 
-Entender a fondo dos patrones arquitectónicos y aplicarlos a situaciones reales. Vas a describir el problema que resuelven, cómo funcionan, beneficios, costos y un caso de uso. Luego resuelves tres escenarios con decisiones concretas y diagramas.
 
 ---
 
@@ -16,31 +17,28 @@ Entender a fondo dos patrones arquitectónicos y aplicarlos a situaciones reales
 
 ### 2.1 Microfrontends
 
-A. Problema que resuelve y cómo lo resuelve
+**Patrón base:** *Self-Contained Systems / Decomposition by Business Capability*
 
-- Equipos grandes que chocan en un único frontend, ciclos de despliegue lentos y dependencias cruzadas.
+**Propósito:**  
+Dividir el frontend monolítico en microaplicaciones independientes para permitir ciclos de desarrollo, prueba y despliegue autónomos.
 
-- Divide la UI en microaplicaciones independientes por dominio. Cada equipo desarrolla, prueba y despliega su parte sin bloquear a los demás. Se orquesta en tiempo de ejecución o en build.
+**Impacto:**  
+Reduce el acoplamiento entre equipos y mejora la cohesión por dominio funcional.
 
-B. Impacto en acoplamiento y cohesión
+**Mecanismo:**  
+- Contenedor principal (*Application Shell*) que orquesta los microfrontends.  
+- Integración mediante *Routing*, *Web Components* o *Module Federation*.  
+- Comunicación por eventos y contratos compartidos.  
+- *Externalized Configuration* para temas comunes (autenticación, estilos, métricas).
 
-- Reduce acoplamiento entre equipos y dominios.
+**Beneficios:**  
+Despliegues independientes, autonomía de equipos, escalabilidad modular.
 
-- Aumenta cohesión por dominio funcional.
+**Trade-offs:**  
+Complejidad de integración y coordinación visual.
 
-- Introduce acoplamiento en la capa de integración si no defines contratos claros.
-
-C. Mecanismo
-
-- Un contenedor de UI compone microfrontends.
-
-- Integración por routing, módulos remotos o web components.
-
-- Contratos compartidos para diseño, autenticación, eventos y observabilidad.
-
-- Comunicación por eventos o bus ligero en el navegador.
-
-D. Arquitectura de alto nivel
+**Ejemplo:**  
+Marketplace con microfrontends para catálogo, carrito y pagos.
 
 ```mermaid
 flowchart LR
@@ -54,108 +52,110 @@ flowchart LR
   MF3 --> API3[(API Pagos)]
   classDef mf fill:#eef,stroke:#446;
   class MF1,MF2,MF3 mf;
-```
-
-E. Beneficios
-- Despliegues independientes.
-- Escalamiento por módulo.
-- Autonomía de equipos y ciclos cortos.
-- Gradual migration del monolito de UI.
-
-F. Complejidades y trade-offs
-- Orquestación de versiones y layout.
-- Rendimiento, más bundles y fronteras de red.
-- Seguridad de sesión y autorización coherente.
-- Diseño consistente sin frenar la autonomía.
-- Observabilidad distribuida en el cliente.
-
-G. Sistema real
-- Marketplace con módulos de búsqueda, producto, checkout y postventa. Cada dominio sale a producción a su ritmo y se prueba por canary en el cliente.
+````
 
 ---
 
 ### 2.2 Log Aggregation
 
-A. Problema que resuelve y cómo
-- Logs dispersos en muchos servicios impiden depurar, auditar y medir.
-- Centraliza, estandariza y enriquece logs. Los envía a un storage indexable y consulta unificada.
+**Patrón base:** *Centralized Logging*
+**Patrón complementario:** *Audit Logging* y *Observability*
 
-B. Impacto en acoplamiento y cohesión
-- Menos acoplamiento operativo entre equipos.
-- Cohesiona la observabilidad con un formato único y trazabilidad.
+**Propósito:**
+Recolectar y almacenar logs de múltiples servicios en un punto central para facilitar auditoría, trazabilidad y depuración.
 
-C. Mecanismo
-- Agentes en cada host o sidecars recolectan logs.
-- Pipeline de ingestión que parsea, enriquece y enruta.
-- Almacén indexado y capa de consultas.
-- Correlation IDs y trazas distribuidas.
+**Mecanismo:**
 
-D. Arquitectura de alto nivel
+* Agentes o sidecars recolectan logs locales.
+* Pipeline central (*Log Aggregator*) los enriquece e indexa.
+* Se almacenan en un repositorio consultable y seguro.
+* Se usan *Correlation IDs* para trazar una solicitud entre servicios.
+
+**Beneficios:**
+Auditoría inmutable, monitoreo global, reducción del tiempo medio de recuperación.
+
+**Trade-offs:**
+Costos de almacenamiento y configuración de retención.
 
 ```mermaid
 flowchart LR
   subgraph Node/Pod
-    App1[Service A]-->Agent1[Agent/Sidecar]
+    App1[Service A]-->Agent1[Log Agent/Sidecar]
     App2[Service B]-->Agent1
   end
   Agent1 --> Ingest[Pipeline Ingestión]
-  Ingest --> Store[(Almacén de Logs)]
-  Store --> Query[UI de Consulta y Alertas]
+  Ingest --> Store[(Log Storage)]
+  Store --> Query[Dashboard & Alerts]
 ```
-
-E. Beneficios
-- Búsqueda centralizada y alertas.
-- Auditoría y cumplimiento.
-- Menor MTTR y análisis de causa raíz.
-- Métricas derivadas de logs.
-
-F. Complejidades y trade-offs
-- Costo de almacenamiento y retención.
-- Back-pressure en picos.
-- Redacción y protección de datos sensibles.
-- Gobernanza de esquemas de logs.
-
-G. Sistema real
-- Plataforma de salud con 70 servicios. Recolectores por pod, pipeline con filtrado de PII y retención diferenciada por tipo de dato.
 
 ---
 
 ## 3. Analysis of Scenarios
 
-### 3.1 Scenario 1 – PagoGlobal
+### 3.1 Scenario 1 – PagoGlobal (Fintech)
 
-Problema
-FraudBlocker entra en brownout y bloquea hilos del PaymentProcessor por timeouts largos. El pool se agota, rechaza también pagos pequeños y hay caída en cascada.
+**Contexto:**
+El microservicio *PaymentProcessor* depende del servicio externo *FraudBlocker*.
+Durante picos de carga, *FraudBlocker* entra en *brownout* (responde en 15–20 s) y bloquea todos los hilos de *PaymentProcessor*.
 
-Objetivos
-- Proteger PaymentProcessor de la latencia del tercero.
-- Mantener operativos los flujos que no requieren fraude.
-- Prevenir agotamiento de hilos y conexiones.
+**Objetivo:**
+Aumentar la resiliencia aplicando los **patrones de estabilidad de Chris Richardson**.
 
-Decisiones y patrones
+---
 
-1. Circuit Breaker en la llamada a FraudBlocker
-   - Estados closed, open, half-open.
-   - Umbral por tasa de error y latencia p95.
-2. Timeouts y retries con backoff y jitter
-   - Timeout cliente 800 a 1200 ms.
-   - Retries máx. 1 en half-open.
-3. Bulkhead e hilos separados
-   - Pool dedicado para FraudBlocker con semáforos.
-   - Pool distinto para pagos < 100k para que no se bloqueen.
-4. Programación no bloqueante
-   - Cliente HTTP async y reactor pattern.
-5. Colas y aislamiento de picos
-   - Para transacciones que permiten espera.
-   - Para > 100k, evalúa short queue con TTL y abandono temprano.
-6. Degradación controlada
-   - Si el breaker está open, responde 503 con reintento al usuario.
-   - Mantén pagos < 100k en ruta rápida.
-7. Observabilidad
-   - Métricas por ruta, latencias y tasa de apertura del breaker.
-   - Correlation ID por transacción.
+#### Patrones aplicados
 
-Diagrama de alto nivel
+1. **Circuit Breaker Pattern**
+
+   * Supervisa latencia y errores.
+   * Abre el circuito cuando la tasa de fallos o el p95 supera umbrales definidos.
+   * Rechaza llamadas inmediatamente durante el periodo *open*, liberando recursos.
+   * Pasa a *half-open* tras un intervalo de enfriamiento para probar recuperación.
+
+2. **Timeout Pattern**
+
+   * Cada llamada remota expira después de 1 segundo.
+   * Evita bloqueos prolongados de hilos.
+
+3. **Retry Pattern with Exponential Backoff and Jitter**
+
+   * Un solo reintento con backoff 200 ms y jitter aleatorio.
+   * Evita tormentas sincronizadas de reintentos.
+
+4. **Bulkhead Pattern**
+
+   * Aisla recursos por tipo de transacción:
+
+     * 70 % del pool para pagos rápidos (<100 000 COP).
+     * 30 % para llamadas a *FraudBlocker*.
+   * Limita concurrencia y conexiones para prevenir saturación total.
+
+5. **Queue-Based Load Leveling Pattern**
+
+   * Introduce una cola corta (TTL 3 s) para solicitudes de fraude.
+   * Desacopla el ritmo de entrada del ritmo de procesamiento.
+
+6. **Fallback Pattern**
+
+   * Si el *Circuit Breaker* está abierto, responde con:
+
+     * HTTP 503 + *Retry-After*, o
+     * Estado “pendiente de validación”.
+   * Permite degradación funcional sin caída total.
+
+7. **Asynchronous Request/Response Pattern**
+
+   * Cliente HTTP asíncrono no bloqueante.
+   * Libera hilos durante operaciones de red.
+
+8. **Observability Pattern**
+
+   * Métricas por ruta: latencias p50/p95/p99, tasa de apertura del breaker, saturación de pools.
+   * Alertas por degradación o breaker abierto >60 % del tiempo.
+
+---
+
+#### Flujo de arquitectura
 
 ```mermaid
 flowchart LR
@@ -164,55 +164,58 @@ flowchart LR
   Router -- Sí --> Gate[Bulkhead + Async Client]
   Gate --> CB[Circuit Breaker + Timeout/Retry]
   CB -->|OK| Fraud[FraudBlocker]
-  CB -->|Open/Timeout| Degrade[Fallback 503 controlado]
+  CB -->|Open/Timeout| Degrade[Fallback: 503 o Pendiente]
   FastPath --> Proc[Confirmación]
   Fraud --> Proc
 ```
 
-Parámetros iniciales sugeridos
-- Timeout 1 s, retry 1, backoff 200 ms con jitter.
-- Breaker: error o latencia p95 > 1.5 s en 20 de 50 llamadas abre. Half-open prueba 5.
-- Pools: 70 por ciento para fast path, 30 por ciento para fraude. Límite duro de 200 conexiones a FraudBlocker.
-
-Validación
-- Pruebas de estrés con cola de 10 mil rps y brownout sintético de 15 s.
-- Objetivo: pagos < 100k con éxito mayor a 99.9 por ciento durante el brownout.
-- p95 de fast path menor a 300 ms en saturación.
-
-Riesgos y mitigaciones
-- Falsos positivos del breaker. Ajusta ventanas deslizantes.
-- Backlog de colas. Usa TTL y rechazos tempranos con códigos claros.
+**Resultado:**
+El sistema mantiene disponibilidad, evita bloqueos en cascada y se recupera automáticamente cuando el tercero vuelve a la normalidad.
 
 ---
 
-### 3.2 Scenario 2 – MiSalud Digital
+### 3.2 Scenario 2 – MiSalud Digital (Gobierno)
 
-Problema
-mTLS obligatorio, auditoría fina, canary 1 por ciento y resiliencia inconsistente entre lenguajes. Las bibliotecas comunes no escalan en coordinación.
+**Contexto:**
+Plataforma nacional con más de 70 microservicios desarrollados en distintos lenguajes.
+Requisitos: mTLS obligatorio, auditoría inmutable y despliegues progresivos.
 
-Objetivos
-- Seguridad y auditoría uniformes sin tocar cada servicio.
-- Despliegues progresivos controlados.
-- Resiliencia homogénea.
+**Problema:**
+Las políticas de seguridad y resiliencia son inconsistentes entre equipos.
+Las bibliotecas comunes generan dependencia y lentitud en las actualizaciones.
 
-Decisiones y patrones
+---
 
-1. Service Mesh
-   - Sidecars proxy en cada pod.
-   - mTLS transparente, rotación de certificados, autenticación mutua.
-2. Política de resiliencia central
-   - Timeouts, retries, circuit breaker y rate limiting definidos en el mesh.
-3. Auditoría inmutable
-   - El mesh emite logs con origen, destino, ruta y latencia.
-   - Envía a un pipeline con firma y almacenamiento append-only.
-4. Canary y traffic splitting
-   - Reglas del mesh para enrutar 1 por ciento a la versión nueva.
-5. Estándares de trazabilidad
-   - Propaga trace y span IDs.
-6. Redacción de PII
-   - Filtros en el proxy antes del almacenamiento.
+#### Patrones aplicados
 
-Diagrama de alto nivel
+1. **Service Mesh Pattern**
+
+   * Implementa los patrones *Circuit Breaker*, *Retry*, *Timeout* y *Rate Limiting* de forma centralizada.
+   * Proporciona mTLS, control de tráfico y observabilidad sin modificar código.
+
+2. **Externalized Configuration Pattern**
+
+   * Las políticas de seguridad, reintentos y timeouts se gestionan fuera de los servicios.
+   * Facilita gobernanza y actualizaciones rápidas.
+
+3. **Audit Logging Pattern**
+
+   * Los sidecars del mesh registran todas las llamadas con origen, destino, URL y latencia.
+   * Los logs se almacenan en un pipeline inmutable firmado.
+
+4. **Deployment Pipeline / Canary Release Pattern**
+
+   * Control de versiones progresivo mediante redirección de tráfico (1 % a versión nueva).
+   * Permite validación segura sin afectar la producción.
+
+5. **Observability Pattern**
+
+   * Métricas y trazas distribuidas por cada servicio.
+   * Integración con dashboards centralizados.
+
+---
+
+#### Diagrama de alto nivel
 
 ```mermaid
 flowchart LR
@@ -224,65 +227,64 @@ flowchart LR
     B-. sidecar .-P2[Proxy B]
     B2-. sidecar .-P3[Proxy B2]
   end
-  P1 -->|Logs audit| Pipeline[Audit Pipeline firmado]
-  Pipeline --> Vault[(Almacén Append-only)]
+  P1 -->|Audit Logs| Pipeline[Audit Pipeline firmado]
+  Pipeline --> Vault[(Append-only Storage)]
 ```
 
-Políticas mínimas
-- mTLS obligatorio para todo tráfico interno.
-- Timeout por servicio y método, p95 objetivo.
-- Retries con backoff y límites por idempotencia.
-- Circuit breaker por código y latencia.
-- Splits por versión y reglas de rollback automático por error rate.
-- Retención de auditoría 5 a 10 años según norma. Hash por lote.
-
-Validación
-- Pruebas de canary con 1 por ciento real.
-- Verificación de rotación de certificados sin downtime.
-- Simulación de fallas para confirmar que el mesh aplica timeouts y breakers iguales en Java, Python y Node.
-
-Riesgos y mitigaciones
-- Sobrecosto de latencia por sidecar. Monitorea p99.
-- Curva de aprendizaje. Capacita con plantillas de política e integración CI.
+**Resultado:**
+El mesh asegura una aplicación consistente de los patrones de resiliencia, auditoría y despliegue controlado, eliminando la dependencia de librerías internas.
 
 ---
 
-### 3.3 Scenario 3 – EntregaRápida
+### 3.3 Scenario 3 – EntregaRápida (Logística)
 
-Problema
-Dispatch-Service usa listas de IP de pods que cambian con el autoscaling. El cron cada 5 minutos queda obsoleto y causa timeouts y bloqueo de recursos.
+**Contexto:**
+Migración a Kubernetes.
+*Routing-Service* escala dinámicamente y *Dispatch-Service* todavía corre en VMs.
 
-Objetivos
-- Descubrimiento dinámico confiable.
-- Conexiones estables durante escalamiento rápido.
-- Resiliencia del cliente legado.
+**Problema:**
+El descubrimiento de pods se hace con un script cada 5 minutos, lo que genera IPs obsoletas y bloqueos por timeouts.
 
-Decisiones y patrones
+---
 
-1. Kubernetes Service como punto estable
-   - Expón Routing-Service detrás de un Service con ClusterIP.
-   - Si el cliente está fuera de K8s, usa LoadBalancer o un Gateway.
-   - DNS estable, sin listas de IP.
-2. Opción con Service Mesh y egress/inbound gateway
-   - Control de tráfico, mTLS y políticas de retries sin tocar el legado.
-3. Timeouts, retries y breaker en el cliente legado
-   - Timeout 800 a 1200 ms. Retries máx. 2 con backoff.
-   - Circuit breaker por latencia y error.
-4. Health checks y readiness
-   - Solo enruta a pods ready.
-5. HPA por métricas correctas
-   - CPU y colas internas del Routing-Service.
-6. Buffer asíncrono para picos extremos
-   - Cola corta con TTL para peticiones de ruta si el SLA lo permite.
-7. Observabilidad
-   - Métricas de DNS, conexión y latencias por salto.
+#### Patrones aplicados
 
-Diagrama de alto nivel
+1. **Service Discovery Pattern**
+
+   * Se elimina el script y se usa el *Service Registry* de Kubernetes.
+   * El *Dispatch-Service* accede mediante nombre DNS estable (`routing.svc.cluster.local`).
+
+2. **API Gateway Pattern**
+
+   * Actúa como punto único de entrada.
+   * Aplica *Circuit Breaker*, *Rate Limiting* y *Timeout* a nivel global.
+
+3. **Externalized Configuration Pattern**
+
+   * Timeouts, retries y políticas de resiliencia se definen externamente (en el Mesh o Config Server).
+   * No requiere cambios en el cliente legacy.
+
+4. **Timeout & Retry Patterns**
+
+   * Timeout: 800–1200 ms.
+   * Retries: máximo 2 con backoff exponencial y jitter.
+
+5. **Health Check & Readiness Pattern**
+
+   * Solo se enruta tráfico a pods marcados como *Ready* para evitar fallos de conexión.
+
+6. **Observability Pattern**
+
+   * Métricas: DNS latency, errores de conexión, saturación del gateway y tasa de reintentos.
+
+---
+
+#### Diagrama de arquitectura
 
 ```mermaid
 flowchart LR
-  Legacy[Dispatch VM] --> DNS[DNS name: routing.svc.company]
-  DNS --> GW[Gateway/LoadBalancer]
+  Legacy[Dispatch VM] --> DNS[routing.svc.cluster.local]
+  DNS --> GW[API Gateway / Ingress]
   GW --> SVC[Service Kubernetes]
   SVC --> P1[Routing Pod 1]
   SVC --> P2[Routing Pod 2..N]
@@ -290,11 +292,29 @@ flowchart LR
   P2 -. readiness .-> SVC
 ```
 
-Plan de migración en pasos
+**Resultado:**
+El descubrimiento se vuelve dinámico, las conexiones son estables y la resiliencia del sistema mejora incluso durante escalamiento rápido.
 
-1. Crear Service y endpoint estable.
-2. Cambiar el cliente para usar el nombre DNS, quitar el cron de IPs.
-3. Activar timeouts, retries y breaker en el cliente.
-4. Añadir gateway o mesh si se requiere mTLS y políticas centralizadas.
-5. Pruebas de autoscaling con ramp up x10 y DNS cache bajo.
-6. Monitoreo de p95, tasa de errores y saturación de pool.
+---
+
+## 4. Summary of Patterns (Based on Chris Richardson’s Catalog)
+
+| Escenario           | Patrones aplicados                                                                                                                        |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **PagoGlobal**      | Circuit Breaker, Timeout, Retry with Backoff, Bulkhead, Queue-Based Load Leveling, Fallback, Asynchronous Request/Response, Observability |
+| **MiSalud Digital** | Service Mesh, Externalized Configuration, Audit Logging, Deployment Pipeline / Canary Release, Observability                              |
+| **EntregaRápida**   | Service Discovery, API Gateway, Externalized Configuration, Timeout, Retry, Health Check & Readiness, Observability                       |
+
+---
+
+## 5. Síntesis final
+
+Cada escenario aplica un conjunto de patrones del catálogo de **Chris Richardson**, diseñados para mejorar resiliencia, comunicación y despliegue en arquitecturas distribuidas:
+
+* **PagoGlobal:** patrones de **Fault Tolerance** y **Stability**.
+* **MiSalud Digital:** patrones de **Security, Observability y Deployment**.
+* **EntregaRápida:** patrones de **Service Communication y Discovery**.
+
+En conjunto, estas estrategias garantizan sistemas que fallan con gracia, se recuperan de manera automática y mantienen alta disponibilidad sin depender de la estabilidad de servicios externos.
+
+
