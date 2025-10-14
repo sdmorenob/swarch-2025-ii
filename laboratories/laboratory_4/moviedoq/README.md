@@ -102,6 +102,15 @@ La **agregación de logs** reduce el acoplamiento y aumenta la cohesión dentro 
 Una plataforma de e-commerce que procesa millones de pedidos diarios, donde cada microservicio (inventario, pagos, envíos, notificaciones) envía sus logs a un **sistema centralizado con Fluent Bit → Kafka → Elasticsearch**, permitiendo a los equipos de operaciones monitorizar fallos en tiempo real, generar alertas automáticas y analizar tendencias de rendimiento.
 
 ## Escenario 2.1 - PagoGlobal
+### Arquitectura actual
+El escenario describe una arquitectura de microservicios sin mecanismos de resiliencia ni aislamiento adecuados, es decir:
+-   el sistema está hecho con varios servicios que se comunican entre sí, pero dependen unos de otros de forma directa y bloqueante.
+    
+-   el servicio principal (paymentprocessor) depende totalmente de un sistema externo llamado fraudblocker, que cuando se pone lento, frena todo.
+    
+-   no hay mecanismos que protejan o separen los procesos, así que si un servicio falla o se demora, todos se ven afectados.
+    
+-   cuando llegan muchas transacciones, el sistema se llena y deja de responder, causando una caída total de la plataforma.
 ### CircuitBreaker:
 Actúa como un interruptor que controla el flujo de llamadas; mantiene un contador de errores y tiempos de respuesta y si detecta que las solicitudes ocmienzan a fallar o tardan demasiado, abre el circuito para detener e impedir que el sistema lleve a cabo o continúe haciendo solicitudes
 
@@ -199,14 +208,62 @@ Otros componentes del sistema escuchan esos eventos, los procesan de forma indep
     -   La consistencia pasa de ser inmediata a **eventual**, lo que requiere un manejo cuidadoso en transacciones financieras.
 
 ## Escenario 2.2 - MiSalud Digital
+### **Arquitectura Actual**
+Arquitectura de microservicios tradicional
+-   Más de **70 microservicios** desarrollados por equipos independientes.
+    
+-   **Políglota:** cada servicio usa su propio lenguaje y librerías (Java, Python, Node.js, etc.).
+    
+-   La **comunicación es directa** entre microservicios (HTTP o gRPC).
+    
+-   Cada equipo gestiona **su propia seguridad, auditoría y resiliencia**, sin coordinación central.
+    
+-   No existe una capa transversal que unifique políticas de red, seguridad o observabilidad.
+### **Problema a solucionar**
+El gran problema no es técnico de código, sino de gestión y coherencia arquitectónica:  
+Cada equipo resolvió los problemas comunes a su manera, lo que generó caos operativo y riesgos de cumplimiento.
+
 ### **Service Mesh**:
-
-
+Es una capa de infraestructura que maneja la comunicación entre los microservicios de una aplicación, gestionando de forma centralizada aspectos como el enrutamiento del tráfico, el balanceo de carga, la seguridad y la observabilidad.
 #### Proposito:
+Resolver de forma transversal y consistente los requisitos que no son funcionales (seguridad, auditoría, resiliencia, tráfico progresivo) sin tener que modificar ni redesplegar cada microservicio.
 
 #### Trade-offs:
 
--   **Ventajas:**
--   **Desventajas:**
+ -   **Ventajas:**
+ - 
+    -   No hay que tocar el código de cada microservicio.
+    -   Todo el tráfico es cifrado, seguro y auditable.
+    -   Puedes hacer despliegues progresivos fácilmente.
+    -   Las políticas se cambian una sola vez y se aplican a todos.
+ -   **Desventajas:**
+ - -   Requiere más conocimiento de infraestructura (DevOps, Kubernetes).
+    -   Añade un poquito de latencia (porque el tráfico pasa por el proxy).
+    -   Si se configura mal el _control plane_, puede afectar a toda la red.
 
+## Escenario 2.3 - EntregaRapida
+### Arquitectura actual
+Actualmente, EntregaRápida opera con una arquitectura híbrida, donde el servicio Dispatch-Service aún corre en máquinas virtuales y el Routing-Service fue migrado a Kubernetes con escalado automático mediante HPA. La comunicación entre ambos depende de un script en Python que cada cinco minutos consulta las IP de los pods y actualiza un archivo de configuración compartido. Este enfoque manual y estático impide un descubrimiento dinámico de servicios, generando una arquitectura frágil y propensa a fallos cuando los pods cambian constantemente durante los picos de carga.
+### Problema a solucionar
+El método actual de comunicación no soporta la naturaleza efímera y cambiante de los pods. Durante los picos de carga, las direcciones IP del Routing-Service quedan obsoletas antes de que el script se actualice, generando intentos de conexión fallidos, bloqueos por timeouts y la caída completa del Dispatch-Service.
+
+###  Service Discovery:
+El patrón de Service Discovery permite que los servicios se localicen y se comuniquen entre sí de manera automática y en tiempo real, sin depender de IPs fijas ni archivos de configuración. En Kubernetes, esto se implementa mediante un objeto Service que asigna un nombre DNS estable al Routing-Service, gestionando internamente las IPs de los pods y balanceando las solicitudes.
+### Propósito:
+Permitir que los servicios se comuniquen de manera automática, confiable y actualizada sin depender de direcciones IP fijas ni configuraciones manuales. Con un mecanismo de descubrimiento de servicios, el Dispatch-Service puede encontrar al Routing-Service de forma dinámica, incluso cuando Kubernetes escala o reemplaza pods constantemente, asegurando continuidad operativa y alta disponibilidad.
+### Trade-offs:
+
+ -   **Ventajas:**
+ - Comunicación dinámica y actualizada entre servicios, sin dependencia 
+   de IPs.
+      -   Alta disponibilidad durante escalados o reinicios de pods.
+      -   Reducción de fallos por configuraciones obsoletas.
+      -   Menor complejidad operativa y mantenimiento.
+
+        
+ -   **Desventajas:**
+	 - Requiere integrar los servicios legacy (en máquinas virtuales) con el
+   entorno de Kubernetes o un registro externo.
+   -   Añade una capa adicional de infraestructura que necesita monitoreo y configuración.
+   -   Puede implicar un cambio de red o ajustes en la seguridad y conectividad entre entornos híbridos.
 
