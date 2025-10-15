@@ -59,7 +59,7 @@ Este mecanismo se basa en dos componentes:
 
 D. Illustrate the architecture at a high level.
 
-![Microfrontends](laboratories/laboratory_4/ancarom-daochoar-calarconf/Screenshot 2025-10-14 214332.png)
+![Microfrontends](img1.png)
 
 E.What are the main benefits?
 
@@ -126,7 +126,7 @@ El mecanismo fundamental de la agregación de logs incluye:
 * Integración de herramientas de análisis y alertas en la plataforma de agregación, lo que permite filtrar, correlacionar y detectar patrones o anomalías en los registros.
 
 D. Illustrate the architecture at a high level.   
-![Log agreggation](Screenshot 2025-10-14 222453.png)
+![Log agreggation](img2.png)
 
 E. What are the main benefits? 
 
