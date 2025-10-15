@@ -59,7 +59,7 @@ Este mecanismo se basa en dos componentes:
 
 D. Illustrate the architecture at a high level.
 
-![Microfrontends](Screenshot 2025-10-14 214332.png)
+![Microfrontends](laboratories/laboratory_4/ancarom-daochoar-calarconf/Screenshot 2025-10-14 214332.png)
 
 E.What are the main benefits?
 
