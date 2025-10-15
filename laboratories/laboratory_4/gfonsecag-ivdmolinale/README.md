@@ -61,6 +61,54 @@ El patrón event-based permite que las validaciones de fraude se procesen de for
 
 Por último, implementar log aggregation y monitoreo distribuido ayuda a identificar con rapidez cuándo un servicio externo empieza a degradarse. Con métricas, trazas y alertas centralizadas, el equipo puede reaccionar antes de que se produzcan fallos mayores. En conjunto, estos patrones crean una arquitectura más resiliente, desacoplada y preparada para la escalabilidad, garantizando que el sistema mantenga su rendimiento incluso ante picos de demanda o servicios externos inestables.
 ## 3.2 Scenario2
+## Análisis
+### **1 Problemas Identificados**
+**Complejidad de Distribución:** 70+ servicios desarrollados por equipos independientes
+**Requisitos de Seguridad Críticos:** mTLS obligatorio para todo tráfico interno
+**Cumplimiento Normativo Estricto:** Auditoría completa e inmutable de acceso a datos médicos
+**Necesidades Operativas Diversas:** Canary deployments, políticas de resiliencia consistentes
+**Fricción en la Evolución:** Cambios transversales requieren coordinación masiva y redepliegues 
+## Limitaciones actuales 
+- Las librerías compartidas crean acoplamiento de versiones
+- Actualizaciones requieren sincronización entre múltiples equipos
+- Diferentes implementaciones por lenguaje generan inconsistencias
+- Ciclo de cambios demasiado lento (semanas)
+## Arquitectura recomendada
+Se recomienda adoptar un **Service Mesh** (sidecar proxies) + **API Gateway** para north-south, combinado con un pipeline de auditoría inmutable y herramientas de entrega progresiva.
+Primero ¿que es **Service Mesh**? Es un patrón de arquitectura que maneja la comunicación entre microservicios a través de una capa de infraestructura dedicada, separando la lógica de red del código de la aplicación.
+De lo que se encargaría es abordar de manera elegante y unificada todos los requisitos: implementando mTLS automático para el mandato Zero-Trust, proporciona auditoría centralizada e inmutable para el cumplimiento normativo, permite canary releases mediante reglas de tráfico sin cambios en el código, y establece políticas de resiliencia consistentes para todos los servicios, independientemente de su lenguaje de programación. Lo más crucial es que elimina la pesadilla logística de actualizar librerías en 70+ servicios, ya que estas capacidades cross-cutting se gestionan de forma externa y centralizada en la capa de infraestructura, permitiendo cambios instantáneos sin redepliegues masivos.
+## Plan de migración propuesto
+Se podría implementar una serie de fases para la transición donde 
+- **Fase 0 — Preparación**:
+  - Inventario de servicios y topologías (namespaces, dominios, “owners” por equipo).
+  - Definir formato mínimo de audit log (campos requeridos: timestamp, trace_id, caller_service, dest_service, path, status, latency, user_id_anonymized).
+  - Policies legales/retention definidas con el área de cumplimiento.
+
+- **Fase 1 — Mesh en permissive mode**
+  - Desplegar mesh en modo permissive (acepta tanto tráfico mTLS como no-mTLS) por namespace. Esto permite empezar a recolectar telemetría sin romper la producción.
+  - Habilitar sidecars en pods, activar tracing y metrics.
+  - Validar que el mesh no añade latencia inaceptable.
+
+- **Fase 2 — Agregar auditoría y logging**
+  - Configurar agentes que envíen audit events (sidecar enrichment + Fluent Bit) hacia Kafka.
+  - Pipeline de ingestión con transformaciones y almacenamiento en staging WORM.
+  - Implementar signing batch y verificación.
+
+- **Fase 3 — Políticas de resiliencia en el control plane**
+  - Definir políticas estándar de retries/timeouts/circuit breaker (por endpoints sensibles).
+  - Implementarlas a través de la configuración del mesh (DestinationRules / Envoy filters).
+  - Deshabilitar gradualmente las librerías de apps o ponerlas en modo “passthrough” (dejar Sidecar manejar la resiliencia).
+
+- **Fase 4 — mTLS obligatorio y Zero-Trust**
+  - Pasar namespaces a strict mTLS por etapas (por equipo/namespace), exigir SPIFFE identities.
+  - Validar certificados y rotación.
+
+- **Fase 5 — Progressive delivery y canaries**
+  - Habilitar Flagger/Argo Rollouts para el Appointment-Scheduler: configurar 1% split, métricas y alertas, luego automatizar observability-based promotion/rollback.
+
+- **Fase 6 — Hardening y desactivación de librerías**
+  - Una vez validado, deprecar las librerías antiguas y documentar que las políticas se aplican desde el mesh/control plane.
+  - Implementar OPA policies para bloqueos (p. ej. impedir exposiciones no auditadas).
 
 ## 3.3 Scenario3
 En el escenario de EntregaRápida, el principal reto surge por una migración incompleta hacia la nube: mientras el Routing-Service ya está completamente containerizado y puede escalar dinámicamente en Kubernetes, el Dispatch-Service sigue funcionando en máquinas virtuales con configuraciones estáticas. Para conectar ambos mundos, el equipo implementó un script temporal que actualiza manualmente las IP de los pods del Routing-Service en un archivo de configuración. Este enfoque no es adecuado para entornos dinámicos, ya que las IP cambian constantemente y la actualización cada cinco minutos no garantiza sincronización en tiempo real, lo que puede provocar fallos de comunicación y pérdida de rendimiento durante picos de carga.
