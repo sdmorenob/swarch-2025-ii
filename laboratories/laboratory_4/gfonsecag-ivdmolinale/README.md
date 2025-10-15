@@ -14,9 +14,9 @@ Ivan David Molina
 - 2) Log aggregation tiene un proceso de centralización de los datos donde se recopilan, normalizan, almacenan, hacen de buffer, analizan y visualizan.
 ## D. Illustrate the architecture at a high level. 
 - 1) Microfrontends
-        ![Ejemplo](microfrontend.PNG)
+- ![Ejemplo](microfrontend.PNG)
 - 2) Log aggregation
-       ![Ejemplo](log_aggregation.PNG)
+- ![Ejemplo](log_aggregation.PNG)
 ## E. What are the main benefits? 
 - 1) Microfrontends
        - Escalabilidad organizacional
