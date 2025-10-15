@@ -1,5 +1,5 @@
-Gabriel Felipe Fonseca Guerrero
-Ivan David Molina
+### Gabriel Felipe Fonseca Guerrero
+### Ivan David Molina
 # 2.Patterns Deconstruction
 - 1-Microfrontends 
 - 2-Log aggregation
