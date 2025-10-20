@@ -1,0 +1,11 @@
+{
+  "searchDir": "./",
+  "mainAPIFile": "cmd/server/main.go",
+  "output": "docs",
+  "parseInternal": true,
+  "parseDependency": true,
+  "parseDepth": 1,
+  "markdownFilesDir": "./docs/markdown",
+  "parseGoList": true,
+  "generatedTime": true
+}

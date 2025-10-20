@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscar Usuarios - Mi Red Social Musical</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">
+                <a href="index.html">🎶 MúsicaConecta</a>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="search_users.html">Buscar Amigos</a></li>
+                <li><a href="#">Mi Perfil</a></li>
+                <li><a href="#">Cerrar Sesión</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        <h1>Buscar Amigos en MúsicaConecta</h1>
+
+        <section class="search-section">
+            <input type="text" id="searchInput" placeholder="Buscar por nombre de usuario..." aria-label="Buscar usuario">
+            <button id="searchButton">
+                <i class="fas fa-search"></i> Buscar
+            </button>
+        </section>
+
+        <section class="search-results-section">
+            <h2>Resultados de la Búsqueda</h2>
+            <div id="searchResults" class="user-list">
+                <p id="noResultsMessage">Usa la barra de búsqueda para encontrar a tus amigos.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2023 MúsicaConecta. Todos los derechos reservados.</p>
+    </footer>
+
+    <script src="js/search.js"></script>
+</body>
+</html>
