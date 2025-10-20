@@ -1,0 +1,117 @@
+# Docker Compose para desarrollo sin volúmenes
+# Usar: docker-compose -f docker-compose.dev.yml up --build
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: tasknotes_postgres_dev
+    environment:
+      POSTGRES_DB: tasknotes
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - tasknotes_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d tasknotes"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MongoDB Database
+  mongodb:
+    image: mongo:7
+    container_name: tasknotes_mongodb_dev
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: tasknotes
+    volumes:
+      - mongodb_data_dev:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d
+    ports:
+      - "27017:27017"
+    networks:
+      - tasknotes_network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Backend FastAPI (sin volúmenes para desarrollo)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tasknotes_backend_dev
+    environment:
+      POSTGRES_URL: postgresql://user:password@postgres:5432/tasknotes
+      MONGODB_URL: mongodb://admin:password@mongodb:27017/tasknotes?authSource=admin
+      SECRET_KEY: your-secret-key-change-in-production
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      API_V1_STR: /api/v1
+      PROJECT_NAME: TaskNotes
+      CORS_ORIGINS: '["http://localhost:3000", "http://localhost:8080"]'
+      SEARCH_SERVICE_URL: http://search-service:8081
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    networks:
+      - tasknotes_network
+    restart: unless-stopped
+
+  # Frontend React
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tasknotes_frontend_dev
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - tasknotes_network
+    restart: unless-stopped
+
+  # Search Service (Go)
+  search-service:
+    build:
+      context: ./search-service
+      dockerfile: Dockerfile
+    container_name: tasknotes_search_dev
+    environment:
+      MONGODB_URL: mongodb://admin:password@mongodb:27017/tasknotes?authSource=admin
+      PORT: 8081
+    ports:
+      - "8081:8081"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - tasknotes_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  postgres_data_dev:
+  mongodb_data_dev:
+
+networks:
+  tasknotes_network:
+    driver: bridge
