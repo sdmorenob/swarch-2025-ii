@@ -1,0 +1,839 @@
+basePath: /api/v1
+definitions:
+  models.AddTrackToPlaylistRequest:
+    properties:
+      track_id:
+        type: string
+    required:
+    - track_id
+    type: object
+  models.CreatePlaylistRequest:
+    properties:
+      creator_id:
+        type: string
+      description:
+        type: string
+      is_collaborative:
+        type: boolean
+      is_public:
+        type: boolean
+      name:
+        type: string
+    required:
+    - creator_id
+    - name
+    type: object
+  models.FileMetadata:
+    properties:
+      album:
+        type: string
+      artist:
+        type: string
+      bitrate:
+        type: integer
+      duration:
+        description: seconds
+        type: integer
+      genre:
+        type: string
+      sample_rate:
+        type: integer
+      title:
+        type: string
+      track:
+        type: integer
+      year:
+        type: integer
+    type: object
+  models.Playlist:
+    properties:
+      cover_image_url:
+        description: Playlist metadata
+        type: string
+      created_at:
+        description: Timestamps
+        type: string
+      creator_id:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      is_collaborative:
+        type: boolean
+      is_public:
+        type: boolean
+      name:
+        type: string
+      total_duration:
+        description: seconds
+        type: integer
+      track_count:
+        description: Computed fields
+        type: integer
+      track_ids:
+        items:
+          type: string
+        type: array
+      updated_at:
+        type: string
+    required:
+    - creator_id
+    - name
+    type: object
+  models.SpotifyMetadata:
+    properties:
+      album:
+        type: string
+      album_art_url:
+        type: string
+      artist:
+        type: string
+      confidence:
+        type: number
+      duration_ms:
+        type: integer
+      genres:
+        items:
+          type: string
+        type: array
+      popularity:
+        type: number
+      preview_url:
+        type: string
+      release_date:
+        type: string
+      spotify_id:
+        type: string
+      title:
+        type: string
+    type: object
+  models.Track:
+    properties:
+      created_at:
+        description: Timestamps
+        type: string
+      enriched_metadata:
+        allOf:
+        - $ref: '#/definitions/models.SpotifyMetadata'
+        description: Enriched metadata from Spotify
+      file_path:
+        type: string
+      file_size:
+        type: integer
+      file_url:
+        type: string
+      filename:
+        description: File information
+        type: string
+      id:
+        type: string
+      is_public:
+        type: boolean
+      mime_type:
+        type: string
+      original_metadata:
+        allOf:
+        - $ref: '#/definitions/models.FileMetadata'
+        description: Original metadata from file
+      tags:
+        description: Additional fields
+        items:
+          type: string
+        type: array
+      updated_at:
+        type: string
+      upload_status:
+        description: Status
+        type: string
+      user_id:
+        type: string
+    required:
+    - user_id
+    type: object
+  models.UpdatePlaylistRequest:
+    properties:
+      description:
+        type: string
+      is_collaborative:
+        type: boolean
+      is_public:
+        type: boolean
+      name:
+        type: string
+    type: object
+  rest.ErrorResponse:
+    description: Error response wrapper
+    properties:
+      error:
+        example: Error description
+        type: string
+      success:
+        example: false
+        type: boolean
+    type: object
+  rest.PaginationInfo:
+    properties:
+      current_page:
+        example: 1
+        type: integer
+      has_next:
+        example: true
+        type: boolean
+      has_prev:
+        example: false
+        type: boolean
+      per_page:
+        example: 20
+        type: integer
+      total_items:
+        example: 100
+        type: integer
+      total_pages:
+        example: 5
+        type: integer
+    type: object
+  rest.PlaylistListResponse:
+    properties:
+      pagination:
+        $ref: '#/definitions/rest.PaginationInfo'
+      playlists:
+        items:
+          $ref: '#/definitions/models.Playlist'
+        type: array
+    type: object
+  rest.SuccessResponse:
+    description: Successful response wrapper
+    properties:
+      data: {}
+      message:
+        example: Operation completed successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  rest.TrackListResponse:
+    properties:
+      pagination:
+        $ref: '#/definitions/rest.PaginationInfo'
+      tracks:
+        items:
+          $ref: '#/definitions/models.Track'
+        type: array
+    type: object
+host: localhost:8081
+info:
+  contact:
+    email: support@musicshare.com
+    name: API Support
+    url: http://www.musicshare.com/support
+  description: RESTful API for music file management and playlist operations
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Music Service API
+  version: "1.0"
+paths:
+  /playlists:
+    get:
+      description: List playlists with optional filtering and pagination
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        maximum: 100
+        name: limit
+        type: integer
+      - description: Filter by creator ID
+        in: query
+        name: creator_id
+        type: string
+      - description: Filter by public/private
+        in: query
+        name: is_public
+        type: boolean
+      - description: Search in name or description
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Playlists retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/rest.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/rest.PlaylistListResponse'
+              type: object
+        "400":
+          description: Invalid query parameters
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: List playlists
+      tags:
+      - playlists
+    post:
+      consumes:
+      - application/json
+      description: Create a new playlist
+      parameters:
+      - description: Playlist information
+        in: body
+        name: playlist
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreatePlaylistRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Playlist created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/rest.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Playlist'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: Create playlist
+      tags:
+      - playlists
+  /playlists/{id}:
+    delete:
+      description: Delete a playlist (only creator can delete)
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User ID for authorization
+        in: query
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Playlist deleted successfully
+          schema:
+            $ref: '#/definitions/rest.SuccessResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "403":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "404":
+          description: Playlist not found
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: Delete playlist
+      tags:
+      - playlists
+    get:
+      description: Retrieve playlist information. Use include_tracks=true to get full
+        track information
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Include full track information
+        in: query
+        name: include_tracks
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Playlist retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/rest.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Playlist'
+              type: object
+        "400":
+          description: Invalid playlist ID
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "404":
+          description: Playlist not found
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: Get playlist details
+      tags:
+      - playlists
+    put:
+      consumes:
+      - application/json
+      description: Update playlist information (only creator or collaborators can
+        update)
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User ID for authorization
+        in: query
+        name: user_id
+        required: true
+        type: string
+      - description: Updated playlist information
+        in: body
+        name: playlist
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdatePlaylistRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Playlist updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/rest.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Playlist'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "403":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "404":
+          description: Playlist not found
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: Update playlist
+      tags:
+      - playlists
+  /playlists/{id}/tracks:
+    post:
+      consumes:
+      - application/json
+      description: Add a track to a playlist
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User ID for authorization
+        in: query
+        name: user_id
+        required: true
+        type: string
+      - description: Track to add
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.AddTrackToPlaylistRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Track added successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/rest.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Playlist'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "403":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "404":
+          description: Playlist or track not found
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "409":
+          description: Track already in playlist
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: Add track to playlist
+      tags:
+      - playlists
+  /playlists/{id}/tracks/{trackId}:
+    delete:
+      description: Remove a track from a playlist
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Track ID
+        in: path
+        name: trackId
+        required: true
+        type: string
+      - description: User ID for authorization
+        in: query
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Track removed successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/rest.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Playlist'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "403":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "404":
+          description: Playlist or track not found
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: Remove track from playlist
+      tags:
+      - playlists
+  /tracks:
+    get:
+      description: List tracks with optional filtering and pagination
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        maximum: 100
+        name: limit
+        type: integer
+      - description: Filter by user ID
+        in: query
+        name: user_id
+        type: string
+      - description: Filter by genre
+        in: query
+        name: genre
+        type: string
+      - description: Filter by artist name
+        in: query
+        name: artist
+        type: string
+      - description: Filter by public/private
+        in: query
+        name: is_public
+        type: boolean
+      - description: Search in title, artist, album, or tags
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tracks retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/rest.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/rest.TrackListResponse'
+              type: object
+        "400":
+          description: Invalid query parameters
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: List tracks
+      tags:
+      - tracks
+  /tracks/{id}:
+    delete:
+      description: Delete a track (only the owner can delete)
+      parameters:
+      - description: Track ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User ID for authorization
+        in: query
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Track deleted successfully
+          schema:
+            $ref: '#/definitions/rest.SuccessResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "403":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "404":
+          description: Track not found
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: Delete track
+      tags:
+      - tracks
+    get:
+      description: Retrieve information about a specific track by ID
+      parameters:
+      - description: Track ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Track retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/rest.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Track'
+              type: object
+        "400":
+          description: Invalid track ID
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "404":
+          description: Track not found
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: Get track details
+      tags:
+      - tracks
+  /tracks/{id}/stream:
+    get:
+      description: Stream audio file for playback. Redirects to the file URL
+      parameters:
+      - description: Track ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - audio/mpeg
+      - audio/wav
+      - audio/flac
+      responses:
+        "307":
+          description: Redirects to audio file
+        "400":
+          description: Invalid track ID
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "403":
+          description: Track is private
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "404":
+          description: Track not found
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: Stream audio track
+      tags:
+      - tracks
+  /tracks/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload an audio file to the service. Supports MP3, WAV, FLAC, M4A,
+        OGG, AAC formats
+      parameters:
+      - description: Audio file
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: User ID
+        in: formData
+        name: user_id
+        required: true
+        type: string
+      - description: Comma-separated tags (e.g., rock,classic)
+        in: formData
+        name: tags
+        type: string
+      - description: Whether the track is public
+        in: formData
+        name: is_public
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Track uploaded successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/rest.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Track'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "413":
+          description: File too large
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "415":
+          description: Unsupported file type
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: Upload audio track
+      tags:
+      - tracks
+  /users/{userId}/playlists:
+    get:
+      description: Get all playlists created by a specific user
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        maximum: 100
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User playlists retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/rest.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/rest.PlaylistListResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: Get user playlists
+      tags:
+      - playlists
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
