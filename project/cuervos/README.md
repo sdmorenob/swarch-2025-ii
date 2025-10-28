@@ -218,10 +218,7 @@ Ambas interactúan exclusivamente con el **API Gateway**.
 
 #### - Decomposition View:
 
-#### Decomposition Structure (Estructura de Descomposición)
 
-
-#### - Decomposition View:
 
 ![TaskNotes Decomposition View](./docs/DecompositionView.png)
 
@@ -229,48 +226,50 @@ Ambas interactúan exclusivamente con el **API Gateway**.
 
 #### Microservices
 
-##### API Gateway (FastAPI)
+##### [API Gateway (FastAPI)](https://uml.planttext.com/plantuml/png/RLFRYjim47qFv1-6FEr2iWk5zdb3IBVkXInsTxTGogB84sM8BRdIEAqf_PZzW3xr4_9Z7VcIj2N6sAFHw9oZez5DOEMvBelnY8aB15NHp2Z6Rwg1YzSgyFmkkHoFPDfLm0xMZjcLa9D7pUJiUBIb724mUdJSL3WUXHtPIdbLGgNqJXdCk17ak41PKs14wsTWSfPl0ZzY4S2nh5Hahwfc0Yh01ubZ0SZp-QwseaeKe6MlSYLX0O81jntebxvkuUo6JEsLfiDl2ptJ51QhD9j2uOmXQw21pEaTybMoQXV-_4-6gdaBrx17JvlcYTqERIjf7lE3f8SuIxfd4cbl7p_2nPlinSjNu22D_yj1rchDQFygV9V9FqWOcMO1_PuqdfLIUVUzUVBujSR0hOYxc3cgI17j_l2hzQQl2g2W9ErTXqik33BcngDHi4MLem_mQNOl9RCa5qFwU2adK9mLubtD65e5QHkU9DGioLOen8PeDpK5IUx25AoJsZWoyjLoMiPvYfawyicg3HKuXO3Aw-qWDB7IQ1ehxjr5Avip5DYxZa9xF1bVeHUGIElAmpEJTcTta2tJXsIn5Ej9TrPcdV6dhTodxmFeeOVMXKo9kGhsobCtx5hGUJi8YStuZzldkOT-wtZRKR8wyiwpsqJkP2NSvPfin6pH7t7TrOPemNNeK4uSyjwWpTkB_GS0)
 - Encargado del enrutamiento y proxy inverso de todas las solicitudes entrantes. Aplica validaciones JWT y políticas de CORS, y actúa como punto central para la comunicación REST/gRPC hacia los microservicios del dominio.
 
 ### User Services
-**user-profile-service (.NET)**  
+[**user-profile-service (.NET)**](https://uml.planttext.com/plantuml/png/VLFBRjim4BmRy3yiV4g0F7uXXUsW1PB2g1lqKFImfjOoQufBKAiWRj2FwGVqb5kl-h4kRL9nWpI23k9oPdTcI5srWb6wner7OiKHT2t5yn1vRHsTw_UzDGGd5n_ddq_78mLn065OiGWtKDb8HYpxyMXZAu9MA1BBBj1ur6wj3nYnWO1cYpKjPQVz4m5zxIXropimUMFg11uJ5600BoBNslV2j1F05l8omK2VhulEgq9LGruYLgYV3Xfh8XyQM_wMaLFsQrjt4OtjdpnyeTMx49mrc2oTmMob0A47WHqKQZjm8sKQTXf5_qkKbwOwX1Msf1p3hckyAkIWJ8-E1lOj1ieQgy3MImidMhlJCOj32lEoSLeuxmcTRC1io6oL1vURVU77Vl_dYupKo22_1FNiv_4vWBHcc5_3b2EfP0z78X9dIVAVl2eQB9w1OrzRwIhbxA3_xQjqWlqVRmqdiVC6hNjLwOUZUSjyyfV_YCZLOgE0YecR_gdEsNkgMQE6TE-WGK_Vzo47YWStLRhV7SPy1LvA6J8leuR2C6n6QwkUYl_OYSAcd-vcQNKaklJNzqhFUF-3_GK0) 
+
 - Maneja la información de usuario, perfiles y credenciales; utiliza Entity Framework y PostgreSQL.
 
-**auth-service (FastAPI)**  
+[**auth-service (FastAPI)**](https://uml.planttext.com/plantuml/png/TL9DIyD05BmN-XyUFRM7YaYHuibFYjPYCO87aVAIlAPhDhlBxYOGnJ_crJ_cspIfLJJaa9sTsNapsLFdqVgoaFsU5ruIOEatOqUs4WdrUung0rv3hBtN1QJ2KkA5LltUHgG4pfCbxMl3N9SBPT1Y0GQJ73EAVCq71W6gJ3QdjJimsBSPm5lO0zZjPgJ8egULTRZAgNR3qG3GmQp5vmm54V3pj0MXLAotm4Cb4YjoS1-TmV3eS3A5M7WtUcxf4Lc1KhpYbWV6YWfJ15Aml5h0S3c_YAR_ipy_OYcIRtfKnY-SS5a6cEUwLckzKrzILPBiJ3WFPu4QJ4Dk5eakDBTeXSfSeth_LKM1GhNf5_ovItqhiK10-AEgpdrMekLWUzu7XeeV_W7ew8kIU1242ZboBBb1xfAKrrPfk7by2FKYf3h9oOvvRgCTTTexa_2bG7d2WLAn3WMrVu5xEaT7nvEjd5GL37PP-JqbbJONy0i0)
+
 - Gestiona autenticación, emisión y validación de tokens JWT.
 
 ##### Core Domain Services
-**categories-service-dotnet (.NET)**  
+[**categories-service-dotnet (.NET)**](https://uml.planttext.com/plantuml/png/TL9TJi9047uduGuJdlG1pe2XlfYW2FfaV9Zk3h2Xx6nsfiR6c7W8B-01l82ltCIJk2iKr63JfDdP-NxJeIX6hTTLjwDEAmA3IWkEZgGl51-SeRvbzQJm-V8A1HbU1nQdZZtCDDP6wqXmugGV4b6VvwU9YGCeGycgl0Rh8fcyt-qidIKGfKYiJQ1kHrRE9nok8Q1PuO9csYGJ6O1-KQMDRcTt0xt_hPqCBizlJdlmbFS1zeZH7Z5Yhv6hYkB0I0zGu32HZ8FqtErc2AFfRG7P6DGUQganEeO6GbrMpY3G0tbb0V8mnR9qEhuUt6UEvpy6pa8eoinAZzeA5wZuIp7TCQHYIXJANukPkm73VkuMTJAnUVSsnONDXtU6ZohjeZQjofWjLOTatqU6TYjpGuWS75cq951ktYGbox9pCakKutcsQIUv1baUkjoEzsAJFpLTpAukVtRLKgTtIDv-_trV)
 - Administración de categorías; expone API REST y publica eventos AMQP.
 
-**tags-service (FastAPI)**  
+[**tags-service (FastAPI)**](https://uml.planttext.com/plantuml/png/LOz1QW9144Nt3Ns7pwnquHqCY91Tm1DKUegniAUhwAu9I0Za4Bb9Zf2Rv2JEg0Yk_tly_xVDgVeqvXXSF3ESXhPfN3yaCVw_Vx3ZfADf4nSjE7YTaa-LCGjgSCMxkkk8NYgdXOdXA3sZELTMFnl7q4vIZ2gDC4ed6lZWvxbh4QWCUIPYk2VedXQizjJyvUrrtU5peO07b_z-1qa4grAI66Nqd74JHJjG0vajqbSCMoxzzUK5)
 - Servicio de etiquetas; mantiene relaciones con tareas y notas.
 
-**notes-service (FastAPI)**  
+[**notes-service (FastAPI)**](https://uml.planttext.com/plantuml/png/ZPHTQXmn3CVV5_OEOfzQw7Qla3RRGg21RPP0ePIWjTLP9sDxQcb2XbBe8NgDFlK8kKbFKda-d2OiIuPvi6nPF_qbsoSicAJrzNmcJcg248LuoPHkdI7u-_CNhCb4tqHsucA0hQJMI9i8T4TiG2BieaZqO5qYattcixsp12oKA4hNq7p6DouqcD13W-O6AzfAfx2y0KDLgyTyDgx0ud4ABzuZovlDsSi5VCzk0CNHemklcsu1o72ku-m0-dtUj47pqXmeI4ABEgnX2EWYZ06_PESVJq9Q5DmXqyh7K4MxA-6pkNvR2ASnq9sx_nEWWzXGGWqSY1LONBFUN4xTtVLblTexbfYwus2jj5I9U29lHli06gV5xSSF0uv2SjzQCfJ0e50Lq_tldYzOyK6kZreRdkHU3UOZrUVzLC7tPkHSNSrP1pru57qCCGbxmfZqFGlpeFSWYSsUFFAgh_PeJ9pjO1R0chwwuCQsAMNJMGpYp02wnTfPRMekiwMXZOUHmp7b5Tqr66oXZTC5zsxiZFEEniEPWuBHE_NGgh5JkievfUDgKsprYWrgYyoBOV8_hcsY2y9mUd6vBbfUWST0rtqUdvQNgc9vPYUA_YSKRFyg_0C0)  
 - Gestión de notas; soporta REST y gRPC, usa MongoDB para persistencia.
 
-**task-service (FastAPI)**  
+[**task-service (FastAPI)**](https://uml.planttext.com/plantuml/png/ZPFRIWCn48Rl2ts7eLSArhv2nGC85jOkWY0YusPQOtUJ9JCjhk9J-GY-c9Czn0CYBdinaqp-R_uSvYmOP5kLuv5OAGa4USDJfh2p1Or7Eknh40_tNiHNO6oWGgntuz63DGGi5CXBKsijRwohCM05DHORN5CkZIh61UZMPQlMpy3a6mVspf3bA3lVdy1BB0D8XHLQTrWt4q26XSQn0FIxoRPE-z8Uo4b0WngMq0bQ3xtWRIn-_I5fKF0UcMQrPra7ua4_w_F4EFQEdkpxcmCS9lFB2uWkTQS28VyAgBpsmad-hij_KXRjQ6ArgUVeI1lKu0i56jt64jMOez-HN3nGXJoB-thN9mCmxz94Eg6LTROJYxYiCUZ45XrnXwKrYegk3VrbipyzdcbWTTKpnfkHgFrimkP3LQVTW1wRuvKFrRzemM_ridKEaxLbDvWOfyxKtZfXE5vUdNmg7a25ZXxR-t8zlTA6f-TcmEW_9sVQL_01)
 - Gestión de tareas; integra con tags y categories, publica eventos en RabbitMQ.
 
 ##### Supporting Services
-**logs-service-java (Spring Boot)**  
+[**logs-service-java (Spring Boot)**](https://uml.planttext.com/plantuml/png/dPF1JYCn38RlbVeELa-xXva7u0HeLreX5Gf5sWFYu4dCu3Q9Gv8M2jgdsaVWnKXcEWExz8GqXyIEVt_vdJcE2KFQM3ET94w6m4WRgqXXougg5MvnEiafyP046ab9B6WEf1ABcqxkMHF4H84axJnD9t7DpcD02nxL6bjQfbrMBGNeMaD5RP-1sQTUy6tf0xiMJaNIzncybEC0Ou55Te3U6rPO06Q04UOb-5BE0TmiDYw3PYXoAQ36iloWULkE_VbFzP4QCBYZqCdzphj1JK9RnwxwBb-97YMiwoRB7FN1ggohpa4ALPQvtTVzVF8IMV7hNzUpQ2_iKeHVrzSBAFvqFX-acOjhvSSfU0gHixLEKN_DVVnBR1eJLhOew15oCJRWpgP2b567HWVXhh1fECql8T-6sl0-X9FvvU9hQ6WV_8YqQSfeU-DseCJ5ZUt7kSq3bJXm7eGxMrwSmpqwRNAJZkeifwAylmubjhx3ybwVhAbNVRPM4kXel-cSQjZf0Mb9WT7mymYbAVuRoaZIhAZG5O81BN_7UV3Th_K6)
 - Registro distribuido de logs y monitoreo de eventos, con persistencia en MongoDB y PostgreSQL.
 
-**search-service (Go + GraphQL)**  
+[**search-service (Go + GraphQL)**](https://uml.planttext.com/plantuml/png/RPFDRjim383l0V8EH4ujbjJtxL8iBR93knPnRiCEhCp8GYJHa-HXnh2dwctNlDWe_wqROXW6IP7yI8g-ZGb3QfrTBf99bY0I1bLl8eNlHj5o8NPk836yS4hie3A1L3BibulQLEAVA12dhX7VU3A-mO0E6bGdr5IcJbBc0FJQzjd64rZz2uAh7SCxs1altqVscky-Ng_WPmu1c8CS6d-ZUGKOuL7ax03oV7bklTGezP1F0IiKqSAGs_0Q5FkZqMr0PSwlFljbKWVRfttvDQVuzHzeB2iMPLzcEQWJUbJZZ7yulsgZCXLUph_ZjvQaXDQRenYp5D5N37h_l8LQQa3md2IyWuJn52zMe4EZ2cMDD1GdxYudc9ZR_aooz6dptALD9r258L9kUQ3C8nvfatwHUdTuYZqg2pFgi-GHmneEgClMEGpT6hQOI7FePiCmgZr9zp7zLMF3FbwcrJ8MIs7kxzEep-1xNpLiP0AmloyFxw5OGp4iJj7t9cfDQ5CjpJbiY07xSLoaZMi5Lu6msh2ttVMmIAFzJRTYHUjGaPVhYx9KazE7D_TxRAtT9FgH9fgyj-Ih_c_w0m00)
 - Búsqueda de texto e indexación; expone API REST/GraphQL.
  
 ##### Integration
 
-**rabbitmq (Message Broker)**  
+[**rabbitmq (Message Broker)**](https://uml.planttext.com/plantuml/png/PP7TIiD048Nl0tc78LSAnGVmgZy4gvZM_WY2I9bindHiihlkJef5V2eVmHTpDxGAEkpDp9xpdM5tw0MTT6sJ9iBI43WiIvRs5SuAyXvhWh4pEtBdQH8ane8OA8s8QQ5YHqhOw3JPSaNWXHmPELXA4xzZRT5X2nRLBc1MSeZqO41TDnHfnnl8bdrciVYNcS5x50ByaTvrPSD-I-v2-GpGmyyW6Y3KOpzH2BGdBSR3pMe-0zBGQQ0tjGrB48ITXQs1jR6idex6YT7FN7SE5NzzQcYfOjH2i4V7M3RaeoqodJQNi1oDnzVhOh6vNzuEVhlfVBKUGFumcOvcL_bcDYho4p_NugX6iEGyXoUBx41iINjy8T_BFj8ad27fgl-PRm00)  
 - Middleware de mensajería AMQP que orquesta la comunicación asincrónica entre microservicios (task-created, note-updated, category-event, etc.), asegurando desacoplamiento y fiabilidad en la entrega.
 
 #### Data Layer
 
-##### PostgreSQL Databases
+[**PostgreSQL Databases**](https://uml.planttext.com/plantuml/png/RP6_JWCn3CRta-uTh4xj0ZjJhxHYAIfSoeHGvKlCDUfT4YM-YWZnI4myGb-Cf7zG1w8CiVpx_DdED31w7lgkB5XpH-1iuDOJZEV8s60W4EJtMjAaB19Z7R25nZBR7fJs95bRKnPRhGW2aoVBqL5PX9qs3Ztsu53ki2N1CPNF0ZHjHxdQEGEZfvEfU5x-upk2pmm3_E6gkN4HRY7nLIUtrCSHO81pbP1vIEVrtXhwq8SV0mXN5aD0e-oL-ktC2meXJREq4Zk8CCjTv1bWLJzUc9Puevhnv0uKEJAAZ8mdI9j8KXxjyYuevET5zb8lGLhphjl1OvCMiJzyfwPMOlrGByGcfotCgtKrgyGYXqVXLrcaEqqsnn_w1G00)
 - Almacenes relacionales dedicados a cada microservicio:  
 auth-service, user-profile-service, task-service, tags-service, categories-service-dotnet, logs-service-java.
 
-##### MongoDB Databases
+[**MongoDB Databases**](https://uml.planttext.com/plantuml/png/RP71QiCm38RlWRo3oAczRFUTIXROPLrXPQSnYk9ecMaY6Lif2sMFrDCU8Iyskqrx6lXYzFsVP7aL5BqEVPTdQhKZw8LRQMfOLAXOOo3OaZzOGyiyYumuK85QLAM7ndeoQeNpxCis1479a-ZeAC_2th93ZpquD7jiQQjZrAS0SjjHiiqLADQfQLN-qxI0Oo81Rkmyu9qRuHxMek8Bm01NnJ710E-FmlHjfr-EnUd4nWiZu0qR0d8Zb_p772bJu_YC1bK26E5FsmuUwpZsOJh5xERbQLELkxVNPnXljwgyvblIdP6kk-namTZJyY4A7N53R4P8-m2fbPXyz4VGH932MV2JP_6i8dl-ZJy0)
 - Bases documentales usadas por notes-service y logs-service-java para persistencia no estructurada.
 
 
@@ -296,7 +295,7 @@ auth-service, user-profile-service, task-service, tags-service, categories-servi
   - Apagar y limpiar volúmenes: `docker compose -f TaskNotes/docker-compose.e2e.dist.yml down -v`
 
 - Más detalles:
-  - Consulta `TaskNotes/DEPLOYMENT_V2.md` para pasos extendidos, troubleshooting y comandos adicionales.
+  - Consulta `TaskNotes/DEPLOYMENT.md` para pasos extendidos, troubleshooting y comandos adicionales.
 
 #### Guía Paso a Paso (Breve)
 
@@ -323,4 +322,4 @@ auth-service, user-profile-service, task-service, tags-service, categories-servi
 - Apagar y limpiar:
   - `docker compose -f TaskNotes/docker-compose.e2e.dist.yml down -v`
 - Ampliar pasos y troubleshooting:
-  - Ver [DEPLOYMENT_V2.md](./DEPLOYMENT_V2.md).
+  - Ver [DEPLOYMENT.md](./DEPLOYMENT.md).
