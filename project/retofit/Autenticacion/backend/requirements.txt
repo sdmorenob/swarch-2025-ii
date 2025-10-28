@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+sqlalchemy
+SQLAlchemy-Utils
+pydantic
+passlib[bcrypt]
+python-jose
+fastapi-mail
+emails
+python-dotenv
+PyJWT
+gunicorn
+httpx
+python-multipart
+psycopg2-binary
