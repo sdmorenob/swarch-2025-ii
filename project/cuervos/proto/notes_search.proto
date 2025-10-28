@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package tasknotes.notes;
+
+import "common.proto";
+
+option go_package = "github.com/tasknotes/proto/notes";
+
+// Servicio gRPC para búsqueda de notas
+service NotesSearchService {
+  rpc SearchNotes(SearchNotesRequest) returns (SearchNotesResponse);
+}
+
+// Request para búsqueda de notas
+message SearchNotesRequest {
+  string query = 1;        // Texto a buscar en title/content
+  int32 user_id = 2;       // ID del usuario (filtro obligatorio)
+  int32 limit = 3;         // Límite de resultados (default: 20, max: 100)
+  int32 skip = 4;          // Offset para paginación
+  string category = 5;     // Filtro opcional por categoría
+  repeated string tags = 6; // Filtro opcional por tags
+}
+
+// Response con resultados de búsqueda
+message SearchNotesResponse {
+  repeated NoteSearchResult notes = 1;
+  int64 total = 2;         // Total de resultados (sin paginación)
+}
+
+// Resultado individual de búsqueda de nota
+message NoteSearchResult {
+  string id = 1;
+  string title = 2;
+  string content = 3;
+  string category_id = 4;
+  repeated string tag_ids = 5;
+  tasknotes.common.CategorySummary category = 6;
+  repeated tasknotes.common.TagSummary tags = 7;
+  int32 user_id = 8;
+  string created_at = 9;   // ISO 8601 format
+  string updated_at = 10;  // ISO 8601 format
+}

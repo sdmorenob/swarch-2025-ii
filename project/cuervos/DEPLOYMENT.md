@@ -1,359 +1,125 @@
-# TaskNotes - Guía de Despliegue
+# TaskNotes — Guía de Despliegue (V2)
+
+Esta guía describe el despliegue y verificación actuales del sistema, alineados con el entorno distribuido `docker-compose.e2e.dist.yml` y la configuración de autenticación acordada (HS256 por defecto, RS256 + JWKS opcional para producción).
 
 ## Requisitos Previos
 
-### Software Necesario
-- Docker (versión 20.10 o superior)
-- Docker Compose (versión 2.0 o superior)
-- Git
+- Docker 20.10+
+- Docker Compose v2+
+- Recursos recomendados: 8GB RAM, 4 CPU, 20GB de disco
+- Sistema: Windows, macOS o Linux
 
-### Recursos del Sistema
-- **Mínimo**: 4GB RAM, 2 CPU cores, 10GB espacio en disco
-- **Recomendado**: 8GB RAM, 4 CPU cores, 20GB espacio en disco
+## Entornos Disponibles
 
-## Despliegue Local (Desarrollo)
+- `docker-compose.e2e.dist.yml`: entorno distribuido por servicio (recomendado para e2e).
+- `docker-compose.dev.yml`: entorno de desarrollo monolítico (backend + search + DBs).
+- `docker-compose.micro.yml`: entorno micro con menos servicios para pruebas rápidas.
 
-### 1. Clonar el Repositorio
-```bash
-git clone <repository-url>
-cd TaskNotes
-```
+Esta guía usa `docker-compose.e2e.dist.yml`.
 
-### 2. Configurar Variables de Entorno
+## Despliegue Rápido (e2e)
 
-#### Backend
-```bash
-cd backend
-cp .env.example .env
-# Editar .env con tus configuraciones
-```
+- Desde la raíz del repo:
+  - `docker compose -f TaskNotes/docker-compose.e2e.dist.yml up -d --build`
+- Ver estado:
+  - `docker compose -f TaskNotes/docker-compose.e2e.dist.yml ps`
+- Logs en vivo (ejemplo gateway):
+  - `docker compose -f TaskNotes/docker-compose.e2e.dist.yml logs -f api-gateway`
 
-#### Microservicio de Búsqueda
-```bash
-cd search-service
-cp .env.example .env
-# Editar .env con tus configuraciones
-```
+## Servicios y Puertos
 
-### 3. Construir y Ejecutar
-```bash
-# Desde el directorio raíz del proyecto
-docker-compose up -d --build
-```
+- API Gateway: `http://localhost:8083`
+- Search Service (Go): `http://localhost:8008`
+- Logs Service (Java): `http://localhost:8010`
+- User Profile (.NET): `http://localhost:8007`
+- Mongo (notes): `localhost:27017` (expuesto en e2e para inspección)
+- Resto de servicios (Auth/Tasks/Tags/Categories): accesibles internamente vía red Docker
 
-### 4. Verificar el Despliegue
-```bash
-# Verificar que todos los servicios estén ejecutándose
-docker-compose ps
+## Verificaciones Iniciales
 
-# Verificar logs
-docker-compose logs -f
-```
+- Salud del Gateway (PowerShell):
+  - `Invoke-RestMethod -Uri http://localhost:8083/health`
+- Salud del Logs Service:
+  - `Invoke-RestMethod -Uri http://localhost:8010/healthz`
+- Salud del Search Service:
+  - `Invoke-RestMethod -Uri http://localhost:8008/health`
 
-### 5. Acceder a la Aplicación
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8000
-- **Documentación API**: http://localhost:8000/docs
-- **Microservicio de Búsqueda**: http://localhost:8081
+## Autenticación (HS256 por defecto)
 
-## Configuración de Base de Datos
+- Registrar usuario (vía Gateway):
+  - `Invoke-RestMethod -Method Post -Uri http://localhost:8083/auth/register -ContentType 'application/json' -Body (@{ email='testuser@example.com'; password='Passw0rd!' } | ConvertTo-Json)`
+- Login para obtener token:
+  - `$login = Invoke-RestMethod -Method Post -Uri http://localhost:8083/auth/login -ContentType 'application/json' -Body (@{ email='testuser@example.com'; password='Passw0rd!' } | ConvertTo-Json)`
+  - `$token = $login.access_token`
+- Acceder perfil:
+  - `Invoke-RestMethod -Uri http://localhost:8083/user/profile -Headers @{ Authorization = "Bearer $token" }`
 
-### Migraciones de PostgreSQL
-```bash
-# Ejecutar migraciones
-docker-compose exec backend alembic upgrade head
+Notas:
+- En e2e/dev el Gateway verifica tokens con `HS256` usando `JWT_SECRET_KEY` y no depende de JWKS.
 
-# Crear nueva migración (si es necesario)
-docker-compose exec backend alembic revision --autogenerate -m "descripción"
-```
+## Inspección de Bases de Datos
 
-### Verificar MongoDB
-```bash
-# Conectar a MongoDB
-docker-compose exec mongodb mongosh
+- PostgreSQL (ej. Auth Service):
+  - Contar usuarios:
+    - `docker compose -f TaskNotes/docker-compose.e2e.dist.yml exec postgres-auth psql -U postgres -d tasknotes_auth_service -c "SELECT COUNT(*) FROM users;"`
+  - Ver columnas:
+    - `docker compose -f TaskNotes/docker-compose.e2e.dist.yml exec postgres-auth psql -U postgres -d tasknotes_auth_service -c "SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_schema='public' AND table_name='users';"`
+  - Listar tablas públicas:
+    - `docker compose -f TaskNotes/docker-compose.e2e.dist.yml exec postgres-auth psql -U postgres -d tasknotes_auth_service -c "SELECT table_name FROM information_schema.tables WHERE table_schema='public';"`
 
-# Verificar colecciones
-use tasknotes
-show collections
-```
+- MongoDB (Logs — colección `event_logs`):
+  - Listar bases:
+    - `docker compose -f TaskNotes/docker-compose.e2e.dist.yml exec mongo-logs mongosh --quiet --eval "printjson(db.getMongo().getDBNames())"`
+  - Listar colecciones de `tasknotes_logs_service`:
+    - `docker compose -f TaskNotes/docker-compose.e2e.dist.yml exec mongo-logs mongosh --quiet --eval "db = db.getSiblingDB('tasknotes_logs_service'); printjson(db.getCollectionNames())"`
+  - Contar documentos en `event_logs`:
+    - `docker compose -f TaskNotes/docker-compose.e2e.dist.yml exec mongo-logs mongosh --quiet --eval "db = db.getSiblingDB('tasknotes_logs_service'); printjson(db.event_logs.countDocuments())"`
+  - Ver 5 últimos:
+    - `docker compose -f TaskNotes/docker-compose.e2e.dist.yml exec mongo-logs mongosh --quiet --eval "db = db.getSiblingDB('tasknotes_logs_service'); printjson(db.event_logs.find().sort({createdAt:-1}).limit(5).toArray())"`
 
-## Despliegue en Producción
+## Opción de Producción: RS256 + JWKS
 
-### 1. Configuración de Seguridad
-
-#### Variables de Entorno de Producción
-```bash
-# backend/.env
-SECRET_KEY=<clave-secreta-fuerte-aleatoria>
-POSTGRES_URL=postgresql://user:password@postgres:5432/tasknotes
-MONGODB_URL=mongodb://admin:password@mongodb:27017/tasknotes?authSource=admin
-CORS_ORIGINS=["https://tu-dominio.com"]
-```
-
-#### Generar Clave Secreta
-```bash
-python -c "import secrets; print(secrets.token_urlsafe(32))"
-```
-
-### 2. Docker Compose para Producción
-
-Crear `docker-compose.prod.yml`:
-```yaml
-version: '3.8'
-
-services:
-  postgres:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: tasknotes
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
-    networks:
-      - internal
-
-  mongodb:
-    image: mongo:7
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
-    volumes:
-      - mongodb_data:/data/db
-    restart: unless-stopped
-    networks:
-      - internal
-
-  backend:
-    build: ./backend
-    environment:
-      POSTGRES_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/tasknotes
-      MONGODB_URL: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:27017/tasknotes?authSource=admin
-      SECRET_KEY: ${SECRET_KEY}
-    depends_on:
-      - postgres
-      - mongodb
-    restart: unless-stopped
-    networks:
-      - internal
-
-  frontend:
-    build: ./frontend
-    ports:
-      - "80:80"
-      - "443:443"
-    depends_on:
-      - backend
-    restart: unless-stopped
-    networks:
-      - internal
-
-  search-service:
-    build: ./search-service
-    environment:
-      MONGODB_URL: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:27017/tasknotes?authSource=admin
-    depends_on:
-      - mongodb
-    restart: unless-stopped
-    networks:
-      - internal
-
-volumes:
-  postgres_data:
-  mongodb_data:
-
-networks:
-  internal:
-    driver: bridge
-```
-
-### 3. Configuración SSL/TLS
-
-#### Nginx con SSL
-Actualizar `frontend/nginx.conf`:
-```nginx
-server {
-    listen 80;
-    server_name tu-dominio.com;
-    return 301 https://$server_name$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name tu-dominio.com;
-
-    ssl_certificate /etc/ssl/certs/cert.pem;
-    ssl_certificate_key /etc/ssl/private/key.pem;
-    
-    # Configuración SSL moderna
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512;
-    ssl_prefer_server_ciphers off;
-    
-    # ... resto de la configuración
-}
-```
-
-### 4. Desplegar en Producción
-```bash
-# Usar archivo de producción
-docker-compose -f docker-compose.prod.yml up -d --build
-
-# Ejecutar migraciones
-docker-compose -f docker-compose.prod.yml exec backend alembic upgrade head
-```
-
-## Monitoreo y Mantenimiento
-
-### Health Checks
-```bash
-# Verificar estado de servicios
-curl http://localhost:8000/health
-curl http://localhost:8081/health
-```
-
-### Logs
-```bash
-# Ver logs de todos los servicios
-docker-compose logs -f
-
-# Ver logs de un servicio específico
-docker-compose logs -f backend
-```
-
-### Backups
-
-#### PostgreSQL
-```bash
-# Backup
-docker-compose exec postgres pg_dump -U user tasknotes > backup_$(date +%Y%m%d_%H%M%S).sql
-
-# Restore
-docker-compose exec -T postgres psql -U user tasknotes < backup.sql
-```
-
-#### MongoDB
-```bash
-# Backup
-docker-compose exec mongodb mongodump --db tasknotes --out /backup
-
-# Restore
-docker-compose exec mongodb mongorestore --db tasknotes /backup/tasknotes
-```
-
-## Escalabilidad
-
-### Load Balancer con Nginx
-```nginx
-upstream backend_servers {
-    server backend1:8000;
-    server backend2:8000;
-    server backend3:8000;
-}
-
-upstream search_servers {
-    server search1:8081;
-    server search2:8081;
-}
-
-server {
-    location /api/ {
-        proxy_pass http://backend_servers;
-    }
-    
-    location /search/ {
-        proxy_pass http://search_servers;
-    }
-}
-```
-
-### Múltiples Instancias
-```yaml
-# En docker-compose.yml
-backend:
-  deploy:
-    replicas: 3
-    
-search-service:
-  deploy:
-    replicas: 2
-```
+- Generar claves RSA (dentro de `auth-service`):
+  - `python generate_keys.py` (genera `private_key.pem` y `public_key.pem`)
+- Exportar claves a env (base64):
+  - `setx JWT_PRIVATE_KEY (Get-Content -Path auth-service\private_key.pem -Raw | [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($_)))`
+  - `setx JWT_PUBLIC_KEY  (Get-Content -Path auth-service\public_key.pem  -Raw | [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($_)))`
+  - Ajusta cómo cargas variables según tu orquestación (Compose/secret manager).
+- Configurar `auth-service`:
+  - `JWT_ALGORITHM=RS256`, `JWT_PRIVATE_KEY`, `JWT_PUBLIC_KEY`.
+  - Verificar `/.well-known/jwks.json` publica claves.
+- Configurar Gateway:
+  - `JWT_ALGORITHM=RS256`, `JWKS_URL=http://auth-service:8002/.well-known/jwks.json`.
+- Consideraciones:
+  - Cambiar de HS256 a RS256 invalida tokens emitidos previamente.
+  - Cachea JWKS con TTL y maneja rotación de claves.
 
 ## Troubleshooting
 
-### Problemas Comunes
+- 401 “No se pudo obtener JWKS”:
+  - Causa: Gateway en RS256 y `auth-service` sin claves RSA → JWKS vacío.
+  - Solución rápida: usar HS256 (actual e2e) o configurar RSA y JWKS.
+- Advertencia Compose “version is obsolete”:
+  - Mensaje informativo; puedes remover el atributo `version` del compose para limpiar la advertencia.
+- PowerShell y quoting:
+  - Usa comillas dobles en SQL y `printjson(...)` en `mongosh` para ver resultados.
+- Servicios “unhealthy”:
+  - Ver logs del servicio afectado: `docker compose -f TaskNotes/docker-compose.e2e.dist.yml logs -f <service>`.
+  - Verifica dependencias (DB, RabbitMQ) y variables de entorno.
+- Limpieza de datos:
+  - `docker compose -f TaskNotes/docker-compose.e2e.dist.yml down -v` (elimina volúmenes; resetea bases).
 
-#### 1. Error de Conexión a Base de Datos
-```bash
-# Verificar que las bases de datos estén ejecutándose
-docker-compose ps
+## Comandos Útiles
 
-# Verificar logs de la base de datos
-docker-compose logs postgres
-docker-compose logs mongodb
-```
+- Reiniciar servicio: `docker compose -f TaskNotes/docker-compose.e2e.dist.yml restart <service>`
+- Reconstruir: `docker compose -f TaskNotes/docker-compose.e2e.dist.yml up -d --build`
+- Acceso a contenedores:
+  - Postgres Auth: `docker compose -f TaskNotes/docker-compose.e2e.dist.yml exec postgres-auth bash`
+  - Mongo Logs: `docker compose -f TaskNotes/docker-compose.e2e.dist.yml exec mongo-logs mongosh`
 
-#### 2. Error de CORS
-- Verificar `CORS_ORIGINS` en variables de entorno
-- Asegurar que el frontend esté en la lista de orígenes permitidos
+## Próximos Pasos
 
-#### 3. Error de Autenticación JWT
-- Verificar que `SECRET_KEY` esté configurada
-- Verificar que los tokens no hayan expirado
-
-#### 4. Error de Búsqueda
-```bash
-# Verificar índices de MongoDB
-docker-compose exec mongodb mongosh
-use tasknotes
-db.notes.getIndexes()
-```
-
-### Comandos Útiles
-
-#### Reiniciar Servicios
-```bash
-# Reiniciar un servicio específico
-docker-compose restart backend
-
-# Reiniciar todos los servicios
-docker-compose restart
-```
-
-#### Limpiar Datos
-```bash
-# Eliminar volúmenes (¡CUIDADO: elimina todos los datos!)
-docker-compose down -v
-
-# Reconstruir imágenes
-docker-compose build --no-cache
-```
-
-#### Acceso a Contenedores
-```bash
-# Acceder al contenedor del backend
-docker-compose exec backend bash
-
-# Acceder a PostgreSQL
-docker-compose exec postgres psql -U user tasknotes
-
-# Acceder a MongoDB
-docker-compose exec mongodb mongosh
-```
-
-## Consideraciones de Seguridad
-
-### Producción
-1. **Cambiar todas las contraseñas por defecto**
-2. **Usar HTTPS en producción**
-3. **Configurar firewall apropiadamente**
-4. **Mantener Docker y dependencias actualizadas**
-5. **Usar secretos externos (no archivos .env)**
-6. **Implementar rate limiting**
-7. **Configurar logging y monitoreo**
-
-### Desarrollo
-1. **No usar datos reales en desarrollo**
-2. **Mantener .env fuera del control de versiones**
-3. **Usar diferentes puertos si es necesario**
+- Añadir cache de JWKS en Gateway (TTL + fallback).
+- Exponer consola de RabbitMQ sólo en dev (si es necesario) y proteger en prod.
+- Automatizar migraciones y seeds por servicio.
+- Integrar métricas y logs centralizados.
