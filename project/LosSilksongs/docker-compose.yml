@@ -1,0 +1,128 @@
+services:
+  # PostgresDB Database
+  postgres:
+    image: postgres:15
+    container_name: musicshare_postgres
+    environment:
+      POSTGRES_USER: music_user
+      POSTGRES_PASSWORD: music_pass
+      POSTGRES_DB: music_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U music_user -d music_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - musicshare-network
+
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: musicshare-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: musicshare
+    volumes:
+      - mongodb_data:/data/db
+      - ./scripts/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    networks:
+      - musicshare-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Music Service
+  music-service:
+    build:
+      context: ./musicservice
+      dockerfile: Dockerfile
+    container_name: musicshare-music-service
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      # Server configuration
+      SERVER_PORT: 8081
+      ENVIRONMENT: production
+      LOG_LEVEL: info
+      
+      # MongoDB configuration
+      MONGODB_URI: mongodb://admin:password123@mongodb:27017/musicshare?authSource=admin
+      MONGODB_DATABASE: musicshare
+      
+      # Storage configuration
+      STORAGE_TYPE: local
+      STORAGE_PATH: /app/uploads
+      
+      # Metadata Service (disabled for MVP)
+      METADATA_SERVICE_GRPC: ""
+      METADATA_SERVICE_HTTP: ""
+    volumes:
+      - ./uploads:/app/uploads  # Bind mount a carpeta local del proyecto
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - musicshare-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "--method=GET", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  userservice:
+    build:
+      context: ./userservice
+      dockerfile: Dockerfile
+    container_name: userservice
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      music-service:
+        condition: service_started
+    environment:
+      POSTGRES_USER: music_user
+      POSTGRES_PASSWORD: music_pass
+      POSTGRES_DB: music_db
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      SECRET_KEY: "replace-this-secret"
+      MUSICSERVICE_URL: "http://music-service:8081"
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./userservice/app:/app/app:ro
+    networks:
+      - musicshare-network
+
+  #frontend:
+    # A la espera del frontend para descomentariar
+    #image: frontend:latest
+    #container_name: frontend
+    #ports:
+      #- "3000:3000"
+    #networks:
+      #- musicshare-network
+      
+networks:
+  musicshare-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local
+  postgres_data:
+    driver: local
