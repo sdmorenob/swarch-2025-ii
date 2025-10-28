@@ -367,6 +367,17 @@ cd MusicShare
 > chmod 777 .
 > ```
 
+```bash
+# 📄 Crear el archivo .env en la raíz del proyecto
+touch .env
+
+# 📋 Copiar el contenido del archivo de ejemplo (.env.example) al nuevo archivo
+cp .env.example .env
+
+# ✏️ Agregar tus credenciales del API de Spotify dentro del archivo .env
+echo "SPOTIFY_CLIENT_ID=ac2b79b47a0643bd824d4fece4d8d110" >> .env
+echo "SPOTIFY_CLIENT_SECRET=3a61c9187a674bf9a505e9a810700e6d" >> .env
+```
 
 ```bash
 # Levantar servicios
