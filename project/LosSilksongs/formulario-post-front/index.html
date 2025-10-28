@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crear Post - MusicShare</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Crear Post con Canción</h1>
+
+    <form id="musicForm">
+      <h2>Subir canción</h2>
+      <div class="drop-zone" id="dropZone">
+        <p>Arrastra tu archivo de música aquí o haz clic para seleccionar</p>
+        <input type="file" id="musicFile" accept=".mp3,.wav,.flac,.m4a,.ogg,.aac" hidden />
+      </div>
+
+      <label for="tags">Tags (separados por coma):</label>
+      <input type="text" id="tags" placeholder="rock, pop, indie" />
+
+      <label for="isPublic">¿Es pública?</label>
+      <select id="isPublic">
+        <option value="true">Sí</option>
+        <option value="false">No</option>
+      </select>
+
+      <button type="button" id="uploadTrackBtn">Probar guardar canción</button>
+    </form>
+
+    <form id="postForm">
+      <h2>Crear Post</h2>
+
+      <label for="caption">Descripción:</label>
+      <textarea id="caption" placeholder="Escribe una descripción..."></textarea>
+
+      <label for="hashtags">Hashtags (separados por coma o espacio):</label>
+      <input type="text" id="hashtags" placeholder="#música, #chill, #covers" />
+
+      <button type="button" id="createPostBtn">Subir Post</button>
+    </form>
+
+    <div id="messageBox"></div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
