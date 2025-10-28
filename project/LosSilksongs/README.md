@@ -310,6 +310,41 @@ Registro de eventos relevantes para los usuarios.
 
 ---
 
+## Correciones entrga anterior y cumplimiento de requisitos actuales
+
+### Correciones hechas:
+- Ya se implementó una funcionalidad equivalente a un MVP.
+- Se mejoró la consistencia de la documentación.
+- El sistema se despliega correctamente.
+- La capa de presentación ya está activa y funcionando.
+- Ya se hace uso del conector gRPC para comunicar MusicService con MetadataService.
+- La vista CyC fue correjida teniendo en cuenta los comentarios realizados por el profesor.
+
+### Cumplimientos del prototipo 2:
+- El sistema implementa una arquitectura distribuida.
+- Se implementarios dos componentes de presentación (Web frontent y Post frontend)
+> ⚠️ **Aclaración importante:**  
+> Originalmente se planeó manejar los microfrontends como uno para **web** y otro para **móvil**.  
+> Sin embargo, debido a que la persona encargada del móvil se retiró del equipo, se decidió como solución rápida **separar una parte del web frontend original y manejarla como microfrontend independiente**.  
+>  
+> Por esta razón existe un **formulario de post** tanto en el *Web Frontend* como en el *Post Frontend*.  
+> Cada frontend corre en su propio contenedor, **cumpliendo así el requisito de arquitectura basada en microfrontends**.
+- Se implementaron 5 componentes lógicos (MetadataService, MusicService, SocialService, UserService y NotificationService)
+- Se implementó un componente de comunicación entre los componentes lógicos. (API Gateway cuya configuración se puede ver en el archivo docker-compose.yml)
+- El API Gateway cumple con ser un componente encargado de manejar procesos asíncronos.
+- Se implementaron conectores REST y un conector gRPC.
+- Se usan 5 lenguajes de propósito general diferentes (Go, Python, Java, TypeScript, JavaScript)
+> ⚠️ **:**  
+> Se pensaba realizar el microfrontend orientado a móbil con el lenguaje Flutter.
+> Debido a que la persona encargada se retiró del grupo, no se pudo realizar para esta entrega  
+- El desplieque del sistema es orientado a contenedores.
+
+### No se cumplió:
+- Implementación de subarquitectura SSR.
+- No se implementó un cuarto componente de data-type. Hay tres componentes actualmente (user_db, music_db, social_db). El cuarto componente podría ser el almacenamiento de las canciones pero no ha sido implementado en nube.
+
+---
+
 ## ⚙️ Despliegue
 
 ### Requisitos
@@ -321,26 +356,58 @@ Registro de eventos relevantes para los usuarios.
 # Clonar repositorio
 git clone <repository-url>
 cd MusicShare
+```
 
+> ⚠️ **IMPORTANTE:**  
+> Si se despliega en un sistema **Linux**, es necesario otorgar permisos de escritura a la carpeta  
+> `uploads/audio/` para que el sistema pueda guardar las canciones correctamente.  
+>  
+> Ejecuta el siguiente comando **dentro de la carpeta correspondiente**:
+> ```bash
+> chmod 777 .
+> ```
+
+
+```bash
 # Levantar servicios
 docker compose build
 docker compose up -d
+
+# Si tiene la versión anterior es recomendable construir sin caché para evitar conflictos
+docker-compose build --no-cache
 
 # Verificar estado
 docker compose ps
 ```
 
-Servicios levantados:
-- `formulario-post-front` → [http://localhost/formulario-post/index.html](http://localhost/formulario-post/index.html)
-- `userservice` → [http://localhost/api/users](http://localhost/api/users)
-- `musicservice` → [http://localhost/api/music](http://localhost/api/music)
-- `socialservice` → [http://localhost/api/social](http://localhost/api/social)
-- `postgres` → puerto 5432
-- `mongodb` → puerto 27017
+## 🚀 Servicios levantados
+
+- **Web Frontend** → [http://localhost](http://localhost)
+- **Post Frontend** → [http://localhost/formulario-post/index.html](http://localhost/formulario-post/index.html)
+- **User Service** → [http://localhost/api/users](http://localhost/api/users)
+- **Music Service** → [http://localhost/api/music](http://localhost/api/music)
+- **Social Service** → [http://localhost/api/social](http://localhost/api/social)
+- **Postgres** → puerto `5432`
+- **MongoDB** → puerto `27017`
 
 ---
 
-## 📖 Endpoints principales
+## ¿Cómo usar la aplicación?
+Dirijase al enlace del Web Frontend, esta es la dirección inicial por defecto de la aplicación, cree su usuario si no lo tiene y luego inicie sesión. Será dirijido al dashboard principal, ahí dirijase a la pestaña "Subir música". Se mostrará un formulario con el que se pueden subir posts con una canción asociada.
+
+Primero deberá subir la canción, seleccionela o arrastrela al campo señalado, agregue tags de su preferencia y configure el tipo de visibilidad de la canción, luego haga click en el botón "Subir Canción", esto hará uso de los serevicios MusicService y MetadataService para guardar la canción en la carpeta `uploads/audio/` con sus metadatos enriquecidos. 
+
+Una vez subida prosiga con la creación de la publicación, agregue una descripción y los hashtags que quiera que estén asociados a ella.
+Finalmente presione el botón de "Publicar Post" para subir el post mediante el servicio SocialService.
+
+Para verificar que la subida de la canción y el post ha sido satisfactoria puede hacer uso de postman a los siguientes endoints:
+
+- GET: http://localhost/api/music/api/v1/tracks (Lista de las canciones subidas)
+- GET: http://localhost/api/social/api/social/posts (Lista de los posts subidos)
+
+---
+
+## 📖 Endpoints principales de los servicios
 
 ### UserService
 **Documentacion** [http://localhost/api/users/docs](http://localhost/api/users/docs)
