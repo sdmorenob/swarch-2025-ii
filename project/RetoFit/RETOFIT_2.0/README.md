@@ -180,60 +180,287 @@ En cuanto a los conectores, existen los siguientes:
 
 ---
 
-#### Layered View
+## Layered View
 <div align="center"><img width="80%" alt="image" src="https://raw.githubusercontent.com/RetoFit/Image_Repository/refs/heads/main/vista_layer.png" /></div>
 
-#### Deployment View
-<div align="center"><img width="80%" alt="Blank diagram - Page 1" src="https://github-production-user-asset-6210df.s3.amazonaws.com/143036159/506242026-a37b41c8-8c9f-408d-b7bd-966b1f58776a.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA%2F20251027%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20251027T230841Z&X-Amz-Expires=300&X-Amz-Signature=37f7cef0d8cb080a470f3daa1a412427bdb763ec82abef92ed668e6970239457&X-Amz-SignedHeaders=host" /></div>
+### Capa de Presentación (Presentation Layer)
 
-#### Decomposition View
-<div align="center"><img width="80%" alt="image" src="https://github-production-user-asset-6210df.s3.amazonaws.com/143036159/506176222-4b5a3a8a-a8ed-4f8d-b16c-bd2aed4c2a72.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA%2F20251027%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20251027T230954Z&X-Amz-Expires=300&X-Amz-Signature=4a519e9ed9d857eab986cf3968577adcfc697b2b2e316e102ee49444deb6deb9&X-Amz-SignedHeaders=host" /></div>
+Es la interfaz con la que interactúa el usuario final. Se compone de las aplicaciones cliente que consumen la API.
+
+* **Front web (Next.js):** Aplicación web principal, construida con Next.js.
+* **Front mobil (...):** Aplicación móvil (iOS/Android).
+
+### API Gateway
+
+Actúa como el **punto de entrada único** (Single Point of Entry) para todas las peticiones que vienen de la Capa de Presentación. Sus responsabilidades principales incluyen:
+
+* **Enrutamiento:** Redirige las peticiones al microservicio correspondiente en la Capa de Servicios.
+* **Agregación:** Puede combinar respuestas de múltiples servicios en una sola.
+* **Gestión Transversal:** Maneja tareas comunes como la autenticación inicial, el balanceo de carga y la limitación de tasa (rate limiting).
+
+### Capa de Servicios (Services Layer)
+
+El núcleo de la lógica de negocio de la aplicación. Está dividida en microservicios independientes, cada uno enfocado en una única responsabilidad de negocio.
+
+* **Auth:** Maneja la autenticación (inicio de sesión, registro, gestión de tokens).
+* **User:** Gestiona toda la información y operaciones relacionadas con los perfiles de usuario.
+* **Activities:** Administra las actividades que los usuarios realizan.
+* **Posts:** Se encarga de las publicaciones (crear, leer, actualizar, borrar).
+* **Admin:** Contiene la lógica para las tareas de administración del sistema.
+* **Gamification:** Implementa la lógica de ludificación (puntos, insignias, niveles, tablas de clasificación).
+
+*Nota: Los servicios pueden comunicarse entre sí (como se indica entre `User` y `Activities`) para operaciones que requieren datos de diferentes dominios.*
+
+### Capa de Datos (Data Layer)
+
+Gestiona la persistencia de los datos. Esta arquitectura sigue el patrón **"Database per Service"** (Base de Datos por Servicio), lo que significa que cada microservicio es dueño de sus propios datos y tiene su propia base de datos.
+
+Esto asegura que los servicios estén desacoplados y puedan evolucionar de forma independiente. Se utilizan dos tecnologías de bases de datos:
+
+#### Cluster PostgreSQL (SQL)
+
+Utilizado para datos estructurados y relacionales:
+
+* **`retofit_auth_db`** (pertenece al servicio `Auth`)
+* **`retofit_users_db`** (pertenece al servicio `User`)
+* **`retofit_activities_db`** (pertenece al servicio `Activities`)
+* **`retofit_posts_db`** (pertenece al servicio `Posts`)
+* **`retofit_retos_db`** (pertenece a un servicio de Retos, probablemente `Activities` o `Gamification`)
+
+#### Cluster MongoDB (NoSQL)
+
+Utilizado para datos con mayor flexibilidad, esquemas dinámicos o alta volúmenes de escritura, como los de ludificación:
+
+* **`retofit_gamification_db`** (pertenece al servicio `Gamification`)
+
+---
+
+#### Deployment View
+<div align="center"><img width="80%" alt="image" src="https://github.com/user-attachments/assets/052aac27-4480-46d7-8441-eb6917a0a6fc" /></div>
+
+#### Description of architectural patterns used
+
+La vista de despliegue (Deployment View) de RETOFIT 2.0 ilustra la distribución física del sistema en nodos de hardware y software.
+
+**Patrones arquitectónicos aplicados:**
+
+1. **Containerization Pattern**: Cada microservicio se empaqueta en un contenedor Docker independiente (K8s Pod), garantizando portabilidad y aislamiento (RNF-19).
+
+2. **Client-Server Pattern**: Separación entre cliente (navegador del usuario) y servidores (Application Server y Data Server).
+
+3. **Multi-tier Architecture**: Distribución en tres capas físicas: Clientes, Application Server (presentación y lógica) y Data Server (persistencia).
+
+4. **Managed Database Services**: Uso de servicios cloud (AWS RDS para PostgreSQL, Railway para MongoDB).
+
+5. **Orchestration Pattern**: Despliegue como Kubernetes Pods para orquestación y escalamiento.
+
+#### Description of architectural elements and relations
+
+**1. Clients (Nodo de Cliente)**
+
+**Elemento:** User (Usuario)
+
+**Descripción:** Navegadores web en dispositivos de usuario final.
+
+**Responsabilidades:**
+- Ejecutar la aplicación web Next.js
+- Realizar peticiones HTTP/HTTPS al Application Server
+- Renderizar interfaces de usuario
+
+**Relaciones:**
+- **Cliente → Application Server:** HTTP/HTTPS sobre internet (puerto 3000)
+
+---
+
+**2. Application Server (Servidor de Aplicación)**
+
+**Descripción:** Servidor que aloja la lógica de presentación y negocio del sistema.
+
+**Plataforma:** Servidor cloud ejecutando Kubernetes
+
+**Componentes internos:**
+
+**a) Presentation Layer**
+
+- **Front web (Next.js)**
+  - **Contenedor:** Node 20
+  - **Puerto:** 3000
+  - **Despliegue:** Kubernetes Pod
+  - **Responsabilidades:** Server-Side Rendering (SSR), servir assets estáticos, gestión de sesiones
+
+- **Front mobile:** En desarrollo futuro
+
+**b) API Gateway**
+
+- **Contenedor:** Java 17 + Spring Cloud Gateway
+- **Puerto:** 8080
+- **Despliegue:** Kubernetes Pod
+- **Responsabilidades:**
+  - Punto único de entrada para peticiones
+  - Enrutamiento a microservicios
+  - Logging centralizado
+- **Rutas:**
+  - `/api/auth/**` → Auth Service (8001)
+  - `/api/users/**` → User Service (8004)
+  - `/api/activities/**` → Activities Service (8002)
+  - `/api/gamification/**` → Gamification Service (8003)
+  - `/api/posts/**` → Posts Service (8005)
+  - `/api/admin/**` → Admin Service (8006)
+
+**c) Service Layer**
+
+Cada microservicio se despliega como Kubernetes Pod independiente:
+
+1. **auth-service** - Python 3.13 + FastAPI (puerto 8001)
+2. **admin-service** - PHP 8.4 + Slim Framework (puerto 8006)
+3. **gamification-service** - Python 3.13 + FastAPI (puerto 8003)
+4. **user-service** - Python 3.13 + FastAPI (puerto 8004)
+5. **activities-service** - Go 1.25 + Gin Framework (puerto 8002)
+6. **post-service** - Node.js 20 + TypeScript + Prisma (puerto 8005)
+
+**Comunicación interna:**
+- **Service-to-Service:** REST API sobre HTTP
+- **Service Discovery:** Kubernetes DNS
+- **gRPC:** Activities Service → User Service para validación
+
+**Relaciones:**
+- **Application Server → Data Server:** TCP para conexiones a bases de datos
+- **Comunicación interna:** Red privada dentro del cluster Kubernetes
+
+---
+
+**3. Data Server (Servidor de Datos)**
+
+**Descripción:** Infraestructura de bases de datos gestionadas en la nube.
+
+**Plataforma:** AWS RDS
+
+**Componentes:**
+
+**a) PostgreSQL Cluster (Postgres 15)**
+
+**Proveedor:** AWS RDS
+
+**Seguridad:** 
+- Encriptación en reposo y en tránsito (SSL/TLS)
+- Security Groups limitando acceso solo desde Application Server
+
+**Bases de datos alojadas:**
+
+1. **retofit_posts_db** - Posts Service (posts, likes, comments)
+2. **retofit_retos_db** - Admin Service (challenges, progress_logs)
+3. **retofit_auth_db** - Auth Service (users, tokens)
+4. **retofit_activities_db** - Activities Service (activities, activity_types)
+5. **retofit_users_db** - User Service (profiles, training_history)
+
+**Conectores:**
+- Python services → `psycopg2`
+- Node.js service → `pg` via Prisma ORM
+- PHP service → `PDO PostgreSQL`
+- Go service → `pq`
+
+**b) MongoDB Cluster (MongoDB 6.0)**
+
+**Proveedor:** Railway (MongoDB Atlas)
+
+**Base de datos:**
+
+1. **retofit_gamification_db** - Gamification Service
+   - Colecciones: user_points, achievements, events, leaderboard
+   - Ventaja: Esquema flexible para diferentes tipos de logros
+
+**Conector:**
+- Python → `pymongo`
+
+**Relaciones:**
+- **Data Server ← Application Server:** TCP desde cada microservicio a su base de datos
+- **Protocolo:** TCP/IP con SSL/TLS
+- **Puertos:** PostgreSQL (5432), MongoDB (27017)
+- **Seguridad:** No hay acceso público directo a las bases de datos
+
+---
+
+**Flujo de comunicación:**
+
+```
+Usuario (Navegador) → [HTTP/HTTPS] → Front web → [REST] → API Gateway → 
+[REST] → Microservicio → [TCP/SSL] → Base de datos
+```
+
+**Comunicación especial:**
+- **Activities Service → User Service:** gRPC
+- **Admin Service → Auth/User Service:** HTTP via Guzzle
+
+---
+
+**Características de despliegue:**
+
+**Escalabilidad:**
+- Aumento de réplicas de Pods según carga
+- Ajuste de recursos por Pod
+
+**Alta disponibilidad:**
+- Servicios críticos con múltiples réplicas
+- Bases de datos distribuidas en múltiples zonas
+- Kubernetes reemplaza automáticamente Pods no saludables
+
+**Seguridad:**
+- Network Policies de Kubernetes
+- Credenciales en Kubernetes Secrets
+- HTTPS obligatorio (RNF-3)
+- Encriptación en bases de datos
+
+**Cumplimiento de requisitos:**
+- **RNF-19:** Despliegue orientado a contenedores ✓
+- **RNF-10:** Arquitectura distribuida ✓
+- **RNF-3:** HTTPS en rutas de autenticación ✓
+
+---
+
+## Decomposition View
+<div align="center"><img width="80%" alt="image" src="https://github.com/user-attachments/assets/8e98e040-9933-42a3-89da-af5e0bc062e3" /></div>
+
+
+#### 🎨 FRONT
+
+El **Front** representa las interfaces de usuario del sistema, permitiendo la interacción con las funcionalidades expuestas por los microservicios.
+
+- **FRONT WEB**  
+  Interfaz web desarrollada (**Next.js**) para administración y uso general desde navegadores.
+
+- **FRONT MÓVIL**  
+  Aplicación móvil (**Dart**) para usuarios finales.
+
+Ambas interfaces se comunican con el **API Gateway**, que enruta las solicitudes hacia los servicios internos.
+
+
+#### ⚙️ SERVICES
+
+El sistema está compuesto por varios microservicios independientes, cada uno con una responsabilidad específica:
+
+| Servicio | Descripción |
+|-----------|--------------|
+| **auth-service** | Maneja la autenticación y autorización de usuarios (login, registro, tokens JWT, etc.). |
+| **user-service** | Gestiona la información del perfil de usuario y datos personales. |
+| **physical_activities_service** | Registra y consulta actividades físicas realizadas por los usuarios. |
+| **posts-service** | Permite la creación, lectura y gestión de publicaciones o retos dentro de la plataforma. |
+| **admin-service** | Ofrece funcionalidades administrativas para la gestión general del sistema. |
+| **gamification-service** | Administra la lógica de gamificación: puntos, niveles, recompensas y ranking de usuarios. |
+
+Cada servicio puede ejecutarse de forma independiente y se comunica con los demás a través del **API Gateway**.
+
+
+#### 🌐 API GATEWAY
+
+El **API Gateway** actúa como punto de entrada único para todas las solicitudes externas.  
+Su función principal es redirigir, filtrar y centralizar la comunicación entre el **Front** y los distintos **microservicios**.
+
+- Carpeta `target/`  
+  Contiene el archivo compilado `api-gateway-1.0.0.0.jar`, que puede ejecutarse para iniciar el Gateway.
+
 
 ## Prototipo
-## 🚀 Guía de Instalación y Ejecución
-**========== Docker NO sirve ==========**
-
-Recordar tener docker instalado y ejecutandose.
-
-Para iniciar la aplicación en docker, se tiene que seguir los siguientes pasos:
-
-**1. Contruir todos los contenedores**
-
-```shell
-docker compose build
-```
-
-**2. Lanzar todos los contenedores**
-
-```shell
-docker compose up -d
-```
-
-Abre la siguiente url en el navegador:
-
-- http://localhost:3000
-
-
----
-**Ver el estado de todos los contenedores**
-
-```shell
-docker compose ps
-```
-
-**Ver logs de un servicio específico**
-
-```shell
-docker compose logs -f [nombre-servicio]
-```
-**Para apagar y borrar todos los contenedores**
-
-```shell
-docker compose down
-```
----
-
-Sigue estos pasos para configurar y ejecutar el proyecto en tu entorno de desarrollo local.
+### 🚀 Guía de Instalación y Ejecución
 
 ### ✅ Requisitos Previos
 
