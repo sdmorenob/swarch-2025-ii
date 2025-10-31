@@ -1,21 +1,44 @@
 services:
   web:
     build: ./web
-    ports:
-    - "3000:3000"
+    networks:
+      - subnet_a
+      
   api:
     build: ./api
-    ports:
-    - "5000:5000"
+    networks:
+      - subnet_b
   db:
     image: postgres:13
     environment:
       POSTGRES_PASSWORD: 1234
-    ports:
-    - "5432:5432"
+    networks:
+      - subnet_b
   network:
     build: ./networking
-    profiles:
-    - build-only
+#  profiles:
+#- build-only
     volumes:
     - ./networking/volume:/home/ubuntu
+  
+  reverse-proxy:
+    image: nginx:latest
+    ports:
+    - "80:80"
+    - "443:443"
+    volumes:
+    - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    - ./networking/volume:/etc/nginx/ssl:ro
+    depends_on:
+    - web
+    - api
+    networks:
+      - subnet_a
+      - subnet_b
+
+networks:
+  subnet_a:
+    driver: bridge
+
+  subnet_b:
+    driver: bridge
