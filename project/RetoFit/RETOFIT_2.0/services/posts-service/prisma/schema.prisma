@@ -1,0 +1,49 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Post {
+  id         Int       @id @default(autoincrement())
+  userEmail  String    @map("user_email")
+  content    String    @db.Text
+  imageUrl   String?   @map("image_url")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  
+  comments   Comment[]
+  likes      Like[]
+
+  @@map("posts")
+}
+
+model Comment {
+  id         Int      @id @default(autoincrement())
+  postId     Int      @map("post_id")
+  userEmail  String   @map("user_email")
+  content    String   @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+  
+  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+model Like {
+  id         Int      @id @default(autoincrement())
+  postId     Int      @map("post_id")
+  userEmail  String   @map("user_email")
+  createdAt  DateTime @default(now()) @map("created_at")
+  
+  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userEmail], name: "unique_post_like")
+  @@map("likes")
+}
