@@ -7,8 +7,9 @@ DB_USERNAME = os.getenv("DB_USERNAME", "app")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "123")
 DB_HOSTNAME = os.getenv("DB_HOSTNAME", "localhost")
 DB_DATABASE = os.getenv("DB_DATABASE", "performance_db")
+DB_PORT = os.getenv("DB_PORT", "3306")
 
-DATABASE_URL = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOSTNAME}:3306/{DB_DATABASE}"
+DATABASE_URL = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOSTNAME}:{DB_PORT}/{DB_DATABASE}"
 
 engine = create_engine(
     DATABASE_URL,
