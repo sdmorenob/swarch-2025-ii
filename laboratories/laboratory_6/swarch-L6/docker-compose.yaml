@@ -1,0 +1,24 @@
+services:
+
+  app:
+    build: ./app
+    ports:
+    - "8000:8000"
+    restart: on-failure
+    environment:
+      DB_USERNAME: app
+      DB_PASSWORD: 123
+      DB_HOSTNAME: database
+      DB_DATABASE: performance_db
+    depends_on:
+    - database
+
+  database:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: 123
+      MYSQL_DATABASE: performance_db
+      MYSQL_USER: app
+      MYSQL_PASSWORD: 123
+    ports:
+    - "3306:3306"
