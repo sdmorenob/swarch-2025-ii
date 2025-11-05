@@ -19,7 +19,7 @@ export let options = {
     { duration: sec, target: 70 },
     { duration: sec, target: 80 },
     { duration: sec, target: 90 },
-    { duration: sec, target: 100 },
+    { duration: sec, target: 200 },
     { duration: sec, target: 250 },
     { duration: sec, target: 300 },
     { duration: sec, target: 450 },
