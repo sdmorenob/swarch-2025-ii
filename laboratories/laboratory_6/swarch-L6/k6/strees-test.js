@@ -7,6 +7,10 @@ export let options = {
   stages: [
     { duration: sec, target: 5 },
     { duration: sec, target: 10 },
+    { duration: sec, target: 11 },
+    { duration: sec, target: 12 },
+    { duration: sec, target: 13 },
+    { duration: sec, target: 14 },
     { duration: sec, target: 15 },
     { duration: sec, target: 20 },
     { duration: sec, target: 25 },
@@ -19,6 +23,7 @@ export let options = {
     { duration: sec, target: 70 },
     { duration: sec, target: 80 },
     { duration: sec, target: 90 },
+    { duration: sec, target: 150 },
     { duration: sec, target: 200 },
     { duration: sec, target: 250 },
     { duration: sec, target: 300 },
