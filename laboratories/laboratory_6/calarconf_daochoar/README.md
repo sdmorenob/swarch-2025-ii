@@ -1,7 +1,6 @@
 ## Cristhian Alejandro Alarcón Florido y Daniel Ochoa Ruiz 
 calarconf y daochoar
 # Laboratorio #6
-Métrica: Throughput (RPS - Requests Per Second)
 
 ## Objetivo
 Identificar el punto "knee" (rodilla) del sistema mediante pruebas de estrés, que representa el punto de inflexión donde el rendimiento del sistema comienza a degradarse significativamente antes del colapso total.
