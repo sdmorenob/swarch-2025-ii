@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Performance Metrics</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      background-color: #f4f4f4;
+    }
+    h1 {
+      color: #333;
+    }
+    .card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      max-width: 500px;
+    }
+    .metric {
+      margin: 0.5rem 0;
+    }
+    .label {
+      font-weight: bold;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Performance Report</h1>
+  <div class="card" id="report">Loading...</div>
+
+  <script>
+    const report = document.getElementById("report");
+
+    fetch("http://localhost:8000/metrics")
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch data");
+        }
+        return response.json();
+      })
+      .then(data => {
+        report.innerHTML = `
+          <div class="metric"><span class="label">Total Transactions:</span> ${data.db_stats.total_transactions}</div>
+          <div class="metric"><span class="label">Average Amount:</span> $${data.db_stats.average_amount.toFixed(2)}</div>
+          <div class="metric"><span class="label">Total Amount:</span> $${data.db_stats.total_amount.toLocaleString()}</div>
+          <div class="metric"><span class="label">Max Amount:</span> $${data.db_stats.max_amount}</div>
+          <div class="metric"><span class="label">Min Amount:</span> $${data.db_stats.min_amount}</div>
+          <hr />
+          <div class="metric"><span class="label">Duration (seconds):</span> ${data.duration_seconds}</div>
+        `;
+      })
+      .catch(error => {
+        report.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+      });
+  </script>
+
+</body>
+</html>
