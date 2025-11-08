@@ -1,0 +1,71 @@
+body {
+  font-family: "Poppins", sans-serif;
+  background-color: #111;
+  color: #eee;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px;
+  min-height: 100vh;
+}
+
+.container {
+  width: 90%;
+  max-width: 600px;
+  background-color: #1e1e1e;
+  border: 1px solid #ff7bf5;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 0 15px rgba(255, 123, 245, 0.3);
+}
+
+h1, h2 {
+  text-align: center;
+  color: #ff7bf5;
+}
+
+label {
+  display: block;
+  margin-top: 15px;
+}
+
+input, textarea, select, button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+  border-radius: 8px;
+  border: none;
+  background-color: #222;
+  color: #eee;
+}
+
+button {
+  background-color: #ff7bf5;
+  color: #111;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+
+button:hover {
+  background-color: #ff94f5;
+}
+
+.drop-zone {
+  border: 2px dashed #ff7bf5;
+  padding: 30px;
+  text-align: center;
+  cursor: pointer;
+  margin-top: 10px;
+  border-radius: 12px;
+}
+
+.drop-zone.dragover {
+  background-color: rgba(255, 123, 245, 0.1);
+}
+
+#messageBox {
+  margin-top: 20px;
+  text-align: center;
+  font-weight: bold;
+}
