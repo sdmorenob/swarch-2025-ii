@@ -23,12 +23,14 @@ require (
 	github.com/swaggo/gin-swagger v1.6.1
 
 	// Swagger
-	github.com/swaggo/swag v1.16.6 // indirect
+	github.com/swaggo/swag v1.16.6
 
 	// MongoDB
 	go.mongodb.org/mongo-driver v1.12.1
 	google.golang.org/protobuf v1.36.10 // indirect
 )
+
+require google.golang.org/grpc v1.76.0
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
@@ -79,4 +81,5 @@ require (
 	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/text v0.29.0 // indirect
 	golang.org/x/tools v0.37.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250804133106-a7a43d27e69b // indirect
 )

@@ -1,0 +1,26 @@
+# gRPC - Versiones más recientes compatibles con Python 3.13
+grpcio==1.68.1
+grpcio-tools==1.68.1
+grpcio-reflection==1.68.1
+protobuf==5.29.2
+
+# Spotify
+spotipy==2.23.0
+
+# Configuration & Validation
+pydantic==2.5.3
+pydantic-settings==2.1.0
+python-dotenv==1.0.0
+
+# Cache (opcional - comentado por ahora)
+# redis==5.0.1
+# hiredis==2.3.2
+
+# Async
+asyncio==3.4.3
+
+# Logging
+structlog==23.2.0
+
+# Utilities
+python-dateutil==2.8.2

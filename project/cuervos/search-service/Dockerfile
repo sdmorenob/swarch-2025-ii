@@ -1,14 +1,19 @@
 # Build stage: compila el binario Go en una imagen con toolchain
-FROM golang:1.21-alpine AS builder
+FROM golang:1.23-alpine AS builder
 
 # Set working directory
 WORKDIR /app
 
-# Install git and CA certificates (needed for go mod download over HTTPS)
-RUN apk add --no-cache git ca-certificates && update-ca-certificates
+# Install git, CA certificates y protoc (para generar código gRPC)
+RUN apk add --no-cache git ca-certificates protobuf && update-ca-certificates
 
 # Configura proxy y sum database públicos para resolver dependencias
-ENV GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org GONOSUMDB= 
+ENV GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org GONOSUMDB=
+
+# Instala plugins de protoc para Go y añade al PATH
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+ENV PATH="/go/bin:${PATH}"
 
 # Copy go mod files (go.sum may not exist initially)
 COPY go.mod ./
@@ -18,6 +23,23 @@ RUN go mod download
 
 # Copy source code
 COPY . .
+
+# Copia archivos .proto locales al contexto
+COPY proto ./proto
+
+# Genera código gRPC en Go dentro de grpc/generated en subcarpetas separadas
+RUN mkdir -p grpc/generated/common grpc/generated/notes grpc/generated/tasks && \
+    protoc --proto_path=./proto \
+      --go_out=./grpc/generated/common --go_opt=paths=source_relative \
+      ./proto/common.proto && \
+    protoc --proto_path=./proto \
+      --go_out=./grpc/generated/notes --go_opt=paths=source_relative \
+      --go-grpc_out=./grpc/generated/notes --go-grpc_opt=paths=source_relative \
+      ./proto/notes_search.proto && \
+    protoc --proto_path=./proto \
+      --go_out=./grpc/generated/tasks --go_opt=paths=source_relative \
+      --go-grpc_out=./grpc/generated/tasks --go-grpc_opt=paths=source_relative \
+      ./proto/tasks_search.proto
 
 # Asegura que los módulos estén consistentes tras copiar el código
 RUN go mod tidy
@@ -42,11 +64,11 @@ RUN adduser -D -s /bin/sh appuser
 USER appuser
 
 # Expose port
-EXPOSE 8081
+EXPOSE 8008
 
 # Health check contra /health para orquestadores
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8081/health || exit 1
+    CMD curl -f http://localhost:8008/health || exit 1
 
 # Ejecuta el binario
 CMD ["./main"]

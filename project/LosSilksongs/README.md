@@ -9,7 +9,6 @@
   - Gabriel Felipe González Bohórquez
   - Andrés Felipe Perdomo Uruburu
   - Andrés Felipe Poveda Bellón
-  - Iván David Molina Leguízamo
 
 ## Sofware System
  - **Name:** MusicShare
@@ -129,19 +128,21 @@ Cada servicio expondrá un endpoint /health para chequeos automáticos por parte
 # Architectural Structures
 ## Components and Connectors (C&C) Structure
 C&C View:
-![C&C View](C&C.jpg)
+![C&C View](CyC.png)
 
 ## Description of architectural styles used.
 
-Microservicios: Servicios independientes con responsabilidades específicas
-Layered Architecture: Separación clara entre presentación, lógica y datos
-Event-Driven: Para notificaciones y actualizaciones en tiempo real
-API Gateway Pattern: Para enrutar requests y manejar autenticación
+- Microservicios: Servicios independientes con responsabilidades específicas
+- MicroFrontends: Frontends independientes
+- Layered Architecture: Separación clara entre presentación, lógica y datos
+- Event-Driven: Para notificaciones y actualizaciones en tiempo real
+- API Gateway Pattern: Para enrutar requests y manejar autenticación
 
 ## Description of architectural elements and relations 
 ## Componentes:
 ### Presentación:
 - Web Frontend (React/TypeScript): Interfaz de usuario principal
+- Posts Frontend (JavaScript): Interfaz para la creacion de posts
 ### Lógica de Negocio:
 - User Service (Python/FastAPI): Gestión de usuarios, autenticación, perfiles
 - Music Service (Go): Manejo de archivos musicales, metadata, cloud storage
@@ -166,72 +167,181 @@ API Gateway Pattern: Para enrutar requests y manejar autenticación
 ### gRPC:
   - Conexión MusicService con MetadataService
 
+## Layered Structure
+Layered View:
+![Diagrama de capas](Diagrama_Capas.png)
 
-## 🎯 Objetivo del prototipo
+## Descripción de los Patrones Arquitectónicos Utilizados
 
-Construir un prototipo **vertical** de la arquitectura distribuida de MusicShare, con:
-- Microservicios backend (Go, Python)
-- Bases de datos: relacional (**Postgres**) y documental (**MongoDB**)
-- Conectores HTTP entre servicios
-- Despliegue completo con Docker Compose
-- Frontend (planificado para siguiente iteración)
+La arquitectura del sistema sigue el Patrón Arquitectónico en Capas (Layered Architectural Pattern), el cual organiza el software en niveles jerárquicos con responsabilidades bien definidas y relaciones unidireccionales tipo “allowed-to-use”. Cada capa superior depende únicamente de los servicios ofrecidos por la capa inmediatamente inferior, promoviendo así la modificabilidad, la escalabilidad y la separación de responsabilidades.
+
+Asimismo, se aplica el Patrón de Microservicios dentro de la Capa de Negocio, donde cada servicio (User, Music, Social, Notification y Metadata) encapsula un dominio funcional específico y se comunica mediante APIs REST o protocolos asíncronos. Este enfoque permite el despliegue independiente, el aislamiento de fallos y una alta mantenibilidad.
+
+Además, en la capa de presentación se aplica el Patrón de Micro Frontends, dividiendo la interfaz de usuario en dos aplicaciones independientes (Web Frontend y Posts Frontend). Cada una se despliega de manera autónoma y consume los servicios del API Gateway. Este enfoque facilita la escalabilidad del frontend, el desarrollo paralelo por equipos distintos y la actualización independiente de módulos de interfaz sin afectar al resto del sistema.
+
+Entre los patrones complementarios utilizados se encuentran:
+
+Patrón API Gateway: centraliza el acceso externo, el enrutamiento y la autenticación hacia los servicios del backend.
+
+Patrón Base de Datos por Servicio (Database per Service): cada microservicio gestiona su propia base de datos, garantizando independencia de datos.
+
+## Descripción de los Elementos Arquitectónicos y sus Relaciones
+
+La arquitectura está compuesta por cinco capas lógicas:
+
+### Capa de Presentación: 
+
+incluye los componentes orientados al usuario como Web Frontend y Posts Frontend. Estos módulos gestionan la interacción con el usuario, la visualización de datos y las peticiones al sistema. Se comunican exclusivamente con la Capa de Integración mediante HTTP/REST.
+
+### Capa de Integración: 
+implementa el API Gateway, responsable del enrutamiento, balanceo de carga, autenticación y control de tráfico. Actúa como una fachada que expone un punto de acceso unificado al frontend y delega las solicitudes hacia los microservicios correspondientes.
+
+### Capa de Negocio (Business): 
+compuesta por microservicios independientes (User Service, Music Service, Social Service, Notification Service y Metadata Service). Cada uno encapsula reglas de negocio específicas.
+
+### Capa de Persistencia: 
+agrupa los componentes de almacenamiento de datos, como User Database (PostgreSQL), Music/Metadata Database (MongoDB), Social Database (PostgreSQL) y Cloud Storage para archivos multimedia. Cada microservicio accede exclusivamente a su propia fuente de datos.
+
+### Capa de Infraestructura: 
+proporciona soporte de ejecución y despliegue mediante Docker, Kubernetes, pipelines de CI/CD, monitoreo (Prometheus/Grafana) y gestión de logs (ELK). Esta capa sustenta a todas las demás sin generar dependencias ascendentes.
+
+Las relaciones entre capas son estrictamente descendentes (allowed-to-use), lo que asegura modularidad y evita dependencias circulares. Esta organización favorece el mantenimiento, permite reemplazar tecnologías en capas inferiores y facilita la escalabilidad independiente de los servicios.
+
+## Deployment Structure
+Deployment View:
+![Diagrama de despliegue](Diagrama_Despliegue.png)
+
+## Decomposition Structure
+![Diagrama de descomposición de Dominio](Diagrama_de_descomposicion_D.jpg)
+## Description 
+🎵 Estructura de Descomposición de Dominio — MusicShare
+Dominio Raíz: MusicShare
+
+Descripción general:
+MusicShare es una plataforma colaborativa para compartir, reproducir y descubrir música. El sistema está diseñado bajo una arquitectura basada en microservicios, donde cada dominio encapsula una funcionalidad específica, comunicándose entre sí mediante un API Gateway.
+Su estructura promueve la escalabilidad, la independencia de desarrollo y el despliegue modular de componentes.
+
+### 1. web_frontend
+
+- **Responsabilidad principal**:
+  - Proporcionar la interfaz gráfica principal para los usuarios finales.
+  - Es la capa de presentación encargada de gestionar la interacción del usuario con las funcionalidades de la plataforma.
+
+- **Funciones clave:**
+  - Registro e inicio de sesión de usuarios.
+  - Exploración de canciones, playlists y perfiles.
+  - Comunicación directa con el API Gateway para consumir servicios REST.
+  - Implementación adaptable para navegadores web.
+
+### 2. post_frontend
+
+- **Responsabilidad principal**:
+  - Gestionar la interfaz y funcionalidad relacionada con la publicación y visualización de contenido social (por ejemplo, publicaciones, comentarios o interacciones).
+- **Funciones clave:**
+  - Creación de publicaciones relacionadas con canciones o playlists.
+  - Interacción entre usuarios mediante comentarios o reacciones.
+  - Integración directa con el SocialService.
+
+### 3. SocialService
+
+- **Responsabilidad principal:**
+  - Encargado del componente social de la plataforma. Administra las interacciones, conexiones y actividades entre los usuarios.
+
+- **Funciones clave:**
+  - Manejo de publicaciones, comentarios y likes.
+  - Seguimiento de usuarios (“followers/following”).
+  - Integración con el NotificationService para alertas sociales.
+  - Conexión con UserService para obtener perfiles.
+
+4. MusicService
+
+- **Responsabilidad principal:**
+  - Administrar los recursos musicales y su ciclo de vida dentro del sistema.
+
+**- Funciones clave:**
+  - Almacenamiento y gestión de canciones y álbumes.
+  - Control de derechos, autoría y acceso.
+  - Integración con el MetadataService para obtener información descriptiva.
+  - Exposición de endpoints para streaming o descarga.
+
+### 5. APIGateway
+- **Responsabilidad principal:**
+  - Centralizar y gestionar todas las solicitudes externas hacia los microservicios.
+  - Actúa como punto único de entrada al ecosistema MusicShare.
+
+-**Funciones clave**:
+  - Enrutamiento y balanceo de peticiones.
+  - Seguridad, autenticación y autorización.
+  - Control de tráfico, logging y CORS.
+  - Comunicación entre frontends y los servicios internos.
+
+### 6. MetadataService
+
+- **Responsabilidad principal:**
+  - Gestionar y proveer información descriptiva asociada al contenido musical.
+
+- **Funciones clave:**
+  - Procesamiento y almacenamiento de metadatos de audio (artista, álbum, duración, género, etc.).
+  - Indexación de canciones para búsqueda y filtrado.
+  - Soporte a MusicService y RecommendationService (si existiera).
+  - Posible integración con APIs externas para completar metadatos.
+
+### 7. UserService
+- **Responsabilidad principal:**
+  - Gestionar la información y autenticación de los usuarios del sistema.
+
+- **Funciones clave:**
+  - Registro, login y recuperación de contraseñas.
+  - Administración de roles y permisos.
+  - Exposición de información de perfil para otros servicios (SocialService, NotificationService).
+  - Almacenamiento seguro de credenciales (posiblemente con JWT o OAuth2).
+
+### 8. NotificationService
+
+- **Responsabilidad principal:**
+  - Coordinar y enviar notificaciones a los usuarios según eventos del sistema.
+
+- **Funciones clave:**
+  - Notificaciones por nuevas publicaciones, seguidores o reacciones.
+  - Integración con SocialService y UserService.
+  - Envío de notificaciones por correo, push o en la aplicación.
+
+Registro de eventos relevantes para los usuarios.
 
 ---
 
-## 🏗️ Arquitectura del Sistema
+## Correciones entrga anterior y cumplimiento de requisitos actuales
 
-### Componentes Implementados
+### Correciones hechas:
+- Ya se implementó una funcionalidad equivalente a un MVP.
+- Se mejoró la consistencia de la documentación.
+- El sistema se despliega correctamente.
+- La capa de presentación ya está activa y funcionando.
+- Ya se hace uso del conector gRPC para comunicar MusicService con MetadataService.
+- La vista CyC fue correjida teniendo en cuenta los comentarios realizados por el profesor.
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    MUSIC SHARE                          │
-│                                                         │
-│   ┌───────────────┐        ┌───────────────┐            │
-│   │ Music Service │◄──────►│  MongoDB      │            │
-│   │     (Go)      │        │  Database     │            │
-│   └───────────────┘        └───────────────┘            │
-│                                                         │
-│   ┌───────────────┐        ┌────────────────┐           │
-│   │ User Service  │◄──────►│  Postgres      │           │
-│   │ (FastAPI/Py)  │        │  Relational DB │           │
-│   └───────────────┘        └────────────────┘           │
-│                                                         │
-│                 (conectados vía Docker network)         │
-└─────────────────────────────────────────────────────────┘
-```
+### Cumplimientos del prototipo 2:
+- El sistema implementa una arquitectura distribuida.
+- Se implementarios dos componentes de presentación (Web frontent y Post frontend)
+> ⚠️ **Aclaración importante:**  
+> Originalmente se planeó manejar los microfrontends como uno para **web** y otro para **móvil**.  
+> Sin embargo, debido a que la persona encargada del móvil se retiró del equipo, se decidió como solución rápida **separar una parte del web frontend original y manejarla como microfrontend independiente**.  
+>  
+> Por esta razón existe un **formulario de post** tanto en el *Web Frontend* como en el *Post Frontend*.  
+> Cada frontend corre en su propio contenedor, **cumpliendo así el requisito de arquitectura basada en microfrontends**.
+- Se implementaron 5 componentes lógicos (MetadataService, MusicService, SocialService, UserService y NotificationService)
+- Se implementó un componente de comunicación entre los componentes lógicos. (API Gateway cuya configuración se puede ver en el archivo docker-compose.yml)
+- El API Gateway cumple con ser un componente encargado de manejar procesos asíncronos.
+- Se implementaron conectores REST y un conector gRPC.
+- Se usan 5 lenguajes de propósito general diferentes (Go, Python, Java, TypeScript, JavaScript)
+> ⚠️ **:**  
+> Se pensaba realizar el microfrontend orientado a móbil con el lenguaje Flutter.
+> Debido a que la persona encargada se retiró del grupo, no se pudo realizar para esta entrega  
+- El desplieque del sistema es orientado a contenedores.
 
-- **MusicService (Go)**: subida y streaming de música, gestión de playlists, metadatos.
-- **UserService (Python + FastAPI)**: registro/login JWT, gestión de usuarios, proxy hacia MusicService.
-- **Postgres**: almacenamiento relacional de usuarios.
-- **MongoDB**: almacenamiento documental de tracks y playlists.
-- **Otros servicios (stub)**: Metadata, Notifications, Search.
-
----
-
-## ✅ Estado Actual del Proyecto
-
-### Music Service (Go)
-- Upload de archivos de audio (MP3, FLAC, WAV, etc.)
-- Extracción de metadatos ID3
-- CRUD completo de playlists
-- Streaming de audio
-- API REST documentada
-
-### User Service (FastAPI + Postgres)
-- Registro de usuarios con hash de contraseña
-- Login con JWT (OAuth2)
-- Endpoint `/users/me` protegido
-- Proxy hacia MusicService (`/proxy/users/{id}/playlists`)
-
-### Bases de Datos
-- **MongoDB**: tracks, metadatos y playlists
-- **Postgres**: usuarios y credenciales
-
-### Infraestructura
-- `docker-compose.yml` con Postgres, MongoDB, MusicService y UserService
-- Networking entre contenedores
-- Volúmenes persistentes
-- Health checks básicos
+### No se cumplió:
+- Implementación de subarquitectura SSR.
+- No se implementó un cuarto componente de data-type. Hay tres componentes actualmente (user_db, music_db, social_db). El cuarto componente podría ser el almacenamiento de las canciones pero no ha sido implementado en nube.
 
 ---
 
@@ -246,26 +356,72 @@ Construir un prototipo **vertical** de la arquitectura distribuida de MusicShare
 # Clonar repositorio
 git clone <repository-url>
 cd MusicShare
+```
 
+> ⚠️ **IMPORTANTE:**  
+> Si se despliega en un sistema **Linux**, es necesario otorgar permisos de escritura a la carpeta  
+> `uploads/audio/` para que el sistema pueda guardar las canciones correctamente.  
+>  
+> Ejecuta el siguiente comando **dentro de la carpeta correspondiente**:
+> ```bash
+> chmod 777 .
+> ```
+
+```bash
+# 📄 Crear el archivo .env en la raíz del proyecto
+touch .env
+
+# 📋 Copiar el contenido del archivo de ejemplo (.env.example) al nuevo archivo
+cp .env.example .env
+
+# ✏️ Agregar tus credenciales del API de Spotify dentro del archivo .env
+echo "SPOTIFY_CLIENT_ID=ac2b79b47a0643bd824d4fece4d8d110" >> .env
+echo "SPOTIFY_CLIENT_SECRET=3a61c9187a674bf9a505e9a810700e6d" >> .env
+```
+
+```bash
 # Levantar servicios
 docker compose build
 docker compose up -d
+
+# Si tiene la versión anterior es recomendable construir sin caché para evitar conflictos
+docker-compose build --no-cache
 
 # Verificar estado
 docker compose ps
 ```
 
-Servicios levantados:
-- `userservice` → [http://localhost:8001](http://localhost:8001)
-- `musicservice` → [http://localhost:8080](http://localhost:8080)
-- `postgres` → puerto 5432
-- `mongodb` → puerto 27017
+## 🚀 Servicios levantados
+
+- **Web Frontend** → [http://localhost](http://localhost)
+- **Post Frontend** → [http://localhost/formulario-post/index.html](http://localhost/formulario-post/index.html)
+- **User Service** → [http://localhost/api/users](http://localhost/api/users)
+- **Music Service** → [http://localhost/api/music](http://localhost/api/music)
+- **Social Service** → [http://localhost/api/social](http://localhost/api/social)
+- **Postgres** → puerto `5432`
+- **MongoDB** → puerto `27017`
 
 ---
 
-## 📖 Endpoints principales
+## ¿Cómo usar la aplicación?
+Dirijase al enlace del Web Frontend, esta es la dirección inicial por defecto de la aplicación, cree su usuario si no lo tiene y luego inicie sesión. Será dirijido al dashboard principal, ahí dirijase a la pestaña "Subir música". Se mostrará un formulario con el que se pueden subir posts con una canción asociada.
+
+Primero deberá subir la canción, seleccionela o arrastrela al campo señalado, agregue tags de su preferencia y configure el tipo de visibilidad de la canción, luego haga click en el botón "Subir Canción", esto hará uso de los serevicios MusicService y MetadataService para guardar la canción en la carpeta `uploads/audio/` con sus metadatos enriquecidos. 
+
+Una vez subida prosiga con la creación de la publicación, agregue una descripción y los hashtags que quiera que estén asociados a ella.
+Finalmente presione el botón de "Publicar Post" para subir el post mediante el servicio SocialService.
+
+Para verificar que la subida de la canción y el post ha sido satisfactoria puede hacer uso de postman a los siguientes endoints:
+
+- GET: http://localhost/api/music/api/v1/tracks (Lista de las canciones subidas)
+- GET: http://localhost/api/social/api/social/posts (Lista de los posts subidos)
+
+---
+
+## 📖 Endpoints principales de los servicios
 
 ### UserService
+**Documentacion** [http://localhost/api/users/docs](http://localhost/api/users/docs)
 - **Health**: `GET /health`
 - **Registro**: `POST /auth/register`
 - **Login**: `POST /auth/token` (devuelve JWT)
@@ -273,14 +429,32 @@ Servicios levantados:
 - **Proxy playlists**: `GET /proxy/users/{id}/playlists`
 
 ### MusicService
+**Documentacion** [http://localhost/api/music/swagger/index.html](http://localhost/api/music/swagger/index.html)
 - `POST /api/v1/tracks/upload` - Subir audio
 - `GET /api/v1/tracks` - Listar tracks
 - `GET /api/v1/tracks/{id}/stream` - Stream de audio
 - CRUD completo de playlists
 - Healthcheck en `/health`
 
----
+### SocialService
+**Documentacion** [http://localhost/api/social/swagger-ui/index.html](http://localhost/api/social/swagger-ui/index.html)
 
-## 📌 Notas
-- El **frontend React** está planificado pero aún no implementado.
-- Este prototipo cumple los requisitos de la materia: arquitectura distribuida, uso de 2 bases de datos, múltiples lenguajes (Go, Python), conectores HTTP, y despliegue en contenedores.
+#### Posts
+- `POST /api/social/posts` — Crear una publicación  
+- `GET /api/social/posts` — Obtener todas las publicaciones  
+- `GET /api/social/posts/usuario/{userId}` — Obtener publicaciones por usuario  
+- `DELETE /api/social/posts/{postId}` — Eliminar publicación  
+
+#### Comments
+- `POST /api/social/comments/post/{postId}` — Crear comentario en un post  
+- `POST /api/social/comments/reply/{commentId}` — Responder a un comentario  
+- `GET /api/social/comments/post/{postId}` — Listar comentarios de un post  
+- `GET /api/social/comments/replies/{parentCommentId}` — Listar respuestas de un comentario  
+- `DELETE /api/social/comments/{commentId}` — Eliminar comentario  
+
+#### Likes
+- `POST /api/social/likes` — Dar like a un post  
+- `GET /api/social/likes/post/{postId}` — Obtener todos los likes de un post  
+- `DELETE /api/social/likes/{likeId}` — Quitar un like
+
+---

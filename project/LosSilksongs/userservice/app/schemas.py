@@ -1,25 +1,46 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
-from datetime import date
 
 class UserBase(BaseModel):
+    username: str = Field(..., min_length=3, max_length=100)
     email: EmailStr
-    first_name: str
-    middle_name: Optional[str] = None
-    last_name: str
-    second_last_name: Optional[str] = None
-    username: str
-    date_of_birth: date
-    gender: Optional[str] = None  # "M", "F", "Otro", etc.
+    first_name: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    last_name: Optional[str] = Field(default=None, min_length=1, max_length=100)
+
 
 class UserCreate(UserBase):
-    password: str
+    password: str = Field(..., min_length=8, max_length=100)
+    profile_picture_url: str = ""
+    bio: str = ""
 
 
 class UserOut(UserBase):
-    id: int
+    user_id: int
+    profile_picture_url: str
+    bio: str
     is_active: bool
-    is_superuser: bool
+
+    class Config:
+        orm_mode = True
+
+class UserPublic(BaseModel):
+    user_id: int
+    username: str
+    first_name: str
+    last_name: str
+    profile_picture_url: str
+    bio: str
+
+    class Config:
+        orm_mode = True
+
+class UserUpdate(BaseModel):
+    username: str | None = None
+    email: EmailStr | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    profile_picture_url: str | None = None
+    bio: str | None = None
 
     class Config:
         orm_mode = True
@@ -27,6 +48,7 @@ class UserOut(UserBase):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
 
 class TokenData(BaseModel):
     email: Optional[str] = None
