@@ -1,0 +1,385 @@
+version: "3.9"
+
+services:
+  # =====================
+  # Infra compartida
+  # =====================
+  rabbitmq:
+    image: rabbitmq:3-management
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - tasknotes-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # =====================
+  # Postgres por servicio
+  # =====================
+  postgres-auth:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tasknotes_auth_service
+    volumes:
+      - pgdata_auth:/var/lib/postgresql/data
+      - ./init-scripts/uuid-ossp.sql:/docker-entrypoint-initdb.d/uuid-ossp.sql:ro
+    networks:
+      - tasknotes-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tasknotes_auth_service"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  postgres-tasks:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tasknotes_tasks_service
+    volumes:
+      - pgdata_tasks:/var/lib/postgresql/data
+      - ./init-scripts/uuid-ossp.sql:/docker-entrypoint-initdb.d/uuid-ossp.sql:ro
+    networks:
+      - tasknotes-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tasknotes_tasks_service"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  postgres-tags:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tasknotes_tags_service
+    volumes:
+      - pgdata_tags:/var/lib/postgresql/data
+      - ./init-scripts/uuid-ossp.sql:/docker-entrypoint-initdb.d/uuid-ossp.sql:ro
+    networks:
+      - tasknotes-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tasknotes_tags_service"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  postgres-categories:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tasknotes_categories_dotnet
+    volumes:
+      - pgdata_categories:/var/lib/postgresql/data
+      - ./init-scripts/uuid-ossp.sql:/docker-entrypoint-initdb.d/uuid-ossp.sql:ro
+    networks:
+      - tasknotes-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tasknotes_categories_dotnet"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  postgres-user-profile:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tasknotes_user_profile_service
+    volumes:
+      - pgdata_user_profile:/var/lib/postgresql/data
+      - ./init-scripts/uuid-ossp.sql:/docker-entrypoint-initdb.d/uuid-ossp.sql:ro
+    networks:
+      - tasknotes-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tasknotes_user_profile_service"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # =====================
+  # Mongo por servicio
+  # =====================
+  mongo-notes:
+    image: mongo:6
+    environment:
+      MONGO_INITDB_DATABASE: tasknotes
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata_notes:/data/db
+      - ./mongo-init/init.js:/docker-entrypoint-initdb.d/init.js:ro
+    networks:
+      - tasknotes-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  mongo-logs:
+    image: mongo:6
+    environment:
+      MONGO_INITDB_DATABASE: tasknotes_logs_service
+    volumes:
+      - mongodata_logs:/data/db
+    networks:
+      - tasknotes-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # =====================
+  # Microservicios
+  # =====================
+  auth-service:
+    build:
+      context: ./auth-service
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres-auth:5432/tasknotes_auth_service
+    depends_on:
+      postgres-auth:
+        condition: service_healthy
+    restart: always
+    networks:
+      - tasknotes-network
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8002/healthz').status==200 else sys.exit(1)\" "]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  tasks-service:
+    build:
+      context: ./tasks-service
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres-tasks:5432/tasknotes_tasks_service
+      RABBITMQ_URL: amqp://rabbitmq:5672
+    ports:
+      - "8003:8003"
+    depends_on:
+      postgres-tasks:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: always
+    networks:
+      - tasknotes-network
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8003/healthz').status==200 else sys.exit(1)\" "]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  notes-service:
+    build:
+      context: ./notes-service
+    environment:
+      MONGODB_URL: mongodb://mongo-notes:27017
+      MONGODB_DB: tasknotes
+      RABBITMQ_URL: amqp://rabbitmq:5672
+    ports:
+      - "8004:8004"
+    depends_on:
+      mongo-notes:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: always
+    networks:
+      - tasknotes-network
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8004/healthz').status==200 else sys.exit(1)\" "]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  tags-service:
+    build:
+      context: ./tags-service
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres-tags:5432/tasknotes_tags_service
+      RABBITMQ_URL: amqp://rabbitmq:5672
+    ports:
+      - "8005:8005"
+    depends_on:
+      postgres-tags:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: always
+    networks:
+      - tasknotes-network
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8005/healthz').status==200 else sys.exit(1)\" "]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  categories-service:
+    build:
+      context: ./categories-service-dotnet
+    environment:
+      ASPNETCORE_URLS: http://+:8006
+      ASPNETCORE_ENVIRONMENT: Production
+      POSTGRES_CONNECTION: Host=postgres-categories;Port=5432;Database=tasknotes_categories_dotnet;Username=postgres;Password=postgres
+      RABBITMQ_HOST: rabbitmq
+    ports:
+      - "8006:8006"
+    depends_on:
+      postgres-categories:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: always
+    networks:
+      - tasknotes-network
+
+  user-profile-service:
+    build:
+      context: ./user-profile-service
+    environment:
+      ASPNETCORE_URLS: http://+:8007
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: Host=postgres-user-profile;Port=5432;Database=tasknotes_user_profile_service;Username=postgres;Password=postgres
+      RABBITMQ_HOST: rabbitmq
+    ports:
+      - "8007:8007"
+    depends_on:
+      postgres-user-profile:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: always
+    networks:
+      - tasknotes-network
+
+  logs-service:
+    build:
+      context: ./logs-service-java
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+      SPRING_RABBITMQ_VIRTUAL_HOST: /
+      SPRING_RABBITMQ_ADDRESSES: rabbitmq:5672
+      MONGODB_URL: mongodb://mongo-logs:27017/tasknotes_logs_service
+      EXCHANGE_NAME: tasknotes.events
+      LOGS_QUEUE: logs-service
+      LOGS_BINDINGS: task.*,note.*,category.*,tag.*,user.updated
+    ports:
+      - "8010:8010"
+    depends_on:
+      mongo-logs:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: always
+    networks:
+      - tasknotes-network
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8002
+      TASKS_SERVICE_URL: http://tasks-service:8003
+      NOTES_SERVICE_URL: http://notes-service:8004
+      TAGS_SERVICE_URL: http://tags-service:8005
+      CATEGORIES_SERVICE_URL: http://categories-service:8006
+      USER_PROFILE_SERVICE_URL: http://user-profile-service:8007
+      SEARCH_SERVICE_URL: http://search-service:8008
+      JWT_ALGORITHM: HS256
+      JWT_SECRET_KEY: change-me-in-prod
+      JWKS_URL: http://auth-service:8002/.well-known/jwks.json
+    ports:
+      - "8083:8083"
+    depends_on:
+      - auth-service
+      - tasks-service
+      - notes-service
+      - tags-service
+      - categories-service
+      - user-profile-service
+      - search-service
+      - logs-service
+    networks:
+      - tasknotes-network
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8083/health').status==200 else sys.exit(1)\" "]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  search-service:
+    build:
+      context: ./search-service
+    environment:
+      PORT: 8008
+      NOTES_GRPC_ADDR: notes-service:50051
+    ports:
+      - "8008:8008"
+    depends_on:
+      notes-service:
+        condition: service_healthy
+    restart: always
+    networks:
+      - tasknotes-network
+
+  # Frontends
+  frontend-micro:
+    build:
+      context: ./frontend-micro
+      args:
+        REACT_APP_API_URL: http://localhost:8083
+        REACT_APP_SEARCH_URL: http://localhost:8008
+        REACT_APP_SOCKET_URL: http://localhost:8083
+    ports:
+      - "8080:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - tasknotes-network
+
+  frontend-ssr:
+    build:
+      context: ./frontend-ssr
+    environment:
+      WEB_URL_PUBLIC: http://localhost:8080
+      GATEWAY_URL_PUBLIC: http://localhost:8083
+      WEB_URL_INTERNAL: http://frontend-micro:80
+      WEB_HEALTH_URL: http://frontend-micro:80/
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api-gateway
+      - frontend-micro
+    networks:
+      - tasknotes-network
+
+networks:
+  tasknotes-network:
+    driver: bridge
+
+volumes:
+  pgdata_auth:
+  pgdata_tasks:
+  pgdata_tags:
+  pgdata_categories:
+  pgdata_user_profile:
+  mongodata_notes:
+  mongodata_logs:

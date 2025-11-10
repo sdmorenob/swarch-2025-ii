@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package metadata;
+option go_package = "musicservice/proto/metadata";
+
+// MetadataService provides music metadata enrichment
+service MetadataService {
+  // EnrichTrack enriches a single track with metadata from external sources
+  rpc EnrichTrack(EnrichTrackRequest) returns (EnrichTrackResponse);
+  
+  // BatchEnrichTracks enriches multiple tracks in a single request
+  rpc BatchEnrichTracks(BatchEnrichRequest) returns (BatchEnrichResponse);
+  
+  // SearchTracks searches for tracks by various criteria
+  rpc SearchTracks(SearchRequest) returns (SearchResponse);
+}
+
+// Request message for enriching a single track
+message EnrichTrackRequest {
+  string title = 1;
+  string artist = 2;
+  string album = 3;
+  int32 duration = 4;
+  string genre_hint = 5;
+}
+
+// Response message for track enrichment
+message EnrichTrackResponse {
+  bool success = 1;
+  SpotifyMetadata metadata = 2;
+  string error_message = 3;
+  float confidence = 4;  // NUEVO: confianza del match
+}
+
+// Request message for batch enrichment
+message BatchEnrichRequest {
+  repeated EnrichTrackRequest tracks = 1;
+}
+
+// Response message for batch enrichment
+message BatchEnrichResponse {
+  repeated EnrichTrackResponse results = 1;
+}
+
+// Search request message
+message SearchRequest {
+  string query = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+// Search response message
+message SearchResponse {
+  repeated SpotifyMetadata tracks = 1;
+  int32 total_results = 2;
+}
+
+// Spotify metadata structure
+message SpotifyMetadata {
+  string spotify_id = 1;
+  string title = 2;
+  string artist = 3;
+  string album = 4;
+  repeated string genres = 5;
+  string release_date = 6;
+  string album_art_url = 7;
+  string preview_url = 8;
+  int32 duration_ms = 9;
+  float popularity = 10;
+  float confidence = 11;
+  string external_url = 12;
+  repeated string artists = 13;      // NUEVO: para colaboraciones
+  string album_type = 14;            // NUEVO: single, album, compilation
+  int32 track_number = 15;           // NUEVO
+  int32 disc_number = 16;            // NUEVO
+}

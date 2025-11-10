@@ -33,7 +33,6 @@ htmlcov/
 logs/
 
 # Database
-migrations
 *.sqlite3
 db.sqlite3
 
