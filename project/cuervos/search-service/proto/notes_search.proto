@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package tasknotes.notes;
+
+import "common.proto";
+
+// Ajuste para uso local en el módulo search-service
+option go_package = "search-service/grpc/generated/notes";
+
+// Servicio gRPC para búsqueda de notas
+service NotesSearchService {
+  rpc SearchNotes(SearchNotesRequest) returns (SearchNotesResponse);
+}
+
+// Request para búsqueda de notas
+message SearchNotesRequest {
+  string query = 1;
+  int32 user_id = 2;       // ID del usuario (compatibilidad con notes-service)
+  int32 limit = 3;
+  int32 skip = 4;
+  string category = 5;
+  repeated string tags = 6;
+}
+
+// Response con resultados de búsqueda
+message SearchNotesResponse {
+  repeated NoteSearchResult notes = 1;
+  int64 total = 2;
+}
+
+// Resultado individual de búsqueda de nota
+message NoteSearchResult {
+  string id = 1;
+  string title = 2;
+  string content = 3;
+  string category_id = 4;
+  repeated string tag_ids = 5;
+  tasknotes.common.CategorySummary category = 6;
+  repeated tasknotes.common.TagSummary tags = 7;
+  int32 user_id = 8;       // ID del usuario como entero
+  string created_at = 9;
+  string updated_at = 10;
+}

@@ -1,0 +1,17 @@
+server:
+  port: 8010
+
+spring:
+  application:
+    name: logs-service
+  rabbitmq:
+    uri: ${RABBITMQ_URL:amqp://rabbitmq:5672/}
+  data:
+    mongodb:
+      uri: ${MONGODB_URL:mongodb://admin:password@mongodb:27017/tasknotes_logs_service?authSource=admin}
+
+logs:
+  exchange: ${EXCHANGE_NAME:tasknotes.events}
+  queue: ${LOGS_QUEUE:logs-service}
+  # Comma-separated binding keys; defaults applied in code if not set
+  bindings: ${LOGS_BINDINGS:}
