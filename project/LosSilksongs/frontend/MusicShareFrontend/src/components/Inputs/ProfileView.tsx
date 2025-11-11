@@ -19,18 +19,12 @@ const ProfileView: React.FC<ProfileViewProps> = ({
   const navigate = useNavigate();
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* 🔹 Espacio reservado para componente lateral */}
-      <aside className="w-1/6 border-r border-gray-300 bg-white">
-        {/* Aquí podrás insertar tu componente de menú o navegación */}
-      </aside>
-
-      {/*  Contenido principal */}
-      <main className="flex-1 p-6">
+    <div className="min-h-screen bg-gray-50">
+      <main className="max-w-6xl mx-auto p-6">
         {/* Sección superior del perfil */}
-        <div className="flex items-center justify-between border-b border-gray-300 pb-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-gray-300 pb-4">
           {/* Foto y descripción */}
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-6 mb-4 md:mb-0">
             <img
               src={profileImage}
               alt="Foto de perfil"
@@ -62,7 +56,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
         </div>
 
         {/* Galería de publicaciones */}
-        <div className="grid grid-cols-3 gap-4 mt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
           {posts.map((post) => (
             <div
               key={post.id}

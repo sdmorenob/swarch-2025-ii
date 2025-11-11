@@ -1,8 +1,8 @@
 type Props = {
-  value: string;
   onChange: (value: string) => void;
 };
-export default function MailInput({ value, onChange }: Props) {
+
+export default function MailInput({ onChange }: Props) {
   return (
     <>
       <label className="input validator w-full">
@@ -24,9 +24,8 @@ export default function MailInput({ value, onChange }: Props) {
         </svg>
         <input
           type="email"
-          placeholder="mail@site.com"
+          placeholder="correo@dominio.com"
           required
-          value={value}
           onChange={(e) => onChange(e.target.value)}
         />
       </label>
