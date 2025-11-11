@@ -39,7 +39,7 @@
   <script>
     const report = document.getElementById("report");
 
-    fetch("http://localhost:8000/metrics")
+    fetch(`/metrics`)
       .then(response => {
         if (!response.ok) {
           throw new Error("Failed to fetch data");
