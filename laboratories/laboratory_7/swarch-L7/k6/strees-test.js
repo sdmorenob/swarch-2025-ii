@@ -38,7 +38,7 @@ export let options = {
 };
 
 export default function () {
-  let res = http.get('http://app:8000/metrics');
+  let res = http.get('http://172.17.0.2:30000/metrics');
   check(res, {
     'status is 200': (r) => r.status === 200,
   });
