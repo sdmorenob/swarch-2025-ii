@@ -1,5 +1,6 @@
 import math
 import time
+import random
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -16,6 +17,8 @@ router = APIRouter()
 def metrics(db: Session = Depends(get_db)):
 
     start_time = time.time()
+
+    matrix_load_test(random.randint(3, 200))
 
     # Expensive DB query: aggregate over large table
     stats = db.query(
@@ -38,3 +41,22 @@ def metrics(db: Session = Depends(get_db)):
         },
         "duration_seconds": round(duration, 2)
     }
+
+
+def generate_matrix(rows, cols):
+    return [[random.randint(1, 100) for _ in range(cols)] for _ in range(rows)]
+
+
+def multiply_matrices(A, B):
+    result = [[0 for _ in range(len(B[0]))] for _ in range(len(A))]
+    for i in range(len(A)):
+        for j in range(len(B[0])):
+            for k in range(len(B)):
+                result[i][j] += A[i][k] * B[k][j]
+    return result
+
+
+def matrix_load_test(size=3000):
+    A = generate_matrix(size, size)
+    B = generate_matrix(size, size)
+    C = multiply_matrices(A, B)
