@@ -9,4 +9,6 @@ require (
     go.mongodb.org/mongo-driver v1.16.1
     github.com/graphql-go/graphql v0.8.0
     github.com/golang-jwt/jwt/v5 v5.2.1
+    google.golang.org/grpc v1.66.0
+    google.golang.org/protobuf v1.33.0
 )

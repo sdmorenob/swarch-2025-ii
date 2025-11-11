@@ -54,7 +54,6 @@ uploads/covers/*
 
 # Temporary files
 tmp/
-temp/
 
 # Generated protobuf files (optional - can be committed)
 # *.pb.go

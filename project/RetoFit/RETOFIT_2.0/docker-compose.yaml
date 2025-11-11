@@ -1,0 +1,146 @@
+networks:
+  app-network:
+    driver: bridge
+
+services:
+  api-gateway:
+    build: ./api_gateway
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+    depends_on:
+      - auth-service
+      - physical-activities-service
+      - gamification-service
+      - user-service
+      - posts-service
+      - admin-service
+
+  frontend:
+    build: ./front
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./front:/app
+      - /app/node_modules
+    networks:
+      - app-network
+    depends_on:
+      - api-gateway
+
+  auth-service:
+    build: ./services/auth-service
+    networks:
+      - app-network
+    # No es necesario exponer el puerto al host, solo se accede desde el gateway
+    # ports:
+    #   - "8001:8001"
+    environment:
+      - DATABASE_URL="postgresql://postgres:Retofit2025@retofit.cd66iick6o60.us-east-2.rds.amazonaws.com:5432/retofit_auth"
+
+      # Configuración de email
+      - MAIL_USERNAME=retofitapp@gmail.com
+      - MAIL_PASSWORD=ubid jqul mzmg nnwh
+      - MAIL_FROM=retofitapp@gmail.com
+      - MAIL_PORT=587
+      - MAIL_SERVER=smtp.gmail.com
+      - MAIL_USE_TLS=true
+      - MAIL_USE_SSL=false
+
+      - SECRET_KEY="f40cf292b97e6ec1e40e6a376e035ee9ebd9369c9dc233c474216ec0fe1b54aa"
+      - ALGORITHM="HS256"
+
+      - BACKEND_URL="http://localhost:8000"
+      - FRONTEND_URL="http://localhost:3000" 
+    volumes:
+      - ./services/auth-service:/app
+
+  physical-activities-service:
+    build: ./services/physical_activities_service
+    networks:
+      - app-network
+    # ports:
+    #   - "8081:8080"
+    environment:
+      # Ambiente
+      - ENV=development
+
+      # Dirección y puerto del servidor Go
+      - SERVER_ADDRESS=localhost:8002
+
+      # Orígenes permitidos para CORS
+      - CORS_ALLOWED_ORIGIN=127.0.0.1:3000
+
+      # Configuración de base de datos
+      - DB_DRIVER=postgres
+
+  gamification-service:
+    build: ./services/gamification-service
+    networks:
+      - app-network
+    # ports:
+    #   - "8003:8003"
+    environment:
+      - DATABASE_URL="mongodb://mongo:wMssbdHQqDrJaPwUGqtqyfoqmPHvneJZ@gondola.proxy.rlwy.net:10201/retofit_gamification?authSource=admin"
+    volumes:
+      - ./services/gamification-service:/app
+
+  user-service:
+    build: ./services/user-service
+    networks:
+      - app-network
+    # ports:
+    #   - "8004:8004"
+    environment:
+      - DATABASE_URL="postgresql://postgres:Retofit2025@retofit.cd66iick6o60.us-east-2.rds.amazonaws.com:5432/retofit_users"
+      - SECRET_KEY="f40cf292b97e6ec1e40e6a376e035ee9ebd9369c9dc233c474216ec0fe1b54aa"
+      - ALGORITHM="HS256"
+    volumes:
+      - ./services/user-service:/app
+
+  posts-service:
+    build: ./services/posts-service
+    networks:
+      - app-network
+    # ports:
+    #   - "3001:3001"
+    volumes:
+      - ./services/posts-service:/app
+    environment:
+      - DATABASE_URL="postgresql://postgres:Retofit2025@retofit.cd66iick6o60.us-east-2.rds.amazonaws.com:5432/RetoFit?sslmode=no-verify"
+
+# JWT Configuration (MUST match other services!)
+      - SECRET_KEY=f40cf292b97e6ec1e40e6a376e035ee9ebd9369c9dc233c474216ec0fe1b54aa
+      - ALGORITHM=HS256
+ 
+      # Server Configuration
+      - PORT=8005
+      - NODE_ENV=development
+      - API_BASE_URL=http://localhost:8005
+ 
+      # File Upload
+      - MAX_FILE_SIZE=5242880
+      - UPLOAD_DIR=./uploads
+ 
+      # Cloudinary Configuration
+      # Estas son las credenciales compartidas del equipo (repositorio privado)
+      - CLOUDINARY_CLOUD_NAME=dpsncmfxz
+      - CLOUDINARY_API_KEY=848674259162179
+      - CLOUDINARY_API_SECRET=6zQbbB8L-cZQbKT1MLIkuKKuqFg
+
+  admin-service:
+    build: ./services/admin-service
+    networks:
+      - app-network
+    # ports:
+    #   - "8006:8006"
+    environment:
+      - FRONTEND_URL="http://localhost:3000"
+
+      - AUTH_SERVICE_URL="http://localhost:8080/api/auth_admin"
+      - USER_SERVICE_URL="http://localhost:8080/api/users_admin"
+ 
+
+    volumes:
+      - ./services/admin-service:/var/www/html
