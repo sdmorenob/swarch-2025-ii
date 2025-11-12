@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\JORGE\\Documents\\GitHub\\swarch-2025-ii\\project\\cuervos\\user-profile-service\\UserProfileService.csproj": {}
+    "C:\\Users\\JORGE\\Documents\\GitHub\\swarch-2025-ii\\project\\cuervos\\categories-service-dotnet\\CategoriesService.csproj": {}
   },
   "projects": {
-    "C:\\Users\\JORGE\\Documents\\GitHub\\swarch-2025-ii\\project\\cuervos\\user-profile-service\\UserProfileService.csproj": {
+    "C:\\Users\\JORGE\\Documents\\GitHub\\swarch-2025-ii\\project\\cuervos\\categories-service-dotnet\\CategoriesService.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\JORGE\\Documents\\GitHub\\swarch-2025-ii\\project\\cuervos\\user-profile-service\\UserProfileService.csproj",
-        "projectName": "UserProfileService",
-        "projectPath": "C:\\Users\\JORGE\\Documents\\GitHub\\swarch-2025-ii\\project\\cuervos\\user-profile-service\\UserProfileService.csproj",
+        "projectUniqueName": "C:\\Users\\JORGE\\Documents\\GitHub\\swarch-2025-ii\\project\\cuervos\\categories-service-dotnet\\CategoriesService.csproj",
+        "projectName": "CategoriesService",
+        "projectPath": "C:\\Users\\JORGE\\Documents\\GitHub\\swarch-2025-ii\\project\\cuervos\\categories-service-dotnet\\CategoriesService.csproj",
         "packagesPath": "C:\\Users\\JORGE\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\JORGE\\Documents\\GitHub\\swarch-2025-ii\\project\\cuervos\\user-profile-service\\obj\\",
+        "outputPath": "C:\\Users\\JORGE\\Documents\\GitHub\\swarch-2025-ii\\project\\cuervos\\categories-service-dotnet\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\JORGE\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -44,21 +44,17 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
-            "FluentValidation": {
-              "target": "Package",
-              "version": "[11.9.2, )"
-            },
-            "Microsoft.EntityFrameworkCore": {
-              "target": "Package",
-              "version": "[8.0.10, )"
-            },
             "Npgsql.EntityFrameworkCore.PostgreSQL": {
               "target": "Package",
-              "version": "[8.0.5, )"
+              "version": "[8.0.2, )"
             },
             "RabbitMQ.Client": {
               "target": "Package",
               "version": "[6.6.0, )"
+            },
+            "Swashbuckle.AspNetCore": {
+              "target": "Package",
+              "version": "[6.5.0, )"
             }
           },
           "imports": [

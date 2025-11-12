@@ -12,9 +12,12 @@ DATABASE_URL = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOSTNAME}:3306/
 
 engine = create_engine(
     DATABASE_URL,
-    pool_size=60,  # Increase base pool size
-    max_overflow=90,  # Allow more temporary connections
-    pool_timeout=30,  # Wait longer before timing out
+    # Adjusted pooling to a safer per-pod connection budget so the DB is not
+    # overwhelmed when the `app` Deployment auto-scales. Calculate pool sizes
+    # so `pool_size + max_overflow` stays within the DB `max_connections` / replicas.
+    pool_size=15,
+    max_overflow=6,
+    pool_timeout=10,
     pool_pre_ping=True
 )
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)

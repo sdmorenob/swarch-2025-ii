@@ -57,6 +57,9 @@ metadata:
   labels:
     app: database
 spec:
+  # Converted to a StatefulSet with a persistent volume claim and a mounted
+  # custom MySQL configuration (from a ConfigMap) so the database has
+  # persistence and an adjustable max_connections setting.
   replicas: 1
   selector:
     matchLabels:
@@ -80,6 +83,19 @@ spec:
           value: "app"
         - name: MYSQL_PASSWORD
           value: "123"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+        - name: mysql-config
+          mountPath: /etc/mysql/conf.d/custom.cnf
+          subPath: custom.cnf
 ---
 apiVersion: v1
 kind: Service
@@ -93,3 +109,96 @@ spec:
     port: 3306
     targetPort: 3306
   type: ClusterIP
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-config
+data:
+  # custom.cnf will be mounted into /etc/mysql/conf.d/ and applied by the
+  # official MySQL image on startup.
+  custom.cnf: |-
+    [mysqld]
+    max_connections=300
+    # Reduce InnoDB buffer pool if running in constrained environment; tune as needed
+    innodb_buffer_pool_size=256M
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: database
+  labels:
+    app: database
+spec:
+  serviceName: database
+  replicas: 1
+  selector:
+    matchLabels:
+      app: database
+  template:
+    metadata:
+      labels:
+        app: database
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:8.0
+        ports:
+        - containerPort: 3306
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "123"
+        - name: MYSQL_DATABASE
+          value: "performance_db"
+        - name: MYSQL_USER
+          value: "app"
+        - name: MYSQL_PASSWORD
+          value: "123"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+        - name: mysql-config
+          mountPath: /etc/mysql/conf.d/custom.cnf
+          subPath: custom.cnf
+  volumeClaimTemplates:
+  - metadata:
+      name: mysql-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 5Gi
+      # storageClassName: <your-storage-class>  # set explicitly if needed
+  # ConfigMap volume (projected via name) is defined in the pod template by mount
+  # Kubernetes will make the ConfigMap available by name `mysql-config`.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: app-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: app
+  minReplicas: 1
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
