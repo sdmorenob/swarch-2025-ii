@@ -5,7 +5,7 @@ metadata:
   labels:
     app: app
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: app
@@ -20,10 +20,10 @@ spec:
         imagePullPolicy: Never
         resources:
           requests:
-            memory: "128Mi"
+            memory: "256Mi"
             cpu: "500m"
           limits:
-            memory: "256Mi"
+            memory: "512Mi"
             cpu: "1000m"
         ports:
         - containerPort: 8000
@@ -71,6 +71,13 @@ spec:
         image: mysql:8.0
         ports:
         - containerPort: 3306
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
         env:
         - name: MYSQL_ROOT_PASSWORD
           value: "123"
@@ -80,6 +87,12 @@ spec:
           value: "app"
         - name: MYSQL_PASSWORD
           value: "123"
+        volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-data
+        emptyDir: {}  # Volumen temporal (se borra al eliminar el pod)
 ---
 apiVersion: v1
 kind: Service
@@ -93,3 +106,28 @@ spec:
     port: 3306
     targetPort: 3306
   type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: app-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: app
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 70

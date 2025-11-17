@@ -12,11 +12,13 @@ DATABASE_URL = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOSTNAME}:3306/
 
 engine = create_engine(
     DATABASE_URL,
-    pool_size=60,  # Increase base pool size
-    max_overflow=90,  # Allow more temporary connections
-    pool_timeout=30,  # Wait longer before timing out
-    pool_pre_ping=True
+    pool_size=10,              # Reducido de 60
+    max_overflow=20,           # Reducido de 90
+    pool_timeout=30,
+    pool_pre_ping=True,
+    pool_recycle=3600,         # Nuevo: recicla conexiones cada hora
 )
+
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 Base = declarative_base()
 

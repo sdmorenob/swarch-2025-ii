@@ -1,6 +1,5 @@
-import math
 import time
-import random
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -11,52 +10,55 @@ from app.models.Transaction import Transaction
 
 router = APIRouter()
 
+# Caché simple en memoria
+_cache = {"data": None, "timestamp": None, "ttl": 60}
 
-# Expensive endpoint
+
+# Endpoint optimizado
 @router.get("/metrics")
 def metrics(db: Session = Depends(get_db)):
-
     start_time = time.time()
-
-    matrix_load_test(random.randint(3, 200))
-
-    # Expensive DB query: aggregate over large table
+    
+    # Verificar caché
+    if _cache["data"] and _cache["timestamp"]:
+        age = (datetime.utcnow() - _cache["timestamp"]).total_seconds()
+        if age < _cache["ttl"]:
+            # Retornar desde caché
+            duration = time.time() - start_time
+            return {
+                "db_stats": _cache["data"],
+                "duration_seconds": round(duration, 4),
+                "cache_hit": True
+            }
+    
+    # Query optimizada: solo últimos 30 días
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    
     stats = db.query(
         func.count(Transaction.id).label("count"),
         func.avg(Transaction.amount).label("average"),
         func.sum(Transaction.amount).label("total"),
         func.max(Transaction.amount).label("max"),
         func.min(Transaction.amount).label("min")
+    ).filter(
+        Transaction.timestamp >= thirty_days_ago
     ).one()
-
-    duration = time.time() - start_time
-
-    return {
-        "db_stats": {
-            "total_transactions": stats.count,
-            "average_amount": stats.average,
-            "total_amount": stats.total,
-            "max_amount": stats.max,
-            "min_amount": stats.min
-        },
-        "duration_seconds": round(duration, 2)
+    
+    # Actualizar caché
+    _cache["data"] = {
+        "total_transactions": stats.count,
+        "average_amount": float(stats.average) if stats.average else 0,
+        "total_amount": float(stats.total) if stats.total else 0,
+        "max_amount": float(stats.max) if stats.max else 0,
+        "min_amount": float(stats.min) if stats.min else 0,
+        "period": "last_30_days"
     }
-
-
-def generate_matrix(rows, cols):
-    return [[random.randint(1, 100) for _ in range(cols)] for _ in range(rows)]
-
-
-def multiply_matrices(A, B):
-    result = [[0 for _ in range(len(B[0]))] for _ in range(len(A))]
-    for i in range(len(A)):
-        for j in range(len(B[0])):
-            for k in range(len(B)):
-                result[i][j] += A[i][k] * B[k][j]
-    return result
-
-
-def matrix_load_test(size=3000):
-    A = generate_matrix(size, size)
-    B = generate_matrix(size, size)
-    C = multiply_matrices(A, B)
+    _cache["timestamp"] = datetime.utcnow()
+    
+    duration = time.time() - start_time
+    
+    return {
+        "db_stats": _cache["data"],
+        "duration_seconds": round(duration, 4),
+        "cache_hit": False
+    }
