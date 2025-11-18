@@ -1,0 +1,559 @@
+# docker-compose.yml
+# Version: 1.0
+# Description: Orquestación completa de los servicios de MusicShare.
+
+services:
+  # === API GATEWAY ===
+  traefik:
+    image: traefik:latest
+    container_name: musicshare_traefik
+    # Ya no usamos 'command', la configuración está en los archivos
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      # Mapeamos el archivo de configuración que acabamos de crear
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      # Certificados
+      - ./traefik/certs:/certs:ro
+      # Mantenemos el socket de Docker
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Carpeta de logs compartida para ser leída por Telegraf
+      - traefik_logs:/var/log/traefik
+    networks:
+      - frontend_net
+      - backend_net
+      - data_net
+
+  # ===============================
+  # 🗄️ Postgres Database (User Service)
+  # ===============================
+  postgres:
+    image: postgres:15
+    container_name: musicshare_postgres
+    environment:
+      POSTGRES_USER: music_user
+      POSTGRES_PASSWORD: music_pass
+      POSTGRES_DB: music_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U music_user -d music_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - data_net
+
+  # ===============================
+  # 🗄️ Postgres Database (Social Service - Posts)
+  # ===============================
+  postgres-social:
+    image: postgres:15
+    container_name: musicshare_postgres_social
+    environment:
+      POSTGRES_USER: music_user
+      POSTGRES_PASSWORD: music_pass
+      POSTGRES_DB: social_db
+    volumes:
+      - postgres_social_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432" # Puerto diferente para evitar conflictos
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U music_user -d social_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - data_net
+
+  # ===============================
+  # 🗄️ Postgres Database (Social Service - relations)
+  # ===============================
+  postgres-relations:
+    image: postgres:15
+    container_name: musicshare_postgres_relations
+    environment:
+      POSTGRES_USER: music_user
+      POSTGRES_PASSWORD: music_pass
+      POSTGRES_DB: relations_db
+    volumes:
+      - postgres_relations_data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432" # Puerto diferente para evitar conflictos con la otra BD
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U music_user -d relations_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - data_net
+
+  # ===============================
+  # 🍃 MongoDB Database
+  # ===============================
+  mongodb:
+    image: mongo:7.0
+    container_name: musicshare-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: musicshare
+    volumes:
+      - mongodb_data:/data/db
+      - ./scripts/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    networks:
+      - data_net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ===============================
+  # 🎧 Metadata Service (Spotify Enrichment)
+  # ===============================
+  metadata-service:
+    build:
+      context: ./metadataservice
+      dockerfile: Dockerfile
+    container_name: musicshare-metadata-service
+    restart: unless-stopped
+    ports:
+      - "50051:50051"
+    environment:
+      ENVIRONMENT: production
+      LOG_LEVEL: info
+      LOG_FORMAT: json
+      DEBUG: "false"
+
+      # gRPC
+      GRPC_HOST: 0.0.0.0
+      GRPC_PORT: 50051
+      GRPC_MAX_WORKERS: 10
+
+      # Spotify API
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-your_client_id}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-your_client_secret}
+      SPOTIFY_MARKET: US
+
+      # Cache (in-memory)
+      CACHE_ENABLED: "true"
+      CACHE_TTL: 3600
+      REDIS_URL: ""
+
+      # Rate limiting
+      SPOTIFY_REQUESTS_PER_SECOND: 10
+      MAX_BATCH_SIZE: 50
+      REQUEST_TIMEOUT: 30
+
+      # Matching
+      FUZZY_MATCHING_THRESHOLD: 0.8
+      TITLE_WEIGHT: 0.5
+      ARTIST_WEIGHT: 0.4
+      ALBUM_WEIGHT: 0.1
+
+      # Retry
+      MAX_RETRIES: 3
+      RETRY_DELAY: 1.0
+    networks:
+      - backend_net
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python -c ''import socket; s=socket.socket(); s.settimeout(2); r=s.connect_ex(("localhost",50051)); s.close(); exit(0 if r==0 else 1)''',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ===============================
+  # 🎵 Music Service (Escalable)
+  # ===============================
+  music-service:
+    build:
+      context: ./musicservice
+      dockerfile: Dockerfile
+    # Removido container_name para permitir múltiples réplicas
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8081
+      ENVIRONMENT: production
+      LOG_LEVEL: info
+
+      # MongoDB
+      MONGODB_URI: mongodb://admin:password123@mongodb:27017/musicshare?authSource=admin
+      MONGODB_DATABASE: musicshare
+
+      # Storage
+      STORAGE_TYPE: local
+      STORAGE_PATH: /app/uploads
+
+      # Metadata Service
+      METADATA_SERVICE_GRPC: metadata-service:50051
+      METADATA_SERVICE_HTTP: ""
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      metadata-service:
+        condition: service_healthy
+    networks:
+      - backend_net
+      - data_net
+    deploy:
+      replicas: 2  # Iniciar con 2 réplicas por defecto
+      resources:
+        limits:
+          cpus: '0.75'
+          memory: 768M
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.music-service.rule=PathPrefix(`/api/music`)"
+      - "traefik.http.middlewares.music-service-stripprefix.stripprefix.prefixes=/api/music"
+      - "traefik.http.routers.music-service.middlewares=music-service-stripprefix"
+      - "traefik.http.services.music-service.loadbalancer.server.port=8081"
+      # Configuración de health check para el balanceador
+      - "traefik.http.services.music-service.loadbalancer.healthcheck.path=/health"
+      - "traefik.http.services.music-service.loadbalancer.healthcheck.interval=10s"
+      # Sticky sessions para uploads
+      - "traefik.http.services.music-service.loadbalancer.sticky.cookie=true"
+      - "traefik.http.services.music-service.loadbalancer.sticky.cookie.name=musicservice_session"
+      - "traefik.http.routers.music-service.entrypoints=websecure"
+      - "traefik.http.routers.music-service.tls=true"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "--method=GET",
+          "http://localhost:8081/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ===============================
+  # 👤 User Service (Escalable)
+  # ===============================
+  userservice:
+    build:
+      context: ./userservice
+      dockerfile: Dockerfile
+    # Removido container_name para permitir múltiples réplicas
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      music-service:
+        condition: service_started
+    environment:
+      POSTGRES_USER: music_user
+      POSTGRES_PASSWORD: music_pass
+      POSTGRES_DB: music_db
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      SECRET_KEY: "replace-this-secret"
+      MUSICSERVICE_URL: "http://music-service:8081"
+    #volumes:
+    #  - ./userservice/app:/app/app:ro
+    networks:
+      - backend_net
+      - data_net
+    deploy:
+      replicas: 2  # Iniciar con 2 réplicas por defecto
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.userservice.rule=PathPrefix(`/api/users`)"
+      - "traefik.http.middlewares.userservice-stripprefix.stripprefix.prefixes=/api/users"
+      - "traefik.http.routers.userservice.middlewares=userservice-stripprefix"
+      - "traefik.http.services.userservice.loadbalancer.server.port=8002"
+      # Configuración de health check para el balanceador
+      - "traefik.http.services.userservice.loadbalancer.healthcheck.path=/health"
+      - "traefik.http.services.userservice.loadbalancer.healthcheck.interval=10s"
+      # Sticky sessions para mantener sesiones de usuario
+      - "traefik.http.services.userservice.loadbalancer.sticky.cookie=true"
+      - "traefik.http.services.userservice.loadbalancer.sticky.cookie.name=userservice_session"
+      - "traefik.http.routers.userservice.entrypoints=websecure"
+      - "traefik.http.routers.userservice.tls=true"
+
+  # ===============================
+  # 💬 Social Service (Escalable)
+  # ===============================
+  social-service:
+    build:
+      context: ./socialservice
+      dockerfile: Dockerfile
+    # Removido container_name para permitir múltiples réplicas
+    restart: unless-stopped
+    depends_on:
+      postgres-social:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-social:5432/social_db
+      SPRING_DATASOURCE_USERNAME: music_user
+      SPRING_DATASOURCE_PASSWORD: music_pass
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    networks:
+      - backend_net
+      - data_net
+    deploy:
+      replicas: 2  # Iniciar con 2 réplicas por defecto
+      resources:
+        limits:
+          cpus: '0.75'
+          memory: 1024M
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.social-service.rule=PathPrefix(`/api/social`) || PathPrefix(`/swagger-ui`) || PathPrefix(`/v3/api-docs`)"
+      - "traefik.http.middlewares.social-service-stripprefix.stripprefix.prefixes=/api/social"
+      - "traefik.http.routers.social-service.middlewares=social-service-stripprefix"
+      - "traefik.http.services.social-service.loadbalancer.server.port=8083"
+      # Configuración de health check para el balanceador
+      - "traefik.http.services.social-service.loadbalancer.healthcheck.path=/actuator/health"
+      - "traefik.http.services.social-service.loadbalancer.healthcheck.interval=10s"
+      # Sticky sessions para interacciones sociales
+      - "traefik.http.services.social-service.loadbalancer.sticky.cookie=true"
+      - "traefik.http.services.social-service.loadbalancer.sticky.cookie.name=socialservice_session"
+      - "traefik.http.routers.social-service.entrypoints=websecure"
+      - "traefik.http.routers.social-service.tls=true"
+
+  # ===============================
+  # 🌐 Frontend (React)
+  # ===============================
+  frontend:
+    build:
+      context: ./frontend/MusicShareFrontend
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: production
+    container_name: musicshare-frontend
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.frontend.priority=1"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls=true"
+    depends_on:
+      - userservice
+      - music-service
+    networks:
+      - frontend_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ===============================
+  # ⚡ Next.js SSR (Music Upload)
+  # ===============================
+  next-ssr:
+    build:
+      context: ./frontendSSR/music-upload
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: production
+    container_name: musicshare-next-ssr
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.next-ssr.rule=PathPrefix(`/upload`)"
+      - "traefik.http.routers.next-ssr.priority=2"
+      - "traefik.http.services.next-ssr.loadbalancer.server.port=3000"
+      - "traefik.http.routers.next-ssr.entrypoints=websecure"
+      - "traefik.http.routers.next-ssr.tls=true"
+    depends_on:
+      - frontend
+    networks:
+      - frontend_net
+    environment:
+      - NODE_ENV=production
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ===============================
+  # 🌐 MicroFrontend (Post)
+  # ===============================
+  formulario-post-front:
+    build:
+      context: ./formulario-post-front
+      dockerfile: Dockerfile
+    container_name: musicshare-formulario-post-front
+    restart: unless-stopped
+    networks:
+      - frontend_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.formulario-post-front.rule=PathPrefix(`/formulario-post`)"
+      - "traefik.http.middlewares.formulario-post-front-stripprefix.stripprefix.prefixes=/formulario-post"
+      - "traefik.http.routers.formulario-post-front.middlewares=formulario-post-front-stripprefix"
+      - "traefik.http.services.formulario-post-front.loadbalancer.server.port=80"
+      - "traefik.http.routers.formulario-post-front.entrypoints=websecure"
+      - "traefik.http.routers.formulario-post-front.tls=true"
+  # ===============================
+  # � Prometheus (Métricas unificadas)
+  # ===============================
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: musicshare_prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - backend_net
+
+  # ===============================
+  # Grafana (Visualización con datasource Prometheus)
+  # ===============================
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: musicshare_grafana
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "3010:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+    networks:
+      - frontend_net
+      - backend_net
+
+  # ===============================
+  # 🐇 RabbitMQ + Notification Service
+  # ===============================
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: musicshare_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - data_net
+
+  notificationservice:
+    build:
+      context: ./notificationservice
+      dockerfile: Dockerfile
+    # Removido container_name para permitir múltiples réplicas
+    depends_on:
+      - rabbitmq
+    environment:
+      AMQP_URL: "amqp://guest:guest@rabbitmq/"
+      QUEUE_NAME: "notifications"
+    networks:
+      - backend_net
+      - data_net
+    deploy:
+      replicas: 2  # Iniciar con 2 réplicas por defecto
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    labels:
+      - "traefik.enable=true"
+      # Router para la API REST
+      - "traefik.http.routers.notificationservice-rest.rule=PathPrefix(`/api/notifications`)"
+      - "traefik.http.middlewares.notificationservice-stripprefix.stripprefix.prefixes=/api/notifications"
+      - "traefik.http.routers.notificationservice-rest.middlewares=notificationservice-stripprefix"
+      - "traefik.http.services.notificationservice.loadbalancer.server.port=8082"
+      # Configuración de health check para el balanceador
+      - "traefik.http.services.notificationservice.loadbalancer.healthcheck.path=/health"
+      - "traefik.http.services.notificationservice.loadbalancer.healthcheck.interval=10s"
+      # Sticky sessions para WebSockets
+      - "traefik.http.services.notificationservice.loadbalancer.sticky.cookie=true"
+      - "traefik.http.services.notificationservice.loadbalancer.sticky.cookie.name=notificationservice_session"
+      - "traefik.http.routers.notificationservice-rest.entrypoints=websecure"
+      - "traefik.http.routers.notificationservice-rest.tls=true"
+      # Router para WebSockets
+      - "traefik.http.routers.notificationservice-ws.rule=PathPrefix(`/ws`)"
+      - "traefik.http.routers.notificationservice-ws.service=notificationservice" # Reutiliza el servicio definido arriba
+      - "traefik.http.routers.notificationservice-ws.entrypoints=websecure"
+      - "traefik.http.routers.notificationservice-ws.tls=true"
+
+# ===============================
+# 🧭 Network & Volumes
+# ===============================
+networks:
+  frontend_net:
+    driver: bridge
+  backend_net:
+    driver: bridge
+  data_net:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local
+  postgres_data:
+    driver: local
+  postgres_social_data:
+    driver: local
+  postgres_relations_data:
+    driver: local
+  grafana_data:
+    driver: local
+  traefik_logs:
+    driver: local
