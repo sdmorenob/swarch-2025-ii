@@ -1,0 +1,79 @@
+{
+  "title": "TaskNotes k6 Compare by Service (testid)",
+  "uid": "tasknotes-k6-compare",
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-30m", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "testid",
+        "type": "query",
+        "hide": 0,
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "definition": "label_values(k6_http_reqs_total, testid)",
+        "query": "label_values(k6_http_reqs_total, testid)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "sort": 1
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "RPS by Service",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (service) (rate(k6_http_reqs_total{testid=~\"$testid\"}[1m]))",
+          "legendFormat": "{{service}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Error Rate by Service",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * (sum by (service) (rate(k6_http_req_failed_total{testid=~\"$testid\"}[1m])) / sum by (service) (rate(k6_http_reqs_total{testid=~\"$testid\"}[1m])))",
+          "legendFormat": "{{service}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency avg (ms) by Service",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "avg by (service) (k6_http_req_duration{testid=~\"$testid\"})",
+          "legendFormat": "{{service}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Checks Success Rate (%)",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "avg(round(k6_checks_rate{testid=~\"$testid\"}, 0.1)*100)",
+          "legendFormat": "checks_rate"
+        }
+      ]
+    }
+  ]
+}

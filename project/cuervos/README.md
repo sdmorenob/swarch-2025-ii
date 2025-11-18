@@ -1,4 +1,4 @@
-## Artifact – Prototipo 2 
+## Artifact – Prototipo 3
 
 ### Equipo
 
@@ -20,205 +20,920 @@
   - Búsqueda full‑text de notas por contenido/título con filtros (categoría/etiquetas) vía microservicio de búsqueda.
 
 - Requisitos No Funcionales:
-  - Arquitectura distribuida.
-  - Al menos dos componentes de presentación (uno: web front-end).
-  - El front-end web sigue subarquitectura SSR (Server-Side Rendering).
-  - Al menos cuatro componentes de lógica.
-  - Al menos un componente para comunicación/orquestación entre componentes lógicos.
-  - Al menos cuatro componentes de datos (relacional y NoSQL).
-  - Al menos un componente responsable de procesos asíncronos.
-  - Al menos dos tipos diferentes de conectores basados en HTTP.
-  - Construido con al menos cinco lenguajes de propósito general.
-  - Despliegue container-oriented.
+  - Escenarios de seguridad:
+    - Patron de canal seguro
+    - Patron de proxy reverso
+    - Patron de segmnentación de red
+    - Adicionales elegidos por el equipo
+  - Escenarios de rendimiento y escalabilidad
+    - Patron de Balanceador de Carga
+    - Adicionales elegidos por el equipo
 
 ### Estructuras Arquitectónicas
 
 #### Component-and-Connector (C&C) Structure
 
 - C&C View: ![C&C View](docs/CC_view.png)
-# Descripción de *estilos y patrones* usados
+### Estilos arquitectónicos
 
-- *Microservicios*: capacidades separadas (Auth, UserProfile, Task, Tags, Category, Notes, Search, Logs), cada una con despliegue y ciclo de vida propios.  
-- *API Gateway (Edge/Gateway)*: único punto de entrada para el Frontend; ruteo y contratos REST hacia servicios.  
-- *DB-per-service*: cada servicio posee su base de datos y su driver/SDK (PostgreSQL: psycopg2/Npgsql; MongoDB: Motor/Java Driver).  
-- *Comunicación síncrona REST*: Frontend→Gateway→Servicios y parte del tráfico S2S.  
-- *Comunicación binaria gRPC (S2S): entre *Search Service y Notes Service para baja latencia.  
-- *Mensajería asíncrona: RabbitMQ como *Message Broker; patrón Producer → Worker (Logs Service) → persistencia en Logs_DB.  
-- *Separación de preocupaciones*: Frontend, Gateway y servicios de dominio claramente delimitados.  
-- *Segregación funcional: *Tags y Category como servicios independientes (bounded contexts específicos).
+* *Microservicios*
+  El dominio se divide en servicios pequeños y desplegables de forma independiente:
+
+  * Auth, UserProfile, Task, Tags, Category, Notes, Search, Logs.
+    Cada servicio:
+  * Tiene su *propio ciclo de vida* (deploy, versionado, escalado).
+  * Posee su *base de datos privada* y no se comparte a nivel de SQL.
+
+* *API Gateway (Edge/Gateway)*
+
+  * Único punto de entrada para los frontends.
+  * Aplica terminación TLS, autenticación/autorización básica, rate limit, enrutamiento a servicios internos.
+
+* *DB-per-service*
+
+  * PostgreSQL: Auth_DB, UserProfile_DB, Task_DB, Tags_DB, Categories_DB.
+  * MongoDB: Notes_DB, Logs_DB.
+  * Cada servicio accede *solo* a su BD, usando su driver correspondiente:
+
+    * psycopg2, Npgsql, Motor, MongoDB Java Driver.
+
+* *Comunicación síncrona REST*
+
+  * Frontend → Gateway → Servicios mediante HTTP/REST.
+  * Parte de la comunicación S2S también es REST.
+
+* *Comunicación binaria gRPC (S2S)*
+
+  * Search Service ↔ Notes Service mediante gRPC para obtener datos de notas con baja latencia y contrato tipado (protobuf).
+
+* *Mensajería asíncrona con RabbitMQ (AMQP)*
+
+  * Notes Service y Search Service actúan como *productores* de eventos/logs.
+  * Logs Service actúa como *worker consumidor*.
+  * Patrón: *Producer → Message Broker → Worker → Persistencia*.
+
+* *Separación de preocupaciones*
+
+  * Paquetes: Frontend, Orquestador (API Gateway), Microservicios, Bases de datos, Mensajería, Observabilidad.
+  * Bounded contexts específicos para Tags y Category.
+
+* *Observabilidad centralizada*
+
+  * Prometheus para scraping de métricas /metrics.
+  * Grafana como cliente de datos (PromQL) para dashboards y alertas.
 
 ---
-# Descripción de elementos y relaciones: 
 
-## Elementos
+## Elementos y relaciones de la arquitectura
 
-### Borde del Sistema
-- *Cliente / Navegador*  
-  Interactúa con la SPA, emite solicitudes HTTP al Gateway.
-- *React Frontend*  
-  Orquestación ligera por vistas (BFF del cliente). Maneja JWT en memoria segura y cachea resultados de lectura.
+### Borde del sistema
 
-- *Next.js SSR Frontend*  
-  Landing Page.
+#### Cliente / Navegador
 
-### Capa de Entrada
-- *API Gateway*
-  - *Rol: terminación TLS, validación de **JWT, autorización simple (scopes/roles), **rate-limit, **routing* por path/host.
-  - *Interfaces: API pública **REST* versionada (/v1/...).
-  - *Políticas*: timeouts, circuit breakers, métricas (P50/P95/P99), logs de acceso.
+* Usuario final que interactúa con la aplicación.
+* Envía solicitudes HTTP al API Gateway a través de:
 
-### Servicios de Dominio
-- *Auth Service* ↔ *Auth_DB (PostgreSQL/psycopg2)*  
-  Emisión/validación de tokens, login/refresh/logout, listas de revocación.
-- *UserProfile Service* ↔ *UserProfile_DB (PostgreSQL/Npgsql)*  
-  Datos de perfil extendido (preferencias, idioma, avatar).
-- *Task Service* ↔ *Task_DB (PostgreSQL/psycopg2)*  
-  To-dos relacionadas con el usuario; filtros por estado/fecha.
-- *Tags Service* ↔ *Tags_DB (PostgreSQL/psycopg2)*  
-  Catálogo de etiquetas; búsqueda por prefijo.
-- *Category Service* ↔ *Categories_DB (PostgreSQL/Npgsql)*  
-  Jerarquía padre-hijo de categorías; operaciones CRUD y mover nodo.
-- *Notes Service* ↔ *Notes_DB (MongoDB/Motor)*  
-  CRUD de notas (documentos flexibles, versiones, metadatos). Produce logs a RabbitMQ. Coopera con Tags/Category vía REST. Interfaz gRPC para hidratar datos a Search.
-- *Search Service*  
-  REST para /search. Colabora con *Notes* por *gRPC* para hidratar títulos/snippets/permisos. Produce logs a RabbitMQ.  
-  > Nota: Idealmente debería consultar un *índice de búsqueda* (Elastic/OpenSearch/Meili) alimentado por eventos de Notes.
-- *Logs Service (Worker)* ↔ *Logs_DB (MongoDB/Java Driver)*  
-  Consumidor de RabbitMQ; formatea y persiste logs estructurados. No se expone al cliente.
+  * *React Frontend* (SPA).
+  * *SSR Frontend* (Next.js u otra tecnología).
+
+#### React Frontend
+
+* Frontend principal tipo SPA.
+* Responsabilidades:
+
+  * Gestión de sesión (JWT).
+  * Lógica de presentación y navegación.
+  * Cacheo de datos de lectura (ej. queries de notas/tareas).
+* Comunicación:
+
+  * HTTP/REST hacia el API Gateway.
+
+#### SSR Frontend
+
+* Frontend para páginas renderizadas en servidor (landing, SEO, etc.).
+* Comunicación:
+
+  * HTTP/REST hacia el API Gateway, igual que React Frontend.
+
+---
+
+### Capa de entrada
+
+#### API Gateway
+
+* Rol:
+
+  * Terminación TLS.
+  * Validación de *JWT*.
+  * Autorización básica (scopes / roles).
+  * *Rate limiting* y cuotas.
+  * *Routing* por path/host a microservicios.
+  * Timeouts y circuit breakers básicos.
+* Puertos:
+
+  * Exposición externa: *REST (HTTPS)* hacia los frontends.
+  * Hacia microservicios: *REST Client Port 8443*.
+* Observabilidad:
+
+  * Expone endpoint /metrics para Prometheus.
+  * Genera logs de acceso (que podrían ir a RabbitMQ o a Logs Service).
+
+---
+
+### Servicios de dominio
+
+Todos los servicios comparten patrón general:
+
+* *REST Provider Port 8443* (API interna).
+* *Producer Port: AMQP* (para logs/eventos, donde aplique).
+* *Métricas HTTP* (/metrics) hacia Prometheus.
+
+#### Auth Service ↔ Auth_DB
+
+* Base de datos: Auth_DB (PostgreSQL, driver psycopg2).
+* Responsabilidades:
+
+  * Registro/login/refresh/logout.
+  * Emisión y validación de tokens JWT.
+  * Listas de revocación / sesiones activas.
+* Interfaces:
+
+  * REST para /auth/....
+  * AMQP Producer para logs de autenticación (opcional).
+  * /metrics para observabilidad.
+
+#### UserProfile Service ↔ UserProfile_DB
+
+* Base de datos: UserProfile_DB (PostgreSQL, driver Npgsql).
+* Responsabilidades:
+
+  * Gestión de perfil de usuario (nombre, idioma, avatar, preferencias).
+* Interfaces:
+
+  * REST para /profiles/....
+  * AMQP Producer para logs/eventos de perfil.
+  * /metrics.
+
+#### Task Service ↔ Task_DB
+
+* BD: Task_DB (PostgreSQL, driver psycopg2).
+* Responsabilidades:
+
+  * CRUD de tareas.
+  * Filtros por estado, fecha, prioridad, etc.
+* Interfaces:
+
+  * REST /tasks/....
+  * AMQP Producer para logs de cambios en tareas.
+  * /metrics.
+
+#### Tags Service ↔ Tags_DB
+
+* BD: Tags_DB (PostgreSQL, driver psycopg2).
+* Responsabilidades:
+
+  * Catálogo de etiquetas reutilizables.
+  * Búsqueda por prefijo.
+* Interfaces:
+
+  * REST /tags/....
+  * AMQP Producer.
+  * /metrics.
+
+#### Category Service ↔ Categories_DB
+
+* BD: Categories_DB (PostgreSQL, driver Npgsql).
+* Responsabilidades:
+
+  * Jerarquía de categorías padre-hijo.
+  * CRUD de categorías, reordenamientos, mover nodos.
+* Interfaces:
+
+  * REST /categories/....
+  * AMQP Producer.
+  * /metrics.
+
+#### Notes Service ↔ Notes_DB
+
+* BD: Notes_DB (MongoDB, driver Motor).
+* Responsabilidades:
+
+  * CRUD de notas (documentos flexibles).
+  * Asociación con tags y categorías (vía REST hacia Tags/Category).
+  * Publicación de eventos/logs de notas hacia RabbitMQ.
+  * Exposición de datos de notas para búsqueda.
+* Interfaces:
+
+  * REST /notes/....
+  * *gRPC Server Port* para exponer un servicio del tipo NotesGrpcService (usado por Search Service).
+  * AMQP Producer (logs/eventos).
+  * /metrics.
+
+#### Search Service
+
+* BD propia no mostrada explícitamente (puede integrarse con un motor de búsqueda externo en el futuro).
+* Responsabilidades:
+
+  * Endpoints de búsqueda /search (filtrar notas/tareas, etc.).
+  * Agregación de datos de notas y permisos.
+* Interfaces:
+
+  * REST /search/....
+  * *gRPC Client Port* para consumir NotesGrpcService en Notes.
+  * AMQP Producer (logs de consultas de búsqueda).
+  * /metrics.
+
+#### Logs Service (Worker) ↔ Logs_DB
+
+* BD: Logs_DB (MongoDB, MongoDB Java Driver).
+* Tipo de componente: *«worker»* (no se expone al cliente).
+* Responsabilidades:
+
+  * Consumir eventos de RabbitMQ (logs, auditoría).
+  * Transformar y persistir logs estructurados.
+* Interfaces:
+
+  * *Consumer Port: AMQP* (cola(s) conectadas al exchange tasknotes.events).
+  * /metrics para monitorizar consumo, backlog, errores.
+
+---
 
 ### Mensajería
-- *RabbitMQ (Broker)*  
-  Exchanges (topic/direct) → colas *durables* con *DLQ* y *TTL*. Productores: Notes, Search (y otros). Consumidor: Logs Service.
 
-### Capa de Datos
-- *PostgreSQL*: Auth_DB, UserProfile_DB, Task_DB, Tags_DB, Categories_DB.  
-- *MongoDB*: Notes_DB, Logs_DB.  
-- *Prohibido* el acceso cruzado entre bases; la integración es por *APIs* o *eventos*.
+#### RabbitMQ – «Message Broker»
 
-## Relaciones
+* Rol:
 
-### Sincrónicas (REST/gRPC)
-- *Frontend → Gateway* (REST): envío de operaciones de usuario con JWT.  
-- *Gateway → Servicios* (REST): /auth, /profiles, /tasks, /tags, /categories, /notes, /search.  
-- *Search ↔ Notes* (*gRPC*): recuperación eficiente de datos de notas (por lote/IDs), con contrato protobuf versionable.
+  * Canalización de eventos/logs de la plataforma.
+* Elementos principales:
 
-*Contratos y Semántica*
-- REST: idempotencia en GET, PUT, DELETE; POST/PATCH con Idempotency-Key si se admiten reintentos.  
-- gRPC: streaming opcional, compresión, y campos opcionales para compatibilidad retroactiva.
+  * *Exchange de tipo topic*: tasknotes.events.
+  * Colas asociadas para Logs Service (y posibles otros consumidores futuros).
+* Conectores:
 
-### Asíncronas (RabbitMQ)
-- *Productores: Notes, Search (publican **logs* no bloqueantes).  
-- *Consumidor*: Logs Service (worker escalable horizontalmente).  
-- *Garantías: *al menos una vez con ack; *orden por cola* (no global); *reintentos* con backoff; *DLQ* para fallos permanentes.  
-- *Trazabilidad*: incluir trace_id/correlation_id en headers de mensaje para correlacionar con trazas.
+  * Productores (Notes Service, Search Service, otros servicios) → RabbitMQ:
+
+    * Etiquetados como *“AMQP via pika”* (u otro cliente AMQP).
+    * Uso de *Producer Port: AMQP* en cada servicio.
+  * Consumidor (Logs Service) ← RabbitMQ:
+
+    * Conector *“AMQP Consumer”*.
+* Patrones de entrega:
+
+  * *Al menos una vez* con ACKs.
+  * Orden garantizado por cola (no global).
+  * Se contemplan DLQ/TTL para mensajes fallidos de forma permanente (a nivel de diseño, aunque no se muestran todas las colas).
+
+---
+
+### Capa de datos
+
+* *PostgreSQL*
+
+  * Auth_DB, UserProfile_DB, Task_DB, Tags_DB, Categories_DB.
+  * Conexión desde cada servicio mediante drivers psycopg2 o Npgsql según lenguaje.
+
+* *MongoDB*
+
+  * Notes_DB, Logs_DB.
+  * Conexiones:
+
+    * Notes Service → Motor.
+    * Logs Service → MongoDB Java Driver.
+
+* Restricción clave:
+
+  * Ningún servicio accede directamente a la BD de otro.
+  * Toda colaboración es vía *REST/gRPC/AMQP*.
+
+---
+
+### Observabilidad
+
+#### Prometheus
+
+* Tipo de componente: *Scraper + Data Source*.
+* Responsabilidades:
+
+  * Hacer scrape de endpoints /metrics expuestos por:
+
+    * API Gateway.
+    * Todos los microservicios de dominio.
+    * Logs Service.
+  * Almacenar series temporales (latencias, tasas de error, colas, etc.).
+* Conectores:
+
+  * *HTTP /metrics scraper* desde Prometheus hacia cada servicio.
+
+#### Grafana
+
+* Tipo de componente: *Data Source Client*.
+* Responsabilidades:
+
+  * Visualizar dashboards de métricas de negocio y técnicas.
+  * Ejecutar consultas PromQL hacia Prometheus.
+* Conectores:
+
+  * *HTTP / PromQL* desde Grafana hacia Prometheus.
+
+---
+
+## Conectores y protocolos
+
+### REST
+
+* Patrón general:
+
+  * Cliente → API Gateway → Microservicios.
+* Notación en el diagrama:
+
+  * Conectores etiquetados como *REST*.
+  * Gateway con *REST Client Port 8443* hacia cada servicio.
+  * Microservicios con *REST Provider Port 8443*.
+* Semántica sugerida:
+
+  * GET, HEAD, OPTIONS, DELETE: idempotentes.
+  * PUT: idempotente.
+  * POST/PATCH: soportan reintentos mediante Idempotency-Key en cabeceras si se requiere.
+
+### gRPC
+
+* Relación principal:
+
+  * Search Service (cliente) → Notes Service (servidor).
+* Notación:
+
+  * Search Service: *gRPC Client Port*.
+  * Notes Service: *gRPC Server Port*.
+  * Conector etiquetado gRPC.
+* Beneficios:
+
+  * Mejor rendimiento y menor latencia que REST para uso interno.
+  * Contratos protobuf fuertemente tipados y versionables.
+  * Soporte para streaming y compresión.
+
+### AMQP (RabbitMQ)
+
+* Productores:
+
+  * Notes Service, Search Service, y potencialmente otros servicios.
+* Consumidor:
+
+  * Logs Service (worker escalable).
+* Notación:
+
+  * Puertos *Producer Port: AMQP* en los productores.
+  * *Consumer Port: AMQP* en Logs Service.
+  * Conectores etiquetados como AMQP via pika (o cliente equivalente).
+* Garantías deseadas:
+
+  * Entrega *al menos una vez*.
+  * Manejo de reintentos / backoff.
+  * Soporte de DLQ para mensajes no procesables.
+  * Inclusión de trace_id / correlation_id en headers de mensajes para correlación con logs y trazas.
+
+### Conectores a Base de datos
+
+* PostgreSQL:
+
+  * psycopg2 (servicios Auth, Task, Tags).
+  * Npgsql (servicios UserProfile, Category).
+* MongoDB:
+
+  * Motor (Notes).
+  * MongoDB Java Driver (Logs).
+* En el diagrama:
+
+  * Cada conector servicio ↔ BD está etiquetado con el driver específico para hacer explícito el stack tecnológico.
+
+### Conectores de observabilidad
+
+* *HTTP /metrics scraper*
+
+  * Prometheus → cada servicio (pull de métricas).
+* *HTTP / PromQL*
+
+  * Grafana → Prometheus (consultas).
+
+---
+
+## Relaciones principales
+
+### Flujos síncronos
+
+1. *Usuario gestiona tareas/notas*
+
+   * Navegador → React/SSR → API Gateway → Servicios de dominio (Auth, Task, Notes, Tags, Category, etc.) vía REST.
+   * Autenticación vía Auth Service con JWT.
+
+2. *Búsqueda de notas*
+
+   * Navegador → Gateway → Search Service (REST /search).
+   * Search Service → Notes Service (gRPC) para obtener detalles de notas / permisos.
+   * Respuesta agregada de Search Service hacia el cliente.
+
+### Flujos asíncronos
+
+1. *Logs y eventos*
+
+   * Notes / Search (y otros) → RabbitMQ (AMQP, exchange tasknotes.events).
+   * RabbitMQ → Logs Service (Consumer AMQP).
+   * Logs Service → Logs_DB (MongoDB).
+
+2. *Métricas*
+
+   * Servicios → Prometheus (/metrics).
+   * Prometheus → Grafana (PromQL) para dashboards.
 
 #### Layered Structure (Estructura por Capas)
 
-- View: 
-![Layered View](docs/layered_view.svg)
+- View General: <br>
+![Layer-view](docs/LayerViews/Layer-view.png)
+- View Capa de representación: <br>
+![Representation-Layer-view](docs/LayerViews/Representation-Layer-view.png)
+- View Capa de API-Getaway: <br>
+![API-Getaway-Layer-view](docs/LayerViews/API-Getaway-Layer-view.png)
+- View Capa de Load Balancer: <br>
+![Load-Balancer-Layer-view](docs/LayerViews/Load-Balancer-Layer-view.png)
+- View Capa de Business Services: <br>
+![Business-Service-Layer-view](docs/LayerViews/Business-Service-Layer-view.png)
+- View Capa de Observabilidad e integración: <br>
+![Observability-and-Integration-Layer-view](docs/LayerViews/Observability-and-Integration-Layer-view.png)
 - Descripción de patrones usados (si aplica): 
-  **Layered Architecture Pattern**: El sistema implementa una arquitectura estrictamente en capas con cinco niveles jerárquicos. Cada capa solo puede acceder a la capa inmediatamente inferior (principio de capas estrictas), garantizando separación de responsabilidades y bajo acoplamiento. Se aplican los patrones **Database per Service** para aislamiento de datos, **API Gateway Pattern** para punto único de entrada, y **Event-Driven Architecture** para comunicación asíncrona entre servicios.
+  **Layered Architecture Pattern**: El sistema implementa una arquitectura estrictamente en capas con cinco niveles jerárquicos. Cada capa solo puede acceder a la capa inmediatamente inferior (principio de capas estrictas).
 
 - Descripción de elementos y relaciones:
   **Elementos por Capa:**
   
   • **Presentation Layer**: 
-    - frontend-ssr: Landing Page SSR (Next.js :3000): Renderizado del servidor para SEO y experiencia inicial
-    - frontend-micro: Frontend Micro (React + Nginx :8080): Aplicación web interactiva (SPA)
+    - frontend-ssr: Landing Page SSR: Renderizado del servidor para SEO y experiencia inicial
+    - frontend-micro: Frontend Micro: Aplicación web interactiva (SPA)
     - Relación interna: SSR puede redirigir a SPA mediante allow-to-use
   
   • **API Gateway Layer**:
-    - api-getaway: API Gateway (FastAPI :8083): Punto único de entrada, validación JWT RS256, enrutamiento, CORS y rate limiting
+    - api-getaway: API Gateway: Punto único de entrada, validación JWT RS256, enrutamiento, CORS y rate limiting
+
+  • **Load Balancer Layer**:
+    - nginx-lb: balanceador de carga implementado con nginx mapeando los servicios de Business Service Layer
   
   • **Business Services Layer** (subdividida en tres dominios):
-    - *User Services*: user-profile-service (.NET :8007), auth-services (FastAPI :8001)
-    - *Core Domain Services*: categories-service-dotnet (.NET :8006), tags-service (FastAPI :8005), notes-service (FastAPI :8004), task-services (FastAPI :8003)
-    - *Supporting Services*: logs-service-java (Java Spring :8010), search-service (Go :8008)
+    - *User Services*: user-profile-service, auth-services
+    - *Core Domain Services*: categories-service-dotnet, tags-service, notes-service, task-services
+    - *Supporting Services*: logs-service-java, search-service
   
   • **Integration Layer**:
+    - *Grafana*: Para observación de dashboards con metricas.
+    - *promethues*: Recolección de metricas de los servicios.
+
+  • **Observability and Monitoring Layer**:
     - *Comunicación Asíncrona*: rabbitmq (Message Broker para eventos)
-  
-  • **Data Layer**:
-    - *PostgreSQL*: 6 bases especializadas (user-profile-service, auth-services, task-services, tags-service, categories-service-dotnet, logs-service-java)
-    - *MongoDB*: 1 base para notes-service con full-text search nativo
-  
+
   **Relaciones Arquitectónicas:**
   
-  • **allowed-to-use-below**: Dependencias estrictas entre capas adyacentes (Presentation→Gateway→Services)
-  • **allow-to-use**: Dependencias más flexibles (Services ↔ Integration ↔ Data)
-  • **Database per Service**: Cada microservicio mantiene acceso exclusivo a su base de datos
-  • **Event Publishing**: Servicios publican eventos a RabbitMQ; Logs Service consume todos los eventos
-  • **Technology Diversity**: 5+ lenguajes (TypeScript, Python, C#, Go, Java) distribuidos por responsabilidades específicas 
+  • **allow-to-use**: Se usa unicamente este tipo de relación entre las capas, pues cada una consume otra en una sola dirección de forma estricta.
 
 #### Deployment Structure (Estructura de Despliegue)
 
 - Deployment View: 
-![Deployment View](docs/DeploymentView.png)
+![Deployment View](docs/DeploymentView1.png)
+https://drive.google.com/file/d/1kfJ7gU_vRUhUJtVVdRv7BOifvc4vXUXx/view?usp=sharing 
 
-- Descripción de patrones usados (si aplica): 
-El principal patrón arquitectónico implementado en TaskNotes es el **API Gateway Pattern**.
+#### **Deployment Structure**
 
-🔹 API Gateway Pattern
-Este patrón se utiliza para **centralizar las peticiones externas** hacia los múltiples microservicios del sistema.  
-En TaskNotes, el servicio `api-gateway` cumple esta función, actuando como punto único de entrada para el frontend y gestionando:
+**Deployment View**
 
-- **Ruteo de solicitudes** hacia microservicios como `auth-service`, `tasks-service`, `notes-service`, `categories-service`, `user-profile-service` y `search-service`.  
-- **Unificación de seguridad y autenticación** mediante JWT.  
-- **Transformación y agregación de respuestas**, reduciendo la carga sobre los clientes.  
+La vista de despliegue describe **cómo los componentes software del sistema TaskNotes se asignan a nodos físicos/lógicos** en tiempo de ejecución. En este proyecto, todos los nodos son contenedores Docker gobernados por Docker Compose, lo cual permite aislamiento, reproducibilidad, escalabilidad horizontal (réplicas) y observabilidad centralizada.
 
-Este enfoque permite:
-- Simplificar la comunicación cliente-servidor.  
-- Aislar la lógica de negocio en microservicios especializados.  
-- Escalar componentes de forma independiente.  
-- Mejorar la mantenibilidad del sistema.
+Los objetivos principales de esta vista son:
 
-Otros patrones complementarios presentes:
-- **Microservices Architecture:** cada dominio funcional (tareas, notas, categorías, usuarios, etc.) opera como un servicio independiente con su propia base de datos.  
-- **Database per Service Pattern:** garantiza independencia y evita acoplamientos entre servicios.   
-- **Log Aggregation Pattern:** el `logs-service` centraliza los registros de eventos desde múltiples servicios para monitoreo y trazabilidad.  
+* Explicar **qué componente se despliega en cada contenedor**.
 
-- Descripción de elementos y relaciones: 
+* Mostrar **cómo se relacionan los contenedores entre sí** (redes, conectores, dependencias).
 
- 🔹 Infrastructure Layer
-- **RabbitMQ (3-management):** actúa como **message broker** para la comunicación asíncrona entre microservicios.  
-- **PostgreSQL (15):** se ejecuta en instancias separadas por microservicio (`postgres-auth`, `postgres-tasks`, `postgres-tags`, `postgres-categories`, `postgres-user-profile`), aplicando el patrón *Database per Service*.  
-- **MongoDB (6):** se usa para los microservicios `notes-service` y `logs-service`, especializados en almacenamiento documental.
+* Hacer explícito cómo esta estructura apoya requerimientos de **seguridad, disponibilidad, rendimiento y observabilidad**.
 
- 🔹 Backend Services
-Cada microservicio es desplegado en su propio contenedor con las siguientes tecnologías:
+- Deployment View: ![Deployment View](docs/DeploymentView1.png)
 
-| Microservicio          | Lenguaje / Runtime         | Puerto | Base de Datos / Broker          |
-|-------------------------|----------------------------|--------|---------------------------------|
-| Auth Service            | Python 3.11                | 8002   | PostgreSQL 15                   |
-| Tasks Service           | Python 3.12                | 8003   | PostgreSQL 15 / RabbitMQ        |
-| Notes Service           | Python 3.12                | 8004   | MongoDB 6 / RabbitMQ            |
-| Tags Service            | Python 3.12                | 8005   | PostgreSQL 15 / RabbitMQ        |ga
-| Categories Service      | .NET 8.0                   | 8006   | PostgreSQL 15 / RabbitMQ        |
-| User Profile Service    | .NET 8.0                   | 8007   | PostgreSQL 15 / RabbitMQ        |
-| Search Service          | Go 1.23 (gRPC)             | 8008   | N/A (consume Notes y Tasks)     |
-| Logs Service            | Java 17 (Spring Boot)      | 8010   | MongoDB 6 / RabbitMQ            |
-| API Gateway             | Python 3.10 (FastAPI)      | 8083   | -                               |
+##### **Patrones arquitectónicos aplicados en el despliegue**
 
-Cada servicio expone endpoints REST (o gRPC en el caso de `search-service`) y cuenta con un **health check** configurado en Docker Compose para garantizar su disponibilidad.
+**Contenedorización (Docker Containers)**
 
- 🔹 Frontend Layer
-- **frontend-micro:** aplicación React construida y servida por Nginx en el puerto `8080`.  
-- **frontend-ssr:** aplicación Next.js (Node.js 20) que ofrece renderizado del lado del servidor (SSR) en el puerto `3000`.  
-Ambas interactúan exclusivamente con el **API Gateway**.
+* Cada microservicio, base de datos, gateway, exporter y herramienta de observabilidad se ejecuta en su propio contenedor.
 
- 🔹 Communication Flow
-1. El usuario interactúa con `frontend-ssr` o `frontend-micro`.  
-2. Las peticiones se canalizan al `api-gateway`.  
-3. El gateway redirige las solicitudes al microservicio correspondiente.  
-4. Los microservicios intercambian eventos a través de **RabbitMQ** y registran su actividad en `logs-service`.  
-5. Las bases de datos (PostgreSQL y MongoDB) persisten la información de manera independiente por dominio.
+* No hay procesos compartidos entre aplicaciones.
+
+* Cada contenedor tiene:
+
+  * Su propio ciclo de vida (build → run → restart).
+
+  * Variables de entorno aisladas.
+
+  * Política de reinicio (`restart: always`).
+
+  * Conectividad explícita mediante `internal-net` y `public-net`.
+
+---
+
+**Network Segmentation (Security Pattern)**
+
+* **internal-net**:  
+   Red privada donde viven todos los microservicios, bases de datos y sistemas internos.  
+   No está expuesta al usuario final.
+
+* **public-net**:  
+   Solo expone:
+
+  * **API Gateway**
+
+  * **Prometheus**
+
+  * **Grafana**
+
+  * **Alertmanager**  
+     Estos servicios requieren acceso desde fuera.
+
+---
+
+**Reverse Proxy \+ Load Balancer (Performance/Security)**
+
+* El contenedor **nginx-lb** ejecuta el componente **Nginx Load Balancer**, que:
+
+  * Hace *routing* interno.
+
+  * Balancea las réplicas de microservicios (por ejemplo, `auth-service` y `auth-service-2`).
+
+  * Expone `/stub_status` para los exporters de métricas.
+
+* El contenedor **nginx-exporter** despliega el componente **Nginx Prometheus Exporter**, que:
+
+  * No ejecuta NGINX.
+
+  * **Scrapea nginx-lb** y expone métricas para Prometheus.
+
+---
+
+**Observabilidad Centralizada (Prometheus \+ Grafana \+ Exporters)**
+
+* Cada servicio expone `/metrics`.
+
+* Los exporters se conectan a bases de datos (Postgres, Mongo, RabbitMQ, Nginx).
+
+* Prometheus hace *scraping* periódico.
+
+* Grafana consulta a Prometheus vía PromQL.
+
+* Alertmanager procesa eventos de alerta desde Prometheus.
+
+---
+
+##### **Elementos y relaciones de la arquitectura de despliegue**
+
+---
+
+**1\. Capa de entrada (Frontends \+ Gateway)**
+
+**React Frontend (container: `frontend-micro`)**
+
+* Componente desplegado: **React SPA compilada**
+
+* Comunicación:
+
+  * REST → API Gateway.
+
+* No se comunica directamente con microservicios internos.
+
+**SSR Frontend (container: `frontend-ssr`)**
+
+* Componente desplegado: **Next.js SSR server**
+
+* Comunicación:
+
+  * REST → API Gateway.
+
+---
+
+**API Gateway (container: `api-gateway`)**
+
+* Componente desplegado: **API Gateway (FastAPI / Python)**
+
+* Funciones:
+
+  * Terminación TLS.
+
+  * Validación de JWT.
+
+  * Rate limiting.
+
+  * Routing interno hacia microservicios.
+
+* Puertos:
+
+  * Público: 8443/443.
+
+  * Interno: peticiones hacia `nginx-lb`.
+
+---
+
+ **2\. Capa de Balanceo y Proxy interno**
+
+**Nginx Load Balancer (container: `nginx-lb`)**
+
+* Componente desplegado: **Nginx (Reverse Proxy \+ Load Balancer)**
+
+* Funciones:
+
+  * Balanceo round-robin.
+
+  * Failover por health checks.
+
+  * Exposición de `/stub_status` para métricas.
+
+* Comunicación:
+
+  * Recibe tráfico desde API Gateway.
+
+  * Reenvía hacia todos los servicios internos.
+
+---
+
+**Nginx Prometheus Exporter (container: `nginx-exporter`)**
+
+* Componente desplegado: **nginx/nginx-prometheus-exporter**
+
+* Función:
+
+  * Lee métricas desde `http://nginx-lb:9100/stub_status`.
+
+  * Expone `/metrics` para Prometheus.
+
+* Importante:
+
+  * No ejecuta NGINX.
+
+  * Es un **exportador de telemetría**.
+
+* Relación clave:
+
+  * `nginx-exporter` **depende de** `nginx-lb` (execution dependency).
+
+  * **No es “desplegado en” nginx-lb**: es otro contenedor que lo observa.
+
+---
+
+**3\. Capa de Microservicios (Domino)**
+
+Todos estos contenedores despliegan un único componente que coincide con su nombre.
+
+ **Servicios Python (REST \+ AMQP \+ Métricas)**
+
+**Auth Service**
+
+* Contenedores: `auth-service`, `auth-service-2`
+
+* Componente: **Auth Service**
+
+* BD: `postgres-auth`
+
+**Tasks Service**
+
+* Contenedores: `tasks-service`, `tasks-service-2`
+
+* Componente: **Tasks Service**
+
+* BD: `postgres-tasks`
+
+**Tags Service**
+
+* Contenedores: `tags-service`, `tags-service-2`
+
+* Componente: **Tags Service**
+
+* BD: `postgres-tags`
+
+**Notes Service**
+
+* Contenedores: `notes-service`, `notes-service-2`
+
+* Componente: **Notes Service**
+
+* BD: `mongo-notes`
+
+* Extra: servidor gRPC para Search Service.
+
+---
+
+**Servicios .NET (REST \+ Métricas)**
+
+**Categories Service**
+
+* Contenedores: `categories-service`, `categories-service-2`
+
+* Componente: **Categories Service (.NET)**
+
+* BD: `postgres-categories`
+
+* Artefacto desplegado: `CategoriesService.dll`.
+
+**User Profile Service**
+
+* Contenedores: `user-profile-service`, `user-profile-service-2`
+
+* Componente: **User Profile Service (.NET)**
+
+* BD: `postgres-user-profile`
+
+---
+
+**Servicios Go (REST \+ gRPC \+ Métricas)**
+
+ **Search Service**
+
+* Contenedores: `search-service`, `search-service-2`
+
+* Componente: **Search Service (Go)**
+
+* Comunicación adicional:
+
+  * gRPC Client → Notes Service.
+
+---
+
+**Servicio Java (Worker \+ AMQP \+ Métricas)**
+
+ **Logs Service**
+
+* Contenedor: `logs-service`
+
+* Componente: **Logs Service (Java / Spring Boot)**
+
+* BD: `mongo-logs`
+
+* Función:
+
+  * Consumidor AMQP de mensajes producidos por Notes y Search.
+
+---
+
+ **4\. Capa de Datos**
+
+ **PostgreSQL (5 instancias)**
+
+Cada una despliega el componente **PostgreSQL Server**, privado por servicio:
+
+* `postgres-auth`
+
+* `postgres-tasks`
+
+* `postgres-tags`
+
+* `postgres-categories`
+
+* `postgres-user-profile`
+
+Su exporter correspondiente corre en contenedores separados, por ejemplo:
+
+* `postgres-exporter-auth`
+
+* `postgres-exporter-tasks`
+
+* etc.
+
+---
+
+ **MongoDB (2 instancias)**
+
+* `mongo-notes` → Notes\_DB
+
+* `mongo-logs` → Logs\_DB
+
+Exporters:
+
+* `mongodb-exporter-notes`
+
+* `mongodb-exporter-logs`
+
+---
+
+**Redis**
+
+* Contenedor: `redis`
+
+* Componente: **Redis Server (k/v cache)**
+
+* Comunicación solo desde servicios que lo necesiten (por ejemplo, caching o rate limiters internos).
+
+---
+
+**RabbitMQ**
+
+* Contenedor: `rabbitmq`
+
+* Componente: **RabbitMQ Broker**
+
+* Relaciones:
+
+  * Productores → Notes, Search.
+
+  * Consumidor → Logs Service.
+
+* Exporter:
+
+  * `rabbitmq-exporter`.
+
+---
+
+ **5\. Capa de Observabilidad**
+
+ **Prometheus**
+
+* Contenedor: `prometheus`
+
+* Componente: **Prometheus Server**
+
+* Toma métricas de:
+
+  * Todos los microservicios.
+
+  * Exporters de BD.
+
+  * nginx-exporter.
+
+  * RabbitMQ exporter.
+
+  * API Gateway.
+
+* Volúmenes montados:
+
+  * `prometheus.yml`
+
+  * `alert-rules.yml`
+
+---
+
+**Grafana**
+
+* Contenedor: `grafana`
+
+* Componente: **Grafana**
+
+* Toma datos desde Prometheus vía PromQL.
+
+* Tiene dashboards provisionados por volumen.
+
+---
+
+ **Alertmanager**
+
+* Contenedor: `alertmanager`
+
+* Componente: **Alertmanager**
+
+* Ejecuta reglas de alerta configuradas desde Prometheus.
+
+---
+
+**Relaciones finales destacadas**
+
+ **Dependencias de ejecución (Docker `depends_on`)**
+
+* `nginx-exporter` depende de `nginx-lb` → **execution dependency**  
+   *No es “desplegado en” Nginx.*
+
+* `grafana` depende de `prometheus`.
+
+* microservicios dependen de sus respectivas BDs.
+
+* frontend depende del API Gateway.
+
+---
+
+**Conectores**
+
+* REST:  
+   Frontends → Gateway → Nginx-LB → Servicios.
+
+* gRPC:  
+   Search → Notes.
+
+* AMQP:  
+   Notes/Search → RabbitMQ → Logs Service.
+
+* Drivers DB:
+
+  * psycopg2, Npgsql, Motor, MongoDriver.
+
+* Exporters → Prometheus.
+
+**Relaciones**
+
+"Desplegado en"
+
+
 
 #### Decomposition Structure (Estructura de Descomposición)
 
 
 #### - Decomposition View:
-
-
 
 ![TaskNotes Decomposition View](./docs/DecompositionView.png)
 
@@ -226,51 +941,41 @@ Ambas interactúan exclusivamente con el **API Gateway**.
 
 #### Microservices
 
-##### [API Gateway (FastAPI)](https://uml.planttext.com/plantuml/png/RLFRYjim47qFv1-6FEr2iWk5zdb3IBVkXInsTxTGogB84sM8BRdIEAqf_PZzW3xr4_9Z7VcIj2N6sAFHw9oZez5DOEMvBelnY8aB15NHp2Z6Rwg1YzSgyFmkkHoFPDfLm0xMZjcLa9D7pUJiUBIb724mUdJSL3WUXHtPIdbLGgNqJXdCk17ak41PKs14wsTWSfPl0ZzY4S2nh5Hahwfc0Yh01ubZ0SZp-QwseaeKe6MlSYLX0O81jntebxvkuUo6JEsLfiDl2ptJ51QhD9j2uOmXQw21pEaTybMoQXV-_4-6gdaBrx17JvlcYTqERIjf7lE3f8SuIxfd4cbl7p_2nPlinSjNu22D_yj1rchDQFygV9V9FqWOcMO1_PuqdfLIUVUzUVBujSR0hOYxc3cgI17j_l2hzQQl2g2W9ErTXqik33BcngDHi4MLem_mQNOl9RCa5qFwU2adK9mLubtD65e5QHkU9DGioLOen8PeDpK5IUx25AoJsZWoyjLoMiPvYfawyicg3HKuXO3Aw-qWDB7IQ1ehxjr5Avip5DYxZa9xF1bVeHUGIElAmpEJTcTta2tJXsIn5Ej9TrPcdV6dhTodxmFeeOVMXKo9kGhsobCtx5hGUJi8YStuZzldkOT-wtZRKR8wyiwpsqJkP2NSvPfin6pH7t7TrOPemNNeK4uSyjwWpTkB_GS0)
+<a href="./docs/DecompositionViews/APIGateway.png" target="_blank">API Gateway (FastAPI)</a>  
 - Encargado del enrutamiento y proxy inverso de todas las solicitudes entrantes. Aplica validaciones JWT y políticas de CORS, y actúa como punto central para la comunicación REST/gRPC hacia los microservicios del dominio.
 
 ### User Services
-[**user-profile-service (.NET)**](https://uml.planttext.com/plantuml/png/VLFBRjim4BmRy3yiV4g0F7uXXUsW1PB2g1lqKFImfjOoQufBKAiWRj2FwGVqb5kl-h4kRL9nWpI23k9oPdTcI5srWb6wner7OiKHT2t5yn1vRHsTw_UzDGGd5n_ddq_78mLn065OiGWtKDb8HYpxyMXZAu9MA1BBBj1ur6wj3nYnWO1cYpKjPQVz4m5zxIXropimUMFg11uJ5600BoBNslV2j1F05l8omK2VhulEgq9LGruYLgYV3Xfh8XyQM_wMaLFsQrjt4OtjdpnyeTMx49mrc2oTmMob0A47WHqKQZjm8sKQTXf5_qkKbwOwX1Msf1p3hckyAkIWJ8-E1lOj1ieQgy3MImidMhlJCOj32lEoSLeuxmcTRC1io6oL1vURVU77Vl_dYupKo22_1FNiv_4vWBHcc5_3b2EfP0z78X9dIVAVl2eQB9w1OrzRwIhbxA3_xQjqWlqVRmqdiVC6hNjLwOUZUSjyyfV_YCZLOgE0YecR_gdEsNkgMQE6TE-WGK_Vzo47YWStLRhV7SPy1LvA6J8leuR2C6n6QwkUYl_OYSAcd-vcQNKaklJNzqhFUF-3_GK0) 
-
+<a href="./docs/DecompositionViews/UserProfileModule.png" target="_blank">User Profile Module</a>  
 - Maneja la información de usuario, perfiles y credenciales; utiliza Entity Framework y PostgreSQL.
 
-[**auth-service (FastAPI)**](https://uml.planttext.com/plantuml/png/TL9DIyD05BmN-XyUFRM7YaYHuibFYjPYCO87aVAIlAPhDhlBxYOGnJ_crJ_cspIfLJJaa9sTsNapsLFdqVgoaFsU5ruIOEatOqUs4WdrUung0rv3hBtN1QJ2KkA5LltUHgG4pfCbxMl3N9SBPT1Y0GQJ73EAVCq71W6gJ3QdjJimsBSPm5lO0zZjPgJ8egULTRZAgNR3qG3GmQp5vmm54V3pj0MXLAotm4Cb4YjoS1-TmV3eS3A5M7WtUcxf4Lc1KhpYbWV6YWfJ15Aml5h0S3c_YAR_ipy_OYcIRtfKnY-SS5a6cEUwLckzKrzILPBiJ3WFPu4QJ4Dk5eakDBTeXSfSeth_LKM1GhNf5_ovItqhiK10-AEgpdrMekLWUzu7XeeV_W7ew8kIU1242ZboBBb1xfAKrrPfk7by2FKYf3h9oOvvRgCTTTexa_2bG7d2WLAn3WMrVu5xEaT7nvEjd5GL37PP-JqbbJONy0i0)
-
+<a href="./docs/DecompositionViews/AuthModule.png" target="_blank">Auth Module</a>  
 - Gestiona autenticación, emisión y validación de tokens JWT.
 
 ##### Core Domain Services
-[**categories-service-dotnet (.NET)**](https://uml.planttext.com/plantuml/png/TL9TJi9047uduGuJdlG1pe2XlfYW2FfaV9Zk3h2Xx6nsfiR6c7W8B-01l82ltCIJk2iKr63JfDdP-NxJeIX6hTTLjwDEAmA3IWkEZgGl51-SeRvbzQJm-V8A1HbU1nQdZZtCDDP6wqXmugGV4b6VvwU9YGCeGycgl0Rh8fcyt-qidIKGfKYiJQ1kHrRE9nok8Q1PuO9csYGJ6O1-KQMDRcTt0xt_hPqCBizlJdlmbFS1zeZH7Z5Yhv6hYkB0I0zGu32HZ8FqtErc2AFfRG7P6DGUQganEeO6GbrMpY3G0tbb0V8mnR9qEhuUt6UEvpy6pa8eoinAZzeA5wZuIp7TCQHYIXJANukPkm73VkuMTJAnUVSsnONDXtU6ZohjeZQjofWjLOTatqU6TYjpGuWS75cq951ktYGbox9pCakKutcsQIUv1baUkjoEzsAJFpLTpAukVtRLKgTtIDv-_trV)
+<a href="./docs/DecompositionViews/CategoriesModule.png" target="_blank">Categories Module</a>  
 - Administración de categorías; expone API REST y publica eventos AMQP.
 
-[**tags-service (FastAPI)**](https://uml.planttext.com/plantuml/png/LOz1QW9144Nt3Ns7pwnquHqCY91Tm1DKUegniAUhwAu9I0Za4Bb9Zf2Rv2JEg0Yk_tly_xVDgVeqvXXSF3ESXhPfN3yaCVw_Vx3ZfADf4nSjE7YTaa-LCGjgSCMxkkk8NYgdXOdXA3sZELTMFnl7q4vIZ2gDC4ed6lZWvxbh4QWCUIPYk2VedXQizjJyvUrrtU5peO07b_z-1qa4grAI66Nqd74JHJjG0vajqbSCMoxzzUK5)
+<a href="./docs/DecompositionViews/TagsModule.png" target="_blank">Tags Module</a>  
 - Servicio de etiquetas; mantiene relaciones con tareas y notas.
 
-[**notes-service (FastAPI)**](https://uml.planttext.com/plantuml/png/ZPHTQXmn3CVV5_OEOfzQw7Qla3RRGg21RPP0ePIWjTLP9sDxQcb2XbBe8NgDFlK8kKbFKda-d2OiIuPvi6nPF_qbsoSicAJrzNmcJcg248LuoPHkdI7u-_CNhCb4tqHsucA0hQJMI9i8T4TiG2BieaZqO5qYattcixsp12oKA4hNq7p6DouqcD13W-O6AzfAfx2y0KDLgyTyDgx0ud4ABzuZovlDsSi5VCzk0CNHemklcsu1o72ku-m0-dtUj47pqXmeI4ABEgnX2EWYZ06_PESVJq9Q5DmXqyh7K4MxA-6pkNvR2ASnq9sx_nEWWzXGGWqSY1LONBFUN4xTtVLblTexbfYwus2jj5I9U29lHli06gV5xSSF0uv2SjzQCfJ0e50Lq_tldYzOyK6kZreRdkHU3UOZrUVzLC7tPkHSNSrP1pru57qCCGbxmfZqFGlpeFSWYSsUFFAgh_PeJ9pjO1R0chwwuCQsAMNJMGpYp02wnTfPRMekiwMXZOUHmp7b5Tqr66oXZTC5zsxiZFEEniEPWuBHE_NGgh5JkievfUDgKsprYWrgYyoBOV8_hcsY2y9mUd6vBbfUWST0rtqUdvQNgc9vPYUA_YSKRFyg_0C0)  
+<a href="./docs/DecompositionViews/NotesModule.png" target="_blank">Notes Module</a>  
 - Gestión de notas; soporta REST y gRPC, usa MongoDB para persistencia.
 
-[**task-service (FastAPI)**](https://uml.planttext.com/plantuml/png/ZPFRIWCn48Rl2ts7eLSArhv2nGC85jOkWY0YusPQOtUJ9JCjhk9J-GY-c9Czn0CYBdinaqp-R_uSvYmOP5kLuv5OAGa4USDJfh2p1Or7Eknh40_tNiHNO6oWGgntuz63DGGi5CXBKsijRwohCM05DHORN5CkZIh61UZMPQlMpy3a6mVspf3bA3lVdy1BB0D8XHLQTrWt4q26XSQn0FIxoRPE-z8Uo4b0WngMq0bQ3xtWRIn-_I5fKF0UcMQrPra7ua4_w_F4EFQEdkpxcmCS9lFB2uWkTQS28VyAgBpsmad-hij_KXRjQ6ArgUVeI1lKu0i56jt64jMOez-HN3nGXJoB-thN9mCmxz94Eg6LTROJYxYiCUZ45XrnXwKrYegk3VrbipyzdcbWTTKpnfkHgFrimkP3LQVTW1wRuvKFrRzemM_ridKEaxLbDvWOfyxKtZfXE5vUdNmg7a25ZXxR-t8zlTA6f-TcmEW_9sVQL_01)
+<a href="./docs/DecompositionViews/TaskModule.png" target="_blank">Task Module</a>  
 - Gestión de tareas; integra con tags y categories, publica eventos en RabbitMQ.
 
 ##### Supporting Services
-[**logs-service-java (Spring Boot)**](https://uml.planttext.com/plantuml/png/dPF1JYCn38RlbVeELa-xXva7u0HeLreX5Gf5sWFYu4dCu3Q9Gv8M2jgdsaVWnKXcEWExz8GqXyIEVt_vdJcE2KFQM3ET94w6m4WRgqXXougg5MvnEiafyP046ab9B6WEf1ABcqxkMHF4H84axJnD9t7DpcD02nxL6bjQfbrMBGNeMaD5RP-1sQTUy6tf0xiMJaNIzncybEC0Ou55Te3U6rPO06Q04UOb-5BE0TmiDYw3PYXoAQ36iloWULkE_VbFzP4QCBYZqCdzphj1JK9RnwxwBb-97YMiwoRB7FN1ggohpa4ALPQvtTVzVF8IMV7hNzUpQ2_iKeHVrzSBAFvqFX-acOjhvSSfU0gHixLEKN_DVVnBR1eJLhOew15oCJRWpgP2b567HWVXhh1fECql8T-6sl0-X9FvvU9hQ6WV_8YqQSfeU-DseCJ5ZUt7kSq3bJXm7eGxMrwSmpqwRNAJZkeifwAylmubjhx3ybwVhAbNVRPM4kXel-cSQjZf0Mb9WT7mymYbAVuRoaZIhAZG5O81BN_7UV3Th_K6)
+<a href="./docs/DecompositionViews/LogsModule.png" target="_blank">Logs Module</a>  
 - Registro distribuido de logs y monitoreo de eventos, con persistencia en MongoDB y PostgreSQL.
 
-[**search-service (Go + GraphQL)**](https://uml.planttext.com/plantuml/png/RPFDRjim383l0V8EH4ujbjJtxL8iBR93knPnRiCEhCp8GYJHa-HXnh2dwctNlDWe_wqROXW6IP7yI8g-ZGb3QfrTBf99bY0I1bLl8eNlHj5o8NPk836yS4hie3A1L3BibulQLEAVA12dhX7VU3A-mO0E6bGdr5IcJbBc0FJQzjd64rZz2uAh7SCxs1altqVscky-Ng_WPmu1c8CS6d-ZUGKOuL7ax03oV7bklTGezP1F0IiKqSAGs_0Q5FkZqMr0PSwlFljbKWVRfttvDQVuzHzeB2iMPLzcEQWJUbJZZ7yulsgZCXLUph_ZjvQaXDQRenYp5D5N37h_l8LQQa3md2IyWuJn52zMe4EZ2cMDD1GdxYudc9ZR_aooz6dptALD9r258L9kUQ3C8nvfatwHUdTuYZqg2pFgi-GHmneEgClMEGpT6hQOI7FePiCmgZr9zp7zLMF3FbwcrJ8MIs7kxzEep-1xNpLiP0AmloyFxw5OGp4iJj7t9cfDQ5CjpJbiY07xSLoaZMi5Lu6msh2ttVMmIAFzJRTYHUjGaPVhYx9KazE7D_TxRAtT9FgH9fgyj-Ih_c_w0m00)
+<a href="./docs/DecompositionViews/SearchModule.png" target="_blank">Search Module</a>  
 - Búsqueda de texto e indexación; expone API REST/GraphQL.
- 
-##### Integration
 
-[**rabbitmq (Message Broker)**](https://uml.planttext.com/plantuml/png/PP7TIiD048Nl0tc78LSAnGVmgZy4gvZM_WY2I9bindHiihlkJef5V2eVmHTpDxGAEkpDp9xpdM5tw0MTT6sJ9iBI43WiIvRs5SuAyXvhWh4pEtBdQH8ane8OA8s8QQ5YHqhOw3JPSaNWXHmPELXA4xzZRT5X2nRLBc1MSeZqO41TDnHfnnl8bdrciVYNcS5x50ByaTvrPSD-I-v2-GpGmyyW6Y3KOpzH2BGdBSR3pMe-0zBGQQ0tjGrB48ITXQs1jR6idex6YT7FN7SE5NzzQcYfOjH2i4V7M3RaeoqodJQNi1oDnzVhOh6vNzuEVhlfVBKUGFumcOvcL_bcDYho4p_NugX6iEGyXoUBx41iINjy8T_BFj8ad27fgl-PRm00)  
+##### Integration
+<a href="./docs/DecompositionViews/MessageBrokerModule.png" target="_blank">Message Broker Module (RabbitMQ)</a>  
 - Middleware de mensajería AMQP que orquesta la comunicación asincrónica entre microservicios (task-created, note-updated, category-event, etc.), asegurando desacoplamiento y fiabilidad en la entrega.
 
-#### Data Layer
 
-[**PostgreSQL Databases**](https://uml.planttext.com/plantuml/png/RP6_JWCn3CRta-uTh4xj0ZjJhxHYAIfSoeHGvKlCDUfT4YM-YWZnI4myGb-Cf7zG1w8CiVpx_DdED31w7lgkB5XpH-1iuDOJZEV8s60W4EJtMjAaB19Z7R25nZBR7fJs95bRKnPRhGW2aoVBqL5PX9qs3Ztsu53ki2N1CPNF0ZHjHxdQEGEZfvEfU5x-upk2pmm3_E6gkN4HRY7nLIUtrCSHO81pbP1vIEVrtXhwq8SV0mXN5aD0e-oL-ktC2meXJREq4Zk8CCjTv1bWLJzUc9Puevhnv0uKEJAAZ8mdI9j8KXxjyYuevET5zb8lGLhphjl1OvCMiJzyfwPMOlrGByGcfotCgtKrgyGYXqVXLrcaEqqsnn_w1G00)
-- Almacenes relacionales dedicados a cada microservicio:  
-auth-service, user-profile-service, task-service, tags-service, categories-service-dotnet, logs-service-java.
-
-[**MongoDB Databases**](https://uml.planttext.com/plantuml/png/RP71QiCm38RlWRo3oAczRFUTIXROPLrXPQSnYk9ecMaY6Lif2sMFrDCU8Iyskqrx6lXYzFsVP7aL5BqEVPTdQhKZw8LRQMfOLAXOOo3OaZzOGyiyYumuK85QLAM7ndeoQeNpxCis1479a-ZeAC_2th93ZpquD7jiQQjZrAS0SjjHiiqLADQfQLN-qxI0Oo81Rkmyu9qRuHxMek8Bm01NnJ710E-FmlHjfr-EnUd4nWiZu0qR0d8Zb_p772bJu_YC1bK26E5FsmuUwpZsOJh5xERbQLELkxVNPnXljwgyvblIdP6kk-namTZJyY4A7N53R4P8-m2fbPXyz4VGH932MV2JP_6i8dl-ZJy0)
-- Bases documentales usadas por notes-service y logs-service-java para persistencia no estructurada.
 
 
 #### - Descripción de relaciones:
@@ -287,6 +992,121 @@ auth-service, user-profile-service, task-service, tags-service, categories-servi
 | **LOGS (Spring Boot)**      | 0      | 0    | 0         | 0     | 0     | 0    | 0           | –    | 0      |
 | **SEARCH (Go)**             | 0      | 0    | 0         | 0     | 1     | 1    | 1           | 0    | –      |
 >  **Leyenda:** “1” = el módulo en la columna *usa* al módulo en la fila.
+
+
+**Quality Attributes**
+
+**Security**
+- Escenarios de seguridad (requeridos y definidos por el equipo):
+  - Secure Channel Pattern: comunicación cifrada TLS entre clientes y el API Gateway (`certs/gateway.crt`, `certs/gateway.key`) y mTLS para gRPC interno cuando aplica.
+  - Reverse Proxy Pattern: `nginx-lb/` actúa como proxy inverso delante del Gateway/servicios, centralizando terminación TLS, reglas y balanceo básico.
+  - Network Segmentation Pattern: segmentación de redes Docker (p. ej., `internal-net` para servicios y datos) aislando componentes críticos del tráfico público.
+  - Rate Limiting (team-defined): limitación de tasa tipo Token Bucket en el API Gateway para proteger servicios y mitigar abuso/DoS.
+- Tácticas aplicadas:
+  - Autenticación y autorización por JWT (HS256 en dev/e2e; validación de `iss`, `aud`, `exp`, `iat`, `nbf` y tolerancia de reloj).
+  - Limitación de tasa por método/endpoint (ventana configurable y límites por HTTP verb).
+  - Canal seguro TLS y políticas de cabeceras (HSTS, saneamiento de headers en el proxy).
+  - Observabilidad de seguridad: métricas y logs de accesos, errores y límites excedidos.
+- Patrones aplicados:
+  - Secure Channel, Reverse Proxy, Network Segmentation, Rate Limiting (definido por el equipo).
+- Implementación y configuración:
+  - API Gateway (`TaskNotes/api-gateway/main.py`): middleware de rate limit y verificación JWT; env vars: `RATE_LIMIT_WINDOW_SECONDS`, `RATE_LIMIT_GET|POST|PUT|PATCH|DELETE`, `JWT_ISSUER`, `JWT_AUDIENCE`, `JWT_CLOCK_SKEW_SECONDS`, `JWT_MAX_TTL_SECONDS`.
+  - TLS: certificados dev en `TaskNotes/certs/`; terminación en `nginx-lb` y Gateway.
+  - Segmentación: redes internas en `docker-compose.e2e.dist.yml` para servicios y datos.
+- Criterios de aceptación:
+  - Excesos de tasa devuelven `429` con conteo en métricas por ruta/método.
+  - Rutas protegidas requieren token válido; fallos de validación se registran y se exponen en métricas.
+  - Tráfico sensible transita únicamente por canales TLS.
+- Referencias: `TaskNotes/SECURITY_REVIEW.md`, `TaskNotes/docs/NFR_Plan.md`, `REQUERIMIENTOS.md` (2.2 y 2.2.1).
+
+**Performance and Scalability**
+- Escenarios de performance/escalabilidad:
+  - Load Balancer Pattern: `nginx-lb` distribuye carga hacia instancias de servicios para mejorar throughput y resiliencia.
+  - Cache Aside (team-defined): `search-service` usa Redis para cachear resultados frecuentes y RabbitMQ para invalidación por eventos de dominio.
+- Tácticas aplicadas:
+  - Caching read-through/write-around con claves consistentes (`search:{user_id}:{hash(query,filters)}`) y TTL configurable.
+  - Invalidation por eventos (`note.updated|deleted`, `task.updated|deleted`) para coherencia de cache.
+  - Pooling de conexiones, concurrencia controlada y separación de tráfico (REST/GraphQL) en `search-service`.
+  - Escalabilidad horizontal mediante balanceo y aislamiento por componentes.
+- Patrones aplicados:
+  - Load Balancer, Cache Aside (definido por el equipo).
+- Implementación y configuración:
+  - `search-service/` (Go) con Redis y consumidores RabbitMQ; env vars: `REDIS_URL`, `CACHE_TTL_SECONDS`, `RABBITMQ_URL`.
+  - Métricas Prometheus: `search_cache_hits_total{source}` y `search_cache_misses_total{source}` para REST/GraphQL.
+  - Pruebas de performance: `TaskNotes/perf/k6/*.js` y `perf/wrk` con integración a Grafana vía Prometheus/InfluxDB.
+- Criterios de aceptación:
+  - Reducción medible de latencias P50/P95 en búsquedas repetidas con cache activo.
+  - Error rate < 1% a 200 RPS bajo carga normal; coherencia tras actualizaciones/eliminaciones.
+  - Saturación y recuperación observables en escenarios de estrés.
+- Análisis y resultados de pruebas:
+  - Metodología, ejecuciones y hallazgos en `TaskNotes/docs/PerformanceResults.md`.
+  - Guía de ejecución reproducible en `TaskNotes/perf/README.md` (k6 y wrk, salida a Prometheus/InfluxDB, uso de `testid`).
+  
+  - Servicios y resultados (con capturas):
+    
+    - Auth Service
+      - Carga: ![Load Auth](docs/Pruebas/Load_auth.png)
+        - Comportamiento estable durante el tramo de carga sostenida; el gráfico de VUs muestra estabilización tras el ramp‑up.
+        - Latencias medias y P95 dentro de los objetivos esperados para autenticación; picos transitorios en el inicio de la rampa.
+        - Tasa de errores baja; respuestas 401 minimizadas usando tokens válidos y TTL suficiente.
+      - Estrés: ![Stress Auth](docs/Pruebas/Estres_auth.png)
+        - A medida que aumentan los VUs, se observan picos de latencia y ligera elevación del error rate en los máximos.
+        - Recuperación al descender la carga; el sistema vuelve a niveles de latencia similares al tramo inicial.
+        - Validación de límites: rate limiting y controles del gateway responden adecuadamente bajo presión.
+    
+    - Search Service
+      - Carga: ![Load Search](docs/Pruebas/Load_search.png)
+        - Curva de VUs estable en el plateau de carga; throughput sostenido.
+        - Latencias P50/P95 reducidas gracias al patrón Cache Aside; se observan valores menores y más consistentes frente a primeras solicitudes (calentamiento del caché).
+        - Error rate bajo; misses iniciales del caché se estabilizan conforme aumenta el hit ratio.
+      - Estrés: ![Stress Search](docs/Pruebas/Estres_search.png)
+        - Picos de latencia durante ramp‑up alto y en el máximo; el caché mitiga parte del impacto y acelera la recuperación en ramp‑down.
+        - Back‑pressure razonable sin incremento significativo de errores; consistencia mantenida en respuestas clave.
+    
+    - Notes Service
+      - Carga y Estrés: ![Load & Stress Notes](docs/Pruebas/Load_&_Estres_notes.png)
+        - En carga, la latencia se mantiene estable con variaciones contenidas; en estrés, se aprecian picos en los máximos con recuperación posterior.
+        - Error rate dentro de tolerancias; el servicio responde con degradación gradual, sin fallos catastróficos.
+    
+    - Tags Service
+      - Carga: ![Load Tags](docs/Pruebas/Load_tags.png)
+        - Plateau de VUs estable; latencias regulares y dispersión controlada.
+        - Error rate bajo; endpoints de lectura predominan y sostienen buen rendimiento.
+      - Estrés: ![Stress Tags](docs/Pruebas/Estres_tags.png)
+        - Aumento de latencias en picos de VUs con recuperación en la fase descendente.
+        - Sistema mantiene disponibilidad y consistencia; sin acumulación prolongada de errores.
+    
+    - Tasks Service
+      - Carga: ![Load Tasks](docs/Pruebas/Load_task.png)
+        - Comportamiento estable bajo carga; latencias P50 dentro de objetivo, P95 con picos en el inicio del plateau.
+        - Error rate bajo; operaciones CRUD responden sin timeouts.
+      - Estrés: ![Stress Tasks](docs/Pruebas/Estres_tasck.png)
+        - Picos de latencia durante ramp‑up/peak; el servicio se estabiliza en ramp‑down.
+        - Evidencia de degradación controlada sin incremento sostenido de errores.
+    
+    - Categories Service
+      - Carga: ![Load Categories](docs/Pruebas/Load_categories.png)
+        - Throughput constante y latencias estables; plataforma .NET muestra buen manejo de concurrencia.
+        - Error rate bajo; endpoints críticos mantienen tiempos de respuesta previsibles.
+      - Estrés: ![Stress Categories](docs/Pruebas/Estres_categories.png)
+        - Incremento de latencia en los máximos con recuperación adecuada al reducir VUs.
+        - El servicio conserva disponibilidad; sin saturación prolongada.
+    
+    - User Profile Service
+      - Carga: ![Load User Profile](docs/Pruebas/Load_user_profile.png)
+        - Estabilidad en VUs y latencias; variabilidad contenida durante el plateau.
+        - Error rate bajo; operaciones de perfil toleran concurrencia con buen tiempo de respuesta.
+      - Estrés: ![Stress User Profile](docs/Pruebas/Estres_user_profile.png)
+        - Picos de latencia en rampas altas; recuperación al finalizar el estrés.
+        - Sin efectos adversos prolongados; el servicio responde con degradación gradual.
+
+    - Conclusiones generales
+      - Bajo escenarios de carga, los servicios mantienen latencias y error rate dentro de los objetivos definidos, con estabilización tras el ramp‑up.
+      - En escenarios de estrés, se observan picos de latencia y variabilidad esperables en los máximos, con recuperación consistente en ramp‑down.
+      - El patrón Cache Aside en `search-service` mejora significativamente la latencia percibida y la estabilidad bajo carga y contribuye a una mejor recuperación bajo estrés.
+      - El uso de tokens válidos y TTLs adecuados evita 401s y reduce ruido en las mediciones; el etiquetado `testid` facilita el análisis en Grafana.
+
+
 ### Prototipo
 
 - Despliegue rápido (Docker Compose e2e distribuido):
@@ -295,7 +1115,7 @@ auth-service, user-profile-service, task-service, tags-service, categories-servi
   - Apagar y limpiar volúmenes: `docker compose -f TaskNotes/docker-compose.e2e.dist.yml down -v`
 
 - Más detalles:
-  - Consulta `TaskNotes/DEPLOYMENT.md` para pasos extendidos, troubleshooting y comandos adicionales.
+  - Consulta `TaskNotes/DEPLOYMENT_V2.md` para pasos extendidos, troubleshooting y comandos adicionales.
 
 #### Guía Paso a Paso (Breve)
 
@@ -322,4 +1142,4 @@ auth-service, user-profile-service, task-service, tags-service, categories-servi
 - Apagar y limpiar:
   - `docker compose -f TaskNotes/docker-compose.e2e.dist.yml down -v`
 - Ampliar pasos y troubleshooting:
-  - Ver [DEPLOYMENT.md](./DEPLOYMENT.md).
+  - Ver [DEPLOYMENT_V2.md](./DEPLOYMENT_V2.md).

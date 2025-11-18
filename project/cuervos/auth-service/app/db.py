@@ -1,4 +1,4 @@
-import os
+﻿import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
@@ -7,7 +7,12 @@ DATABASE_URL = os.getenv(
     "postgresql+psycopg2://postgres:postgres@postgres:5432/tasknotes_auth_service",
 )
 
-engine = create_engine(DATABASE_URL, echo=False, future=True)
+engine = create_engine(
+    DATABASE_URL,
+    echo=False,
+    future=True,
+    pool_pre_ping=True,
+)
 
 class Base(DeclarativeBase):
     pass

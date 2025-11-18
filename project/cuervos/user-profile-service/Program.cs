@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using UserProfileService.Endpoints;
 using UserProfileService.Infrastructure.Persistence;
 using UserProfileService.Application.Services;
+using Prometheus;
 
 namespace UserProfileService;
 
@@ -21,6 +22,9 @@ public class Program
         builder.Services.AddScoped<IUserProfileService, UserProfilesService>();
 
         var app = builder.Build();
+
+        app.UseRouting();
+        app.UseHttpMetrics();
 
         using (var scope = app.Services.CreateScope())
         {
@@ -41,6 +45,7 @@ public class Program
         }
 
         app.MapGet("/healthz", () => Results.Json(new { ok = true }));
+        app.MapMetrics();
 
         app.MapUserProfileEndpoints();
 
