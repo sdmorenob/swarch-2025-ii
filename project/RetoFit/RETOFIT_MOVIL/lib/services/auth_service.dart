@@ -1,4 +1,6 @@
+import 'dart:io'; // <-- AÑADIR ESTA IMPORTACIÓN
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart'; // <-- AÑADIR ESTA IMPORTACIÓN para DefaultHttpClientAdapter
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -6,6 +8,15 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 
 class AuthService {
   final Dio _dio = Dio();
+  AuthService() {
+    // SOLUCIÓN CRÍTICA: Permite la conexión a certificados no confiables (autofirmados)
+    // Esto es necesario en DEV si usas un certificado propio.
+    (_dio.httpClientAdapter as DefaultHttpClientAdapter).onHttpClientCreate = (client) {
+      client.badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true; // Acepta cualquier certificado
+      return client;
+    };
+  }
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   String get baseUrl => dotenv.env['AUTH_API_URL']!;
 

@@ -4,6 +4,8 @@ import grpc
 from grpc_reflection.v1alpha import reflection
 from concurrent import futures
 import logging
+import asyncio
+import threading
 
 from app.grpc import user_pb2, user_pb2_grpc
 from app.db.session import SessionLocal
@@ -19,7 +21,7 @@ class UserServiceServicer(user_pb2_grpc.UserServiceServicer):
             context.set_code(grpc.StatusCode.NOT_FOUND)
             context.set_details(f"User with id {request.id} not found")
             return user_pb2.UserResponse()
-
+        print("gRPC server encontró el usuario.")
         return user_pb2.UserResponse(
             id=user.id_usuario,
             name=user.nombre,
@@ -38,6 +40,18 @@ async def serve_grpc() -> None:
     reflection.enable_server_reflection(SERVICE_NAMES, server)
 
     server.add_insecure_port("[::]:50051")
-    logging.info("✅ gRPC server running on port 50051")
+    logging.info("🚀 Starting gRPC server on port 50051...")
     await server.start()
+    logging.info("✅ gRPC server running on port 50051")
     await server.wait_for_termination()
+
+def run_grpc_server():
+    """Ejecuta el servidor gRPC en un event loop separado"""
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(serve_grpc())
+    except Exception as e:
+        logging.error(f"❌ gRPC server failed: {e}")
+    finally:
+        loop.close()

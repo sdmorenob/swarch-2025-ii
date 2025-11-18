@@ -120,7 +120,7 @@ func (us *Activity) CreateActivity(userId int, createActivityRequest *dtos.Creat
 		}
 
 		// URL del servicio de gamificación (¡debería ser una variable de entorno!)
-		gamificationURL := "http://localhost:8003/gamification/process-activity"
+		gamificationURL := "http://gamification-service:8003/gamification/process-activity"
 		resp, err := http.Post(gamificationURL, "application/json", bytes.NewBuffer(jsonData))
 		if err != nil {
 			log.Printf("Error calling gamification service: %v", err)

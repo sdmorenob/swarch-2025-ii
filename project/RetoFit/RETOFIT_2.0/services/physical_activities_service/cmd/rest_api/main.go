@@ -44,7 +44,7 @@ func main() {
 	// Initialize repositories
 	activityRepo := repositories.NewActivityRepository(client.DB)
 
-	grpcClient, err := grpc.NewUserClient("localhost:50051") // 👈 puerto gRPC del servicio Python
+	grpcClient, err := grpc.NewUserClient("users-service:50051") // 👈 puerto gRPC del servicio Python
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to connect to gRPC User service")
 		return

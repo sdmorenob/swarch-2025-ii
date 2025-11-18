@@ -22,8 +22,8 @@ router = APIRouter()
 security = HTTPBearer()
 
 
-USER_SERVICE_URL = "http://127.0.0.1:8080/api/users"
-PHYSICAL_ACTIVITIES_SERVICE_URL = "http://localhost:8080/api/activities"
+USER_SERVICE_URL = "http://api-gateway:8080/api/users"
+PHYSICAL_ACTIVITIES_SERVICE_URL = "http://api-gateway:8080/api/activities"
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 FRONTEND_URL = os.getenv("FRONTEND_URL")

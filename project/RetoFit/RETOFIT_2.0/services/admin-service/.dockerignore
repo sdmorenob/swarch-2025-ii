@@ -1,0 +1,11 @@
+.git
+.gitignore
+.env.local
+.env.*.local
+vendor
+node_modules
+tests
+*.md
+.docker
+docker-compose*.yml
+Dockerfile*

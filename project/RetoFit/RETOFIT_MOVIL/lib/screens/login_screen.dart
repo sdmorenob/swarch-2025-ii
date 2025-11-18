@@ -89,7 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
             const SizedBox(height: 50),
 
-            // 📧 Email
+            // Email
             _buildTextField(
               controller: _emailController,
               hint: "Correo electrónico",
@@ -98,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
             const SizedBox(height: 16),
 
-            // 🔑 Contraseña
+            // Contraseña
             _buildTextField(
               controller: _passwordController,
               hint: "Contraseña",
@@ -146,7 +146,7 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 25),
 
 
-        // 🔗 Registro
+        // Registro
         TextButton(
           onPressed: () async {
             final webUrl = dotenv.env['WEB_APP_URL'];

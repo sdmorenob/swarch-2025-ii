@@ -1,6 +1,23 @@
 # RetoFit 2.0 🏋️‍♂️
 
-Bienvenido al repositorio oficial del proyecto RetoFit 2.0. Este es un monorepo que contiene la aplicación completa, incluyendo el frontend y todos los microservicios del backend.
+Bienvenido al repositorio oficial del proyecto RetoFit 2.0. Este es un monorepo que contiene la aplicación completa, incluyendo el frontend (con arquitectura de microfrontends) y todos los microservicios del backend.
+
+## 🏗️ Arquitectura de Microfrontends
+
+El proyecto ahora implementa una **arquitectura de microfrontends** que separa:
+
+- **Landing Page** (`/landing-page`) - Puerto 3001
+  - Página de aterrizaje pública
+  - Presentación del producto
+  - Información del equipo
+  
+- **Frontend Principal** (`/front`) - Puerto 3000
+  - Aplicación completa con autenticación
+  - Dashboard, retos, perfil
+  - Panel de administración
+
+📖 **Documentación detallada**: Ver [MICROFRONTENDS.md](./MICROFRONTENDS.md)
+
 ## Equipo
 
 ### Nombre del equipo
@@ -181,7 +198,7 @@ En cuanto a los conectores, existen los siguientes:
 ---
 
 ## Layered View
-<div align="center"><img width="80%" alt="image" src="https://raw.githubusercontent.com/RetoFit/Image_Repository/refs/heads/main/vista_layer.png" /></div>
+<div align="center"><img width="80%" alt="image" src="diagramas/Diagrama_capas_general.png" /></div>
 
 ### Capa de Presentación (Presentation Layer)
 
@@ -203,11 +220,22 @@ Actúa como el **punto de entrada único** (Single Point of Entry) para todas la
 El núcleo de la lógica de negocio de la aplicación. Está dividida en microservicios independientes, cada uno enfocado en una única responsabilidad de negocio.
 
 * **Auth:** Maneja la autenticación (inicio de sesión, registro, gestión de tokens).
+
+<div align="center"><img width="80%" alt="image" src="diagramas/Diagrama_Capas_Auth.png" /></div>
+
 * **User:** Gestiona toda la información y operaciones relacionadas con los perfiles de usuario.
+
+<div align="center"><img width="80%" alt="image" src="diagramas/Diagrama_Capas_User.png" /></div>
+
 * **Activities:** Administra las actividades que los usuarios realizan.
+
+<div align="center"><img width="80%" alt="image" src="diagramas/Diagrama_Capas_Activities.png" /></div>
+
 * **Posts:** Se encarga de las publicaciones (crear, leer, actualizar, borrar).
 * **Admin:** Contiene la lógica para las tareas de administración del sistema.
 * **Gamification:** Implementa la lógica de ludificación (puntos, insignias, niveles, tablas de clasificación).
+
+<div align="center"><img width="80%" alt="image" src="diagramas/Diagrama_Capas_Gamification.png" /></div>
 
 *Nota: Los servicios pueden comunicarse entre sí (como se indica entre `User` y `Activities`) para operaciones que requieren datos de diferentes dominios.*
 
@@ -236,15 +264,13 @@ Utilizado para datos con mayor flexibilidad, esquemas dinámicos o alta volúmen
 ---
 
 #### Deployment View
-<div align="center"><img width="80%" alt="image" src="https://github.com/user-attachments/assets/052aac27-4480-46d7-8441-eb6917a0a6fc" /></div>
+<div align="center"><img width="80%" alt="image" src=diagramas/Diagrama_Despliegue.png /></div>
 
-#### Description of architectural patterns used
-
-La vista de despliegue (Deployment View) de RETOFIT 2.0 ilustra la distribución física del sistema en nodos de hardware y software.
+La vista de despliegue (Deployment View) de RETOFIT 2.0 ilustra la distribución física del sistema en contenedores Docker y servicios externos.
 
 **Patrones arquitectónicos aplicados:**
 
-1. **Containerization Pattern**: Cada microservicio se empaqueta en un contenedor Docker independiente (K8s Pod), garantizando portabilidad y aislamiento (RNF-19).
+1. **Containerization Pattern**: Cada microservicio y frontend se empaqueta en un contenedor Docker independiente, garantizando portabilidad y aislamiento (RNF-19).
 
 2. **Client-Server Pattern**: Separación entre cliente (navegador del usuario) y servidores (Application Server y Data Server).
 
@@ -252,9 +278,11 @@ La vista de despliegue (Deployment View) de RETOFIT 2.0 ilustra la distribución
 
 4. **Managed Database Services**: Uso de servicios cloud (AWS RDS para PostgreSQL, Railway para MongoDB).
 
-5. **Orchestration Pattern**: Despliegue como Kubernetes Pods para orquestación y escalamiento.
+5. **Reverse Proxy Pattern**: Uso de Nginx como proxy inverso para manejar tráfico HTTPS y enrutar peticiones a los contenedores internos.
 
-#### Description of architectural elements and relations
+---
+
+**Descripción de los elementos y relaciones:**
 
 **1. Clients (Nodo de Cliente)**
 
@@ -263,12 +291,12 @@ La vista de despliegue (Deployment View) de RETOFIT 2.0 ilustra la distribución
 **Descripción:** Navegadores web en dispositivos de usuario final.
 
 **Responsabilidades:**
-- Ejecutar la aplicación web Next.js
-- Realizar peticiones HTTP/HTTPS al Application Server
-- Renderizar interfaces de usuario
+- Ejecutar la aplicación web Next.js.
+- Realizar peticiones HTTP/HTTPS al Application Server.
+- Renderizar interfaces de usuario.
 
 **Relaciones:**
-- **Cliente → Application Server:** HTTP/HTTPS sobre internet (puerto 3000)
+- **Cliente → Application Server:** HTTP/HTTPS sobre internet (puertos 3000 y 3001).
 
 ---
 
@@ -276,56 +304,51 @@ La vista de despliegue (Deployment View) de RETOFIT 2.0 ilustra la distribución
 
 **Descripción:** Servidor que aloja la lógica de presentación y negocio del sistema.
 
-**Plataforma:** Servidor cloud ejecutando Kubernetes
+**Plataforma:** Contenedores Docker orquestados con Docker Compose.
 
 **Componentes internos:**
 
 **a) Presentation Layer**
 
-- **Front web (Next.js)**
-  - **Contenedor:** Node 20
-  - **Puerto:** 3000
-  - **Despliegue:** Kubernetes Pod
-  - **Responsabilidades:** Server-Side Rendering (SSR), servir assets estáticos, gestión de sesiones
+- **Front web (Next.js)**  
+  - **Contenedor:** Node.js 20  
+  - **Puerto:** 3000  
+  - **Responsabilidades:** Server-Side Rendering (SSR), servir assets estáticos, gestión de sesiones.
 
-- **Front mobile:** En desarrollo futuro
+- **Landing Page (Next.js)**  
+  - **Contenedor:** Node.js 18  
+  - **Puerto:** 3001  
+  - **Responsabilidades:** Página de aterrizaje pública.
 
 **b) API Gateway**
 
-- **Contenedor:** Java 17 + Spring Cloud Gateway
-- **Puerto:** 8080
-- **Despliegue:** Kubernetes Pod
-- **Responsabilidades:**
-  - Punto único de entrada para peticiones
-  - Enrutamiento a microservicios
-  - Logging centralizado
-- **Rutas:**
-  - `/api/auth/**` → Auth Service (8001)
-  - `/api/users/**` → User Service (8004)
-  - `/api/activities/**` → Activities Service (8002)
-  - `/api/gamification/**` → Gamification Service (8003)
-  - `/api/posts/**` → Posts Service (8005)
-  - `/api/admin/**` → Admin Service (8006)
+- **Contenedor:** Java 17 + Spring Cloud Gateway  
+- **Puerto:** 8080  
+- **Responsabilidades:**  
+  - Punto único de entrada para peticiones.  
+  - Enrutamiento a microservicios.  
+  - Logging centralizado.  
+  - Implementación de Circuit Breaker y Rate Limiting.
 
 **c) Service Layer**
 
-Cada microservicio se despliega como Kubernetes Pod independiente:
+Cada microservicio se despliega como contenedor Docker independiente:
 
-1. **auth-service** - Python 3.13 + FastAPI (puerto 8001)
-2. **admin-service** - PHP 8.4 + Slim Framework (puerto 8006)
-3. **gamification-service** - Python 3.13 + FastAPI (puerto 8003)
-4. **user-service** - Python 3.13 + FastAPI (puerto 8004)
-5. **activities-service** - Go 1.25 + Gin Framework (puerto 8002)
-6. **post-service** - Node.js 20 + TypeScript + Prisma (puerto 8005)
+1. **auth-service** - Python 3.11 + FastAPI (puerto 8001).  
+2. **admin-service** - PHP 8.4 + Slim Framework (puerto 8006).  
+3. **gamification-service** - Python 3.11 + FastAPI (puerto 8003).  
+4. **user-service** - Python 3.11 + FastAPI (puerto 8004).  
+5. **activities-service** - Go 1.25 + Gin Framework (puerto 8002).  
+6. **post-service** - Node.js 20 + TypeScript + Prisma (puerto 8005).
 
 **Comunicación interna:**
-- **Service-to-Service:** REST API sobre HTTP
-- **Service Discovery:** Kubernetes DNS
-- **gRPC:** Activities Service → User Service para validación
+- **Service-to-Service:** REST API sobre HTTP.
+- **Service Discovery:** Docker Compose DNS.
+- **gRPC:** Activities Service → User Service para validación.
 
 **Relaciones:**
-- **Application Server → Data Server:** TCP para conexiones a bases de datos
-- **Comunicación interna:** Red privada dentro del cluster Kubernetes
+- **Application Server → Data Server:** TCP para conexiones a bases de datos.
+- **Comunicación interna:** Red privada dentro de Docker Compose.
 
 ---
 
@@ -333,7 +356,7 @@ Cada microservicio se despliega como Kubernetes Pod independiente:
 
 **Descripción:** Infraestructura de bases de datos gestionadas en la nube.
 
-**Plataforma:** AWS RDS
+**Plataforma:** AWS RDS y Railway.
 
 **Componentes:**
 
@@ -341,84 +364,184 @@ Cada microservicio se despliega como Kubernetes Pod independiente:
 
 **Proveedor:** AWS RDS
 
-**Seguridad:** 
-- Encriptación en reposo y en tránsito (SSL/TLS)
-- Security Groups limitando acceso solo desde Application Server
+**Seguridad:**  
+- Encriptación en reposo y en tránsito (SSL/TLS).  
+- Security Groups limitando acceso solo desde Application Server.
 
 **Bases de datos alojadas:**
-
-1. **retofit_posts_db** - Posts Service (posts, likes, comments)
-2. **retofit_retos_db** - Admin Service (challenges, progress_logs)
-3. **retofit_auth_db** - Auth Service (users, tokens)
-4. **retofit_activities_db** - Activities Service (activities, activity_types)
-5. **retofit_users_db** - User Service (profiles, training_history)
+1. **retofit_posts_db** - Posts Service (posts, likes, comments).  
+2. **retofit_retos_db** - Admin Service (challenges, progress_logs).  
+3. **retofit_auth_db** - Auth Service (users, tokens).  
+4. **retofit_activities_db** - Activities Service (activities, activity_types).  
+5. **retofit_users_db** - User Service (profiles, training_history).
 
 **Conectores:**
-- Python services → `psycopg2`
-- Node.js service → `pg` via Prisma ORM
-- PHP service → `PDO PostgreSQL`
-- Go service → `pq`
+- Python services → `psycopg2`.  
+- Node.js service → `pg` via Prisma ORM.  
+- PHP service → `PDO PostgreSQL`.  
+- Go service → `pq`.
 
 **b) MongoDB Cluster (MongoDB 6.0)**
 
 **Proveedor:** Railway (MongoDB Atlas)
 
-**Base de datos:**
+**Base de datos:**  
+1. **retofit_gamification_db** - Gamification Service  
+   - Colecciones: user_points, achievements, events, leaderboard.  
+   - Ventaja: Esquema flexible para diferentes tipos de logros.
 
-1. **retofit_gamification_db** - Gamification Service
-   - Colecciones: user_points, achievements, events, leaderboard
-   - Ventaja: Esquema flexible para diferentes tipos de logros
+**Conector:**  
+- Python → `pymongo`.
 
-**Conector:**
-- Python → `pymongo`
-
-**Relaciones:**
-- **Data Server ← Application Server:** TCP desde cada microservicio a su base de datos
-- **Protocolo:** TCP/IP con SSL/TLS
-- **Puertos:** PostgreSQL (5432), MongoDB (27017)
-- **Seguridad:** No hay acceso público directo a las bases de datos
+**Relaciones:**  
+- **Data Server ← Application Server:** TCP desde cada microservicio a su base de datos.  
+- **Protocolo:** TCP/IP con SSL/TLS.  
+- **Puertos:** PostgreSQL (5432), MongoDB (27017).  
+- **Seguridad:** No hay acceso público directo a las bases de datos.
 
 ---
 
 **Flujo de comunicación:**
 
 ```
-Usuario (Navegador) → [HTTP/HTTPS] → Front web → [REST] → API Gateway → 
+Usuario (Navegador) → [HTTP/HTTPS] → Front web / Landing Page → [REST] → API Gateway → 
 [REST] → Microservicio → [TCP/SSL] → Base de datos
 ```
 
+
 **Comunicación especial:**
-- **Activities Service → User Service:** gRPC
-- **Admin Service → Auth/User Service:** HTTP via Guzzle
+- **Activities Service → User Service:** gRPC.  
+- **Admin Service → Auth/User Service:** HTTP via Guzzle.
 
 ---
 
 **Características de despliegue:**
 
-**Escalabilidad:**
-- Aumento de réplicas de Pods según carga
-- Ajuste de recursos por Pod
+**Escalabilidad:**  
+- Aumento de réplicas de contenedores según carga.  
+- Ajuste de recursos por contenedor.
 
-**Alta disponibilidad:**
-- Servicios críticos con múltiples réplicas
-- Bases de datos distribuidas en múltiples zonas
-- Kubernetes reemplaza automáticamente Pods no saludables
+**Alta disponibilidad:**  
+- Servicios críticos con múltiples réplicas.  
+- Bases de datos distribuidas en múltiples zonas.  
+- Docker Compose reinicia automáticamente contenedores no saludables.
 
-**Seguridad:**
-- Network Policies de Kubernetes
-- Credenciales en Kubernetes Secrets
-- HTTPS obligatorio (RNF-3)
-- Encriptación en bases de datos
+**Seguridad:**  
+- Redes privadas en Docker Compose.  
+- Credenciales en archivos `.env`.  
+- HTTPS obligatorio (RNF-3).  
+- Encriptación en bases de datos.
 
-**Cumplimiento de requisitos:**
-- **RNF-19:** Despliegue orientado a contenedores ✓
-- **RNF-10:** Arquitectura distribuida ✓
+**Cumplimiento de requisitos:**  
+- **RNF-19:** Despliegue orientado a contenedores ✓  
+- **RNF-10:** Arquitectura distribuida ✓  
 - **RNF-3:** HTTPS en rutas de autenticación ✓
 
 ---
 
+## Security View
+
+Esta sección describe cómo se gestionan los aspectos clave de seguridad dentro de la arquitectura de RetoFit 2.0, incluyendo amenazas, tácticas aplicadas y patrones arquitectónicos utilizados. El propósito de este view es complementar la información del *Deployment View* mostrando cómo se protege cada punto del sistema, desde la comunicación externa hasta las interacciones internas entre microservicios.
+
+
+### 1. Threat Model — Security Scenarios
+
+Este diagrama representa una visión general de los flujos de datos críticos dentro del sistema y los puntos donde pueden aparecer amenazas relevantes.  
+Incluye el recorrido que realiza un usuario desde el frontend, pasando por Nginx y el API Gateway, y llegando a los microservicios expuestos en la red privada.
+
+El diagrama identifica amenazas comunes como:
+- Manipulación de tokens durante la comunicación.
+- Interceptación de tráfico externo.
+- Peticiones maliciosas hacia rutas críticas.
+- Accesos indebidos a servicios internos.
+
+**Diagrama:**  
+
+![Threat Model](<diagramas/threat model diagram.png>)
+---
+
+### 2. Security Tactics — Controles Aplicados
+
+Este diagrama muestra, desde una perspectiva arquitectónica, qué tácticas de seguridad se aplican sobre cada uno de los componentes del sistema.  
+El objetivo es presentar de manera clara cómo se refuerza cada capa del modelo:
+
+- Terminación de HTTPS en Nginx.  
+- Validación y emisión de JWT en el Auth Service.  
+- Filtrado y enrutamiento controlado en el API Gateway.  
+- Aislamiento por redes internas para microservicios.  
+- Respeto al patrón “database-per-service”.
+
+Esto complementa y amplía la información vista en el *Deployment View*.
+
+**Diagrama:**  
+![Security Tactics](<diagramas/security tactics diagram.png>)
+
+---
+
+### 3. Security Architecture Pattern — Patrones Aplicados
+
+Este diagrama presenta una vista de alto nivel sobre cómo los componentes principales se organizan siguiendo patrones de seguridad utilizados en arquitecturas modernas.
+
+Entre los patrones incluidos se encuentran:
+- **Reverse Proxy** (Nginx recibiendo todo el tráfico entrante).  
+- **API Gateway Pattern** para controlar el acceso a los microservicios.  
+- **Separation of Concerns** al delegar autenticación en un solo servicio.  
+- **Network Segmentation** mediante redes públicas y privadas.  
+- **Database-per-Service Pattern** reforzando el aislamiento de datos.
+
+Este diagrama sirve para entender rápidamente cómo la estructura general del sistema favorece la seguridad end-to-end.
+
+**Diagrama:**  
+![Security Architecture Pattern](<diagramas/security arquitecture pattern diagram.png>)
+
+---
+
+### 4. Authentication Sequence — Flujo de Autenticación
+
+Este diagrama de secuencia ilustra el proceso completo desde que un usuario inicia sesión en la aplicación web hasta que obtiene un JWT válido, así como la validación posterior del token cuando realiza solicitudes a microservicios protegidos.
+
+El flujo cubre:
+1. Envío de credenciales desde el frontend.  
+2. Paso por Nginx y enrutamiento por el API Gateway.  
+3. Validación de credenciales por el Auth Service.  
+4. Emisión de un JWT si las credenciales son válidas.  
+5. Validación posterior del token en cada request autenticada.
+
+Este diagrama complementa otros views técnicos del sistema mostrando claramente la interacción entre frontend, proxy, gateway y servicios internos en procesos sensibles.
+
+**Diagrama:**  
+![Auth Sequence](<diagramas/auth flow.png>)
+
+### 5. HTTPS Evidence — Deployment Security Proof
+
+Esta sección presenta evidencia visual de que el sistema está funcionando efectivamente bajo HTTPS, con terminación TLS en Nginx tal como se describe en el *Deployment View* y en las tácticas de seguridad previamente enumeradas.
+
+Las capturas de pantalla demuestran:
+
+- Que el frontend es servido mediante `https://localhost`.
+- Que el navegador reconoce el certificado instalado en Nginx.
+- Que la conexión es segura (🔒) y el certificado es válido.
+- Que no existen advertencias de contenido inseguro.
+- Que el tráfico entre usuario ⇆ Nginx se encuentra cifrado.
+
+Estas evidencias complementan el modelo de amenazas y validan la configuración real del entorno.
+
+**Capturas:**
+
+1. **Indicador de conexión segura (HTTPS activo): NO LO PUDE PONER**    
+   ![HTTPS Lock](<diagramas/https-lock.png>)
+
+2. **Detalles del certificado y su validez:**  
+   ![Certificate Details](diagramas/certificados_https.png)
+
+3. **Frontend cargado correctamente bajo HTTPS: NO LO PUDE PONER**  
+   ![Frontend HTTPS](<diagramas/frontend-https.png>)
+
+---
+
+
 ## Decomposition View
-<div align="center"><img width="80%" alt="image" src="https://github.com/user-attachments/assets/8e98e040-9933-42a3-89da-af5e0bc062e3" /></div>
+<div align="center"><img width="80%" alt="image" src="diagramas/Diagrama_capas_general.png" /></div>
 
 
 #### 🎨 FRONT
@@ -458,267 +581,233 @@ Su función principal es redirigir, filtrar y centralizar la comunicación entre
 - Carpeta `target/`  
   Contiene el archivo compilado `api-gateway-1.0.0.0.jar`, que puede ejecutarse para iniciar el Gateway.
 
+---
 
 ## Prototipo
-### 🚀 Guía de Instalación y Ejecución
+## 🚀 Guía de Instalación y Ejecución
+Recordar que tiene que tener docker instalado y ejecutandose.
 
-### ✅ Requisitos Previos
+Para iniciar la aplicación en docker, se tiene que seguir los siguientes pasos:
 
-Asegúrate de tener instalado lo siguiente:
-
-- Java (versión 17.+). Ni superior ni inferior.
-- Maven.
-- [Node.js](https://nodejs.org/) (versión 18 o superior)
-- [Python](https://www.python.org/downloads/) (versión 3.9 o superior)
-- `npm` (se instala con Node.js) o `yarn`
-- PHP (versión 8.0 o superior)
-- Composer (gestor de dependencias para PHP)
-
-### Clonar el Repositorio
-
-Primero, clona este repositorio en tu máquina local.
+**1. Contruir todos los contenedores**
 
 ```shell
-git clone <URL_DEL_REPOSITORIO_GIT>
-cd RETOFIT_2.0
+docker compose build
 ```
 
-### Opción automática de instalación y ejecución
+**2. Lanzar todos los contenedores**
 
-#### Linux
+```shell
+docker compose up -d
+```
 
-Ejecutar los siguientes comandos en la raíz del proyecto:
+Abre la siguiente url en el navegador:
 
-1. Dar permisos de ejecución a los archivos ```instalaciones.sh``` y a ```arrance_sin_docker.sh```.
+- http://localhost:3000
+
+
+---
+**Ver el estado de todos los contenedores**
+
+```shell
+docker compose ps
+```
+
+**Ver logs de un servicio específico**
+
+```shell
+docker compose logs -f [nombre-servicio]
+```
+**Para apagar y borrar todos los contenedores**
+
+```shell
+docker compose down
+```
+---
+## 🔒 Pruebas de Patrones de Seguridad
+
+### 🛡️ Seguridad y Segmentación de Red
+
+El proyecto implementa una estrategia de **defensa en profundidad** mediante segmentación de redes en Docker. Esto asegura que los microservicios no sean accesibles directamente desde el frontend o internet, forzando todo el tráfico a través del API Gateway.
+
+### Arquitectura de Redes
+
+| Red | Tipo | Servicios Conectados | Descripción |
+|-----|------|----------------------|-------------|
+| **public-net** | Bridge | Nginx, Landing Page, Frontend, API Gateway | Red expuesta (vía proxy) para la interfaz de usuario. |
+| **private-net** | Bridge | API Gateway, Todos los Microservicios, Bases de Datos | Red aislada. Contiene la lógica de negocio y datos. |
+
+### Verificación de Aislamiento
+
+Se ha incluido un script automatizado para validar que las reglas de firewall de Docker estén funcionando correctamente.
+
+![Diagrama segmentacion de Red](diagramas/Segmentacion_Red.png)
+
+**Requisitos:**
+- Python 3 instalado.
+- Contenedores corriendo (`docker compose up -d`).
+
+**Ejecutar prueba:**
+```bash
+# Ejecutar desde la raíz del proyecto
+python scripts/verify_network.py
+```
+El script simula un "ataque" interno intentando realizar conexiones de red no autorizadas entre contenedores. Su objetivo es confirmar que:
+
+1.  **El Frontend (Público)** NO tenga acceso directo a los servicios privados (como Auth o Bases de Datos).
+2.  **El API Gateway** SÍ tenga acceso a los servicios privados (actuando como puente).
+3.  **El Proxy Inverso (Nginx)** pueda comunicarse con los frontends.
+
+**Resultados esperados:**
+```bash
+=== Iniciando Verificación de Segmentación de Red (TCP) ===
+Usando Netcat (nc) para compatibilidad con Alpine Linux
+
+Probando conexión: [frontend] -> auth-service:8001... ✔ ÉXITO (Bloqueado correctamente)
+Probando conexión: [api-gateway] -> auth-service:8001... ✔ ÉXITO (Conectado)
+Probando conexión: [nginx-proxy] -> landing-page:3001... ✔ ÉXITO (Conectado)
+
+=== Resultados ===
+Pruebas ejecutadas: 3
+Pruebas pasadas: 3
+```
+**Beneficios Demostrados:**
+- Reducción de la Superficie de Ataque: Si un atacante logra vulnerar el Frontend (que está expuesto a internet), NO tendrá acceso directo a tus microservicios críticos (Auth, Usuarios, Base de Datos). El firewall de Docker le impedirá ver esas IPs o puertos.
+
+- Gatekeeper forzado (Patrón Gateway):Se obliga a que todo el tráfico pase por el API Gateway. Esto garantiza que nadie pueda "saltarse" los mecanismos de seguridad centralizados.
+
+- Aislamiento de Datos: Las bases de datos y servicios backend viven en una "burbuja" segura. Solo el API Gateway (que tiene una "tarjeta de acceso" especial al estar en ambas redes) puede hablar con ellos.
+### Rate Limiting Pattern
+
+El sistema implementa el patrón **Rate Limiting**  utilizando **Nginx** como Reverse Proxy. Este mecanismo protege a los microservicios situados abajo (como `auth-service` y `user-service`) de ser saturados por picos de tráfico o ataques de denegación de servicio (DoS).
+
+#### Configuración del Patrón
+
+- **Zona de Memoria:** `apilimit` (10MB compartidos)
+- **Tasa Sostenida:** 10 peticiones/segundo (`10r/s`)
+- **Ráfaga (Burst):** 20 peticiones
+- **Comportamiento:** Las peticiones dentro de la ráfaga se procesan instantáneamente (`nodelay`), pero si se excede la capacidad total (Tasa + Ráfaga), Nginx corta la conexión inmediatamente.
+
+Se incluye un script en Python para validar la eficacia del bloqueo bajo alta concurrencia:
+
+**Prueba de Saturación**
 
 ```bash
-chmod +x arrance_sin_docker.sh
-
-chmod +x instalaciones.sh
+python test_rate_limit.py
 ```
 
-2. Ejecutar ```instalaciones.sh```
+**Salida esperada**
+- Peticiones 1-30 (Aprox): Reciben código 200 OK o 405 Method Not Allowed (proveniente del microservicio). Esto indica tráfico legítimo aceptado.
 
+- Peticiones 31-50 (Aprox): Reciben código 503 Service Temporarily Unavailable. Este error es generado por Nginx, demostrando que la petición nunca tocó el microservicio ni la base de datos.
 ```bash
-./instalaciones.sh
+🚀 Iniciando prueba de Rate Limiting (Enfoque Arquitectónico)...
+📡 URL Objetivo: https://localhost/api/users/
+⚡ Lanzando 50 peticiones simultáneas...
+
+📊 --- RESULTADOS DEL TEST ---
+⏱️  Tiempo total: 0.89 segundos
+✅ Peticiones Aceptadas (Pasaron al Backend): 29
+⛔ Peticiones Bloqueadas (Detenidas por Nginx): 21
+----------------------------------------
+[EXITO] El patrón Rate Limiting está ACTIVO.
+       Nginx protegió el sistema del exceso de tráfico.
 ```
+**Beneficios Demostrados**
+1. Protección Anti-DoS: Evita que un atacante inunde el sistema con solicitudes.
 
-3. Ejecutar ```arrance_sin_docker.sh```
+2. Estabilidad: Garantiza que los microservicios (User, Auth, etc.) solo reciban una carga de trabajo que pueden procesar.
 
-```bash
-./arrance_sin_docker.sh
-```
+3. Seguridad en el Borde: El tráfico malicioso es detenido en Nginx, antes de consumir recursos de procesamiento del API Gateway o la Base de Datos.
 
-#### Windows
 
-Ejecutar los siguientes comandos en la raíz del proyecto y como administrador en el ```Powershell```:
+## 🧪 Pruebas de Patrones de Escalabilidad
 
-1. Ejecutar ```instalaciones.ps1```
+### Circuit Breaker Pattern
+
+El sistema implementa el patrón **Circuit Breaker** usando Spring Cloud Gateway y Resilience4j para mejorar la resiliencia y prevenir cascadas de fallos cuando un servicio está caído.
+
+#### Configuración del Circuit Breaker
+
+- **Umbral de fallos:** 50%
+- **Llamadas mínimas:** 5
+- **Timeout por petición:** 5 segundos
+- **Tiempo en estado OPEN:** 10 segundos
+- **Estados:** CLOSED → OPEN → HALF_OPEN → CLOSED
+
+#### Scripts de Prueba
+
+Se incluyen dos scripts PowerShell para probar el Circuit Breaker:
+
+**1. Prueba Directa al Gateway (sin Nginx)**
 
 ```powershell
-.\instalaciones.ps1
+.\test-circuit-breaker-direct.ps1
 ```
 
-2. Ejecutar ```arrance_sin_docker.ps1```
+Este script prueba el Circuit Breaker accediendo directamente al API Gateway en el puerto 8081, sin pasar por Nginx.
+
+**Resultados esperados:**
+- Tiempo SIN Circuit Breaker: ~24-30 segundos (timeouts)
+- Tiempo CON Circuit Breaker: ~1-2 segundos (fallback inmediato)
+- **Mejora de performance: ~15-20x más rápido**
+
+**2. Prueba a través de Nginx (HTTPS)**
 
 ```powershell
-.\arrance_sin_docker.ps1
+.\test-circuit-breaker-nginx.ps1
 ```
 
-Si hay errores de permisos:
+Este script prueba el Circuit Breaker en un escenario real, accediendo a través de Nginx con HTTPS y Rate Limiting configurado.
+
+**Resultados esperados:**
+- Tiempo SIN Circuit Breaker: ~5-10 segundos
+- Tiempo CON Circuit Breaker: ~1-2 segundos
+- **Mejora de performance: ~4-5x más rápido**
+
+#### Monitoreo del Circuit Breaker
+
+Puedes verificar el estado de los Circuit Breakers en tiempo real:
 
 ```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+# Ver todos los circuit breakers
+Invoke-WebRequest -Uri http://localhost:8081/actuator/circuit-breakers -UseBasicParsing
+
+# Ver un circuit breaker específico
+Invoke-WebRequest -Uri http://localhost:8081/actuator/circuit-breakers/usersServiceCircuitBreaker -UseBasicParsing
 ```
 
-3. En el navegador poner la dirección: **http://localhost:3000/**
+#### Endpoints de Fallback
 
-### Opción manual
+Cuando un servicio falla y el Circuit Breaker se activa (estado OPEN), el sistema retorna automáticamente respuestas de fallback con mensajes descriptivos:
 
-En caso de que los scripts no se ejecuten correctamente, este proceso, se puede hacer de forma manual. Debe seguir los siguientes pasos:
-
-### 1. Configurar el Frontend
-
-El frontend es una aplicación de Next.js. Para ejecutarla, sigue estos pasos:
-
-```shell
-# 1. Navega a la carpeta del frontend
-cd front
-
-# 2. Instala todas las dependencias del proyecto
-npm install
-
-# 3. Ejecuta el servidor de desarrollo
-npm run dev
+```json
+{
+  "timestamp": "2025-11-17T03:02:23.822894950",
+  "status": 503,
+  "error": "Service Unavailable",
+  "message": "El servicio de usuarios no está disponible temporalmente. Por favor, intente más tarde.",
+  "service": "Users Service",
+  "circuitBreakerActivated": true
+}
 ```
 
-✨ ¡Listo! La aplicación de frontend estará disponible en **[http://localhost:3000](http://localhost:3000)**.
+#### Beneficios Demostrados
 
-### 2. Configurar el Backend (Microservicios)
+1. **Resiliencia:** El sistema sigue respondiendo aunque servicios internos fallen
+2. **Performance:** Respuestas inmediatas (sin esperar timeouts de 5 segundos)
+3. **Auto-recuperación:** El circuito se cierra automáticamente cuando el servicio se recupera
+4. **Prevención de cascada:** Evita que fallos en un servicio tumben todo el sistema
+5. **Experiencia de usuario:** Mensajes claros en lugar de timeouts largos
 
-El backend consta de varios microservicios independientes. Cada uno debe ser configurado y ejecutado en su propia terminal.
 
-### a. Proceso General para cada servicio en FastApi
-
-Para los microservicios: `auth-service`, `gamification-service` y `user-service`, debes seguir estos pasos desde la raíz del proyecto:
-
-1.  **Navegar a la carpeta del servicio**: `cd services/<nombre-del-servicio>`
-2.  **Crear un entorno virtual**: 
-    - En **Windows**: `python -m venv venv`
-    - En **Linux**: `python3 -m venv venv`
-3.  **Activar el entorno virtual**:
-    -   En **Windows**: `venv\Scripts\activate`
-    -   En **macOS/Linux**: `source venv/bin/activate`
-4.  **Instalar las dependencias**: `pip install -r requirements.txt`
-
-Una vez completados estos pasos, puedes ejecutar el servicio específico como se describe a continuación.
-
-#### ▶️ Ejecutar los Microservicios en FastApi
-
-Abre una terminal separada para cada servicio.
-
-**1. Authentication Service (`auth-service`)**
-
-```shell
-# Navega a la carpeta del servicio
-cd services/auth-service
-
-# (Asegúrate de que tu entorno virtual esté activado)
-# Ejecuta el servidor
-uvicorn app.main:app --reload --port 8001
-```
-✅ El servicio de autenticación estará escuchando en **[http://localhost:8001](http://localhost:8001)**.
-
-**2. Gamification Service (`gamification-service`)**
-
-```shell
-# Navega a la carpeta del servicio
-cd services/gamification-service
-
-# (Asegúrate de que tu entorno virtual esté activado)
-# Ejecuta el servidor
-uvicorn app.main:app --reload --port 8003
-```
-✅ El servicio de gamificación estará escuchando en **[http://localhost:8003](http://localhost:8003)**.
-
-**3. User Service (`user-service`)**
-
-```shell
-# Navega a la carpeta del servicio
-cd services/user-service
-
-# (Asegúrate de que tu entorno virtual esté activado)
-# Ejecuta el servidor
-uvicorn app.main:app --reload --port 8004
-```
-✅ El servicio de usuarios estará escuchando en **[http://localhost:8004](http://localhost:8004)**.
-
-### b. Proceso para el servicio de actividades en `Go`
-
-Primero, te ubicas en la carpeta de ***physical_activities_service***-
-
-```shell
-# Navega a la carpeta del servicio
-cd services/user-physical_activities_service
-```
-
-Luego, ejecutas los siguientes comandos para instalar las librerias y dependencias, y ejecutar el servicio:
-
-```shell
-# Instalar librerías
-go mod tidy
-
-# Ejecutar servicio
-go run cmd/rest_api/main.go
-```
-
-### c. Proceso para el servicio de administración en `PHP`
-
-Nos ubicamos en la carpeta ***admin-service***.
-
-```shell
-cd services/admin-service
-```
-
-Luego, instala las dependencias del proyecto con Composer.
-
-Este comando lee el archivo `composer.json` y descarga todas las librerías necesarias (como Slim Framework y Guzzle) en la carpeta `vendor/`.
-
-```shell
-composer install
-```
-
-Despues, inicia el servidor de desarrollo integrado de PHP.
-
-El servicio se ejecutará en el puerto 8006. El flag `-t public` es
-importante porque establece el directorio `public/` como la raíz del servicio.
-
-```shell
-php -S localhost:8006 -t public
-```
-
-Este patrón de comunicación se realiza mediante **Guzzle**, un cliente **HTTP** para **PHP**. Esto permite que los microservicios, aunque escritos en diferentes lenguajes, colaboren entre sí de forma transparente.
-
-### d. Proceso para el servicio de administración en `Node.js + TypeScript`
-
-#### 1. Navegar al directorio del servicio
-
-```bash
-cd services/posts-service
-```
-
-#### 2. Instalar dependencias
-
-```bash
-npm install
-```
-
-#### 3. Generar cliente de Prisma
-
-```bash
-npx prisma generate
-```
-#### 4. Ejecutar migraciones de base de datos (OPCIONAL)
-
-```bash
-npx prisma migrate dev --name init
-```
-
-Si te pregunta por el nombre de la migración, usa "init" o "posts_service_initial".
-
-#### 5. Iniciar el servidor en modo desarrollo
-
-```bash
-npm run dev
-```
-
-El servidor estará disponible en `http://localhost:8005`
-
-### 3. Configurar el Api Gateway
-
-#### 1. Navegar al directorio del api gateway
-
-```bash
-cd api_gateway
-```
-
-#### 2. Compilar api gateway
-
-```bash
-mvn clean package -DskipTests
-```
-
-#### 3. Ejecutar ***.jar***
-
-```bash
-java -jar target/*.jar
-```
+---
 
 ## 📁 Estructura del Proyecto
 
 ```
 RETOFIT_2.0/
-├── api_gateway/                     # Api Gateway (Java)
+├── api_gateway_2.1/            # Api Gateway (Java + Spring Cloud Gateway)
 │   ├── src/
 |   |   └── main/ 
 |   |       ├── java/
@@ -726,25 +815,135 @@ RETOFIT_2.0/
 |   |       |       └── example/
 |   |       |           └── api_gateway/
 |   |       |               ├── config/
-|   |       |               |   └── CorsConfig.java
+|   |       |               |   ├── CorsConfig.java
+|   |       |               |   └── CircuitBreakerConfig.java
 |   |       |               ├── filter/
 |   |       |               |   └── LoggingFilter.java
 |   |       |               └── Application.java
 │   |       └── resources/
 |   |           └── application.yml
 │   ├── pom.xml
-├── front/                     # Frontend (Next.js)
-│   ├── components/
-│   ├── pages/
-│   └── ...
-├── services/                  # Microservicios
-|    ├── activities-service/    # (Deprecated)
-|    ├── auth-service/          # (Python) Servicio de Autenticación
-|    ├── admin-service/         # (PHP) Servicio de Administración
-|    ├── gamification-service/  # (Python) Servicio de Gamificación
-|    ├── physical_activities_service/  # (Go) Servicio de actividades
-|    ├── posts-service          # (Node.js + TypeScript) Servicio de foro
-|    └── user-service/          # (Python) Servicio de Usuarios
+├── landing-page/              # 🆕 Landing Page Microfrontend (Next.js - Puerto 3001)
+│   ├── src/
+│   │   ├── app/              # App Router
+│   │   │   ├── page.tsx     # Página principal
+│   │   │   ├── layout.tsx   # Layout raíz
+│   │   │   └── globals.css  # Estilos
+│   │   ├── components/      # Componentes UI
+│   │   │   ├── ui/         # shadcn/ui
+│   │   │   └── icons.tsx
+│   │   └── lib/            # Utilidades
+│   ├── public/
+│   │   └── images/         # Imágenes del equipo
+│   ├── Dockerfile          # Multi-stage build
+│   ├── package.json
+│   ├── next.config.ts
+│   ├── tailwind.config.ts
+│   └── README.md
+├── front/                     # Frontend Principal (Next.js - Puerto 3000)
+│   ├── src/
+│   │   ├── app/              # App Router
+│   │   │   ├── (auth)/      # Rutas de autenticación
+│   │   │   ├── dashboard/   # Dashboard
+│   │   │   └── admin/       # Panel admin
+│   │   ├── components/      # Componentes React
+│   │   ├── hooks/          # Custom hooks
+│   │   ├── lib/            # APIs y utilidades
+│   │   └── ai/             # Integración Genkit
+│   ├── public/
+│   ├── Dockerfile
+│   ├── package.json
+│   └── next.config.ts
+├── nginx/                     # Reverse Proxy
+│   ├── nginx.conf            # Configuración de enrutamiento
+│   └── tls/                  # Certificados SSL
+├── services/                  # Microservicios Backend
+|    ├── auth-service/          # (Python + FastAPI) Puerto 8001
+|    ├── admin-service/         # (PHP + Slim) Puerto 8006
+|    ├── gamification-service/  # (Python + FastAPI) Puerto 8003
+|    ├── physical_activities_service/  # (Go + Gin) Puerto 8002
+|    ├── posts-service          # (Node.js + TypeScript) Puerto 8005
+|    └── user-service/          # (Python + FastAPI) Puerto 8004
+├── docker-compose.yaml        # Orquestación de contenedores
+├── microfrontends.ps1         # 🆕 Script de gestión de microfrontends
+├── MICROFRONTENDS.md          # 🆕 Documentación de arquitectura
 ├── .gitignore
 └── README.md
+```
+
+## 🚀 Guía de Inicio Rápido
+
+### Requisitos Previos
+
+- **Docker** y **Docker Compose** instalados
+- **Node.js** 18+ (para desarrollo local)
+- **PowerShell** (en Windows)
+
+### Opción 1: Despliegue Completo con Docker (Recomendado)
+
+```bash
+# Clonar el repositorio
+git clone https://github.com/RetoFit/RETOFIT_2.0.git
+cd RETOFIT_2.0
+
+# Levantar todos los servicios
+docker-compose up --build
+
+# Acceder a la aplicación
+# Landing page: https://localhost/
+# Frontend: https://localhost/dashboard
+# API: https://localhost/api/
+```
+
+### Opción 2: Desarrollo Local de Microfrontends
+
+```powershell
+# Usar el script de gestión (Windows)
+.\microfrontends.ps1 install    # Instalar dependencias
+.\microfrontends.ps1 dev        # Modo desarrollo
+
+# O manualmente
+cd landing-page
+npm install
+npm run dev  # Puerto 3001
+
+# En otra terminal
+cd front
+npm install
+npm run dev  # Puerto 3000
+```
+
+### Comandos Útiles del Script de Microfrontends
+
+```powershell
+.\microfrontends.ps1 dev         # Iniciar ambos frontends en dev
+.\microfrontends.ps1 build       # Construir para producción
+.\microfrontends.ps1 docker-up   # Levantar con Docker
+.\microfrontends.ps1 docker-down # Detener Docker
+.\microfrontends.ps1 install     # Instalar dependencias
+.\microfrontends.ps1 clean       # Limpiar node_modules
+.\microfrontends.ps1 help        # Ver ayuda
+```
+
+### Acceso a la Aplicación
+
+Una vez desplegado el sistema:
+
+| Componente | URL | Descripción |
+|------------|-----|-------------|
+| **Landing Page** | https://localhost/ | Página de bienvenida |
+| **Login** | https://localhost/login | Autenticación |
+| **Dashboard** | https://localhost/dashboard | Panel principal |
+| **Admin** | https://localhost/admin | Administración |
+| **API Gateway** | https://localhost/api/ | Endpoints de API |
+| **Circuit Breakers** | http://localhost:8081/actuator/ | Monitoreo |
+
+### Variables de Entorno
+
+**Landing Page** (`.env.local`):
+```env
+NEXT_PUBLIC_FRONTEND_URL=https://localhost
+```
+
+**Frontend Principal**: Configurado en `docker-compose.yaml`
 ```
