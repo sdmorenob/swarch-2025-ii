@@ -13,7 +13,10 @@
 ## Sofware System
  - **Name:** MusicShare
  - **Logo**
+
 ![Logo](Logo.jpg)
+
+ 
  - **Description**
 **MusicShare** es una red social de música desarrollada con una **arquitectura distribuida de microservicios**, que integra presentación web en **React/TypeScript**, servicios de negocio independientes y bases de datos híbridas (**PostgreSQL y MongoDB**). El sistema permite a los usuarios compartir y descubrir música mientras garantiza **escalabilidad horizontal**, **baja latencia en streaming y alta disponibilidad**. La comunicación entre componentes se gestiona mediante **REST, gRPC y WebSockets**, bajo un esquema seguro con **OAuth2/JWT y TLS 1.2+**. Todo el software se despliega en entornos contenedorizados con Docker/Kubernetes, con monitoreo centralizado, pruebas automatizadas y cumplimiento de estándares de usabilidad, accesibilidad (WCAG 2.1 AA) y protección de datos (GDPR/legislación colombiana).
 # MusicShare - Red Social Musical
@@ -215,8 +218,157 @@ Las relaciones entre capas son estrictamente descendentes (allowed-to-use), lo q
 Deployment View:
 ![Diagrama de despliegue](Diagrama_Despliegue.png)
 
+
+# Arquitectura de Despliegue – MusicShare
+
+Este documento describe la arquitectura física y el despliegue del ecosistema **MusicShare** utilizando contenedores Docker organizados dentro de una red interna. Cada microservicio, base de datos y componente de infraestructura se ejecuta de forma aislada, asegurando autonomía, escalabilidad y mantenibilidad.
+
+---
+
+## 🏗️ 1. Nodo Principal: Servidor Docker Host
+
+Toda la arquitectura se ejecuta sobre un **Servidor Docker Host**, que puede ser:
+
+- Linux / Windows / macOS
+- Máquina virtual (VM)
+- Infraestructura bare-metal
+- Instancia cloud
+
+Este nodo ejecuta todos los contenedores del sistema.
+
+---
+
+## 🌐 2. Red Interna Docker
+
+Se utiliza una red interna tipo bridge llamada:
+
+Esta red permite:
+
+- Comunicación entre microservicios  
+- Aislamiento de tráfico  
+- Control de seguridad interno  
+
+Todos los contenedores del ecosistema están dentro de esta red.
+
+---
+
+## 🚪 3. API Gateway (Traefik)
+
+**Contenedor:** `gateway`  
+**Tecnología:** Traefik  
+
+**Responsabilidades:**
+
+- Punto único de entrada al sistema  
+- Enrutamiento dinámico hacia microservicios  
+- Manejo de certificados  
+- Balanceo básico de carga  
+- Seguridad, CORS, logging  
+
+---
+
+## 🎨 4. Frontend Web
+
+**Contenedor:** `musicshare-frontend`  
+**Tecnología:** NGINX  
+**Puerto:** 80  
+
+Sirve la interfaz visual de MusicShare y se expone a través del Gateway.
+
+---
+
+## ⚙️ 5. Microservicios Backend
+
+Cada microservicio se despliega en contenedores independientes, con sus propias tecnologías y puertos.
+
+### **User Service**
+- **Contenedor:** `musicshare-userservice`
+- **Tecnología:** Python 3.11
+- **Puerto:** 8002
+
+### **Music Service**
+- **Contenedor:** `musicshare-music-service`
+- **Tecnología:** Go 1.24
+- **Puerto:** 8081
+
+### **Social Service**
+- **Contenedor:** `musicshare-social-service`
+- **Tecnología:** Java JDK 21
+- **Puerto:** 8083
+
+### **Metadata Service**
+- **Contenedor:** `musicshare-metadata-service`
+- **Tecnología:** Python 3.11
+- **Puerto:** 50051
+
+### **Notification Service**
+- **Contenedor:** `notificationservice`
+- **Tecnología:** Python 3.9
+- **Puerto:** 8082
+
+---
+
+## 🗄️ 6. Bases de Datos
+
+Cada microservicio cuenta con su propia base de datos, garantizando **independencia y bajo acoplamiento**.
+
+### PostgreSQL
+- **Contenedor:** `musicshare-postgres`
+  - Base de datos: `user_db`
+- **Contenedor:** `musicshare-postgres_social`
+  - Base de datos: `social_db`
+
+### MongoDB
+- **Contenedor:** `musicshare-mongodb`
+  - Base de datos: `music_db`
+
+---
+
+## 🔗 7. Conexiones y Relaciones
+
+- El **API Gateway** enruta peticiones hacia:
+  - Frontend  
+  - User Service  
+  - Music Service  
+  - Social Service  
+  - Metadata Service  
+  - Notification Service  
+
+- Cada microservicio se comunica directamente con su base de datos.
+- La red interna `musicshare-network` permite comunicación entre contenedores sin exponer puertos innecesarios al exterior.
+
+---
+
+## 📦 8. Artefactos Externos
+
+En la arquitectura se muestran los artefactos que generan cada microservicio:
+
+- `social_service.jar` (Java)
+- `metadata_service` (Python)
+- `notification_service` (Python)
+
+Estos artefactos son empaquetados previamente y utilizados para construir los contenedores.
+
+---
+
+## 🧩 Resumen General
+
+La arquitectura MusicShare está basada en microservicios altamente desacoplados, desplegados sobre Docker y organizados en una red interna. Sus características:
+
+- Gateway centralizado (Traefik)
+- Microservicios independientes
+- Bases de datos aisladas por servicio
+- Red Docker interna segura
+- Alta modularidad
+- Preparada para escalar o migrar a Kubernetes
+
+---
+
+
+
 ## Decomposition Structure
-![Diagrama de descomposición de Dominio](general.PNG)
+![Diagrama de descomposición de Dominio](general.png)
+
 ## Description 
 🎵 Estructura de Descomposición de Dominio — MusicShare
 Dominio Raíz: MusicShare
@@ -224,15 +376,13 @@ Dominio Raíz: MusicShare
 Descripción general:
 MusicShare es una plataforma colaborativa para compartir, reproducir y descubrir música. El sistema está diseñado bajo una arquitectura basada en microservicios, donde cada dominio encapsula una funcionalidad específica, comunicándose entre sí mediante un API Gateway.
 Su estructura promueve la escalabilidad, la independencia de desarrollo y el despliegue modular de componentes.
+Cliente para funcionalidades principales
+
+
+### 1. frontend
 
 ![Frontend](frontend.png)
-![FrontendSSR](frontendSSR.png)
-![notificationservice](notificationservice.png)
-![musicservice](musicservice.png)
-![traefik](traefik.png)
-![metadataservice](metadataservice.png)
 
-### 1. web_frontend
 
 - **Responsabilidad principal**:
   - Proporcionar la interfaz gráfica principal para los usuarios finales.
@@ -244,16 +394,21 @@ Su estructura promueve la escalabilidad, la independencia de desarrollo y el des
   - Comunicación directa con el API Gateway para consumir servicios REST.
   - Implementación adaptable para navegadores web.
 
-### 2. post_frontend
+### 2. frontendSSR
+
+![FrontendSSR](frontendSSR.png)
+
 
 - **Responsabilidad principal**:
-  - Gestionar la interfaz y funcionalidad relacionada con la publicación y visualización de contenido social (por ejemplo, publicaciones, comentarios o interacciones).
+  - Cliente con Server-Side Rendering que carga el formulario para enviar al cliente para crear los POST
 - **Funciones clave:**
-  - Creación de publicaciones relacionadas con canciones o playlists.
-  - Interacción entre usuarios mediante comentarios o reacciones.
-  - Integración directa con el SocialService.
+  - Permite arrastar canciones
+  - Insersión de Tags, 
+  - Definir si es de tipo de publica, agrega descripción y hashtags
 
 ### 3. SocialService
+
+![socialservice](socialservice.png)
 
 - **Responsabilidad principal:**
   - Encargado del componente social de la plataforma. Administra las interacciones, conexiones y actividades entre los usuarios.
@@ -264,29 +419,45 @@ Su estructura promueve la escalabilidad, la independencia de desarrollo y el des
   - Integración con el NotificationService para alertas sociales.
   - Conexión con UserService para obtener perfiles.
 
-4. MusicService
+### 4. MusicService
+
+![musicservice](musicservice.png)
 
 - **Responsabilidad principal:**
   - Administrar los recursos musicales y su ciclo de vida dentro del sistema.
 
-**- Funciones clave:**
+- **Funciones clave:**
   - Almacenamiento y gestión de canciones y álbumes.
   - Control de derechos, autoría y acceso.
   - Integración con el MetadataService para obtener información descriptiva.
   - Exposición de endpoints para streaming o descarga.
 
-### 5. APIGateway
+### 5. Traekik
+
+![traefik](traefik.png)
+
+
+## Apigateway
 - **Responsabilidad principal:**
   - Centralizar y gestionar todas las solicitudes externas hacia los microservicios.
   - Actúa como punto único de entrada al ecosistema MusicShare.
 
 -**Funciones clave**:
-  - Enrutamiento y balanceo de peticiones.
   - Seguridad, autenticación y autorización.
   - Control de tráfico, logging y CORS.
   - Comunicación entre frontends y los servicios internos.
 
+## Load Balancer
+- **Responsabilidad principal:**
+  - Distribuir equitativamente las solicitudes entrantes entre múltiples instancias de un servicio.
+
+-**Funciones clave**:
+  - Garantizar alta disponibilidad del ecosistema MusicShare.
+  - Garantizar escalabilidad del ecosistema MusicShare.
+
 ### 6. MetadataService
+
+![metadataservice](metadataservice.png)
 
 - **Responsabilidad principal:**
   - Gestionar y proveer información descriptiva asociada al contenido musical.
@@ -298,6 +469,9 @@ Su estructura promueve la escalabilidad, la independencia de desarrollo y el des
   - Posible integración con APIs externas para completar metadatos.
 
 ### 7. UserService
+
+![userservice](userservice.png)
+
 - **Responsabilidad principal:**
   - Gestionar la información y autenticación de los usuarios del sistema.
 
@@ -308,6 +482,8 @@ Su estructura promueve la escalabilidad, la independencia de desarrollo y el des
   - Almacenamiento seguro de credenciales (posiblemente con JWT o OAuth2).
 
 ### 8. NotificationService
+
+![notificationservice](notificationservice.png)
 
 - **Responsabilidad principal:**
   - Coordinar y enviar notificaciones a los usuarios según eventos del sistema.
@@ -336,8 +512,8 @@ Registro de eventos relevantes para los usuarios.
   - Escenario 3: Se implementó el patrón de [Network Segmentation Pattern](#-network-segmentation-pattern) para aislar las capas de la aplicación.  
   - Escenario 4: Se implementó el patrón de [Access Token Pattern](#-access-token-pattern) para manejar sesiones y autenticación en los microservicios.
 - Escenarios de seguridad:
-    - Escenario 1: Se implementó el patrón de [Load Balancer](#load-balancer-pattern) y se realizaron pruebas de estrés a tres servicios.
-    - Escenario 2: Se implementó el patrón de [Auto Scaling](#auto-scaling-pattern) ajusta el número de recursos computacionales.
+    - Escenario 1: Se implementó el patrón de [Load Balancer](#balanceo-de-carga-y-escalado) y se realizaron pruebas de estrés a tres servicios.
+    - Escenario 2: Se implementó el patrón de [Auto Scaling](#balanceo-de-carga-y-escalado) ajusta el número de recursos computacionales.
 
 ---
 
@@ -849,7 +1025,9 @@ Accede al dashboard de Traefik para ver:
 http://localhost:8080/dashboard/
 ```
 
-### ⚖️ Balanceo de Carga y Escalado
+---
+
+# Balanceo de Carga y Escalado
 
 MusicShare implementa **balanceo de carga automático** con Traefik. Los servicios backend se ejecutan con **múltiples réplicas** para alta disponibilidad y mejor rendimiento.
 
@@ -943,9 +1121,7 @@ nuevo-servicio:
 
 ---
 
----
-
-### 🧩 Secure Channel Pattern (TLS/HTTPS con Traefik)
+# 🧩 Secure Channel Pattern (TLS/HTTPS con Traefik)
 
 Para proteger la comunicación entre el cliente y los servicios, se implementó el **Secure Channel Pattern** mediante **Traefik** actuando como *terminador TLS*.
 Todas las conexiones externas ahora usan HTTPS con certificados locales.
@@ -1134,10 +1310,3 @@ Con el **Access Token Pattern**, MusicShare garantiza:
 * Sesiones sin estado (**stateless authentication**).
 * Extracción confiable del `userId` para acciones como subir posts, comentarios o likes.
 * Un modelo de seguridad consistente, escalable y compatible con arquitecturas distribuidas.
-
----
-
-# Load Balancer Pattern
-
----
-# Auto Scaling Pattern
