@@ -1,7 +1,7 @@
 package com.proyecto.spring.social_service.controllers;
 
-import com.proyecto.spring.social_service.model.Comment;
-import com.proyecto.spring.social_service.repository.CommentRepository;
+import com.proyecto.spring.social_service.model.social.Comment;
+import com.proyecto.spring.social_service.repository.social.CommentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -67,7 +67,7 @@ public class CommentController {
 
         // Asignar relaciones
         reply.setParentCommentId(commentId);
-        reply.setPostId(parentComment.get().getPostId()); // 👈 importante
+        reply.setPostId(parentComment.get().getPostId());
         reply.setCreatedAt(LocalDateTime.now());
         reply.setUpdatedAt(LocalDateTime.now());
 

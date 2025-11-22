@@ -8,28 +8,40 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/register", response_model=schemas.UserOut)
-def register(email: str = Form(...),
+def register(
+    email: str = Form(...),
     username: str = Form(...),
     password: str = Form(...),
+    first_name: str = Form(...), 
+    last_name: str = Form(...),
     db: Session = Depends(get_db)
-    ):
-    # Reconstruimos el objeto que la lógica CRUD espera
-    user_in = schemas.UserCreate(email=email, username=username, password=password)
+):
+    # Construir el objeto UserCreate
+    user_in = schemas.UserCreate(        
+        email=email, 
+        username=username, 
+        password=password,
+        first_name=first_name, 
+        last_name=last_name   
+        )
+    
+    # Validar que el email no esté registrado
     if crud.get_user_by_email(db, user_in.email):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
         )
+    
+    # Validar que el username no esté tomado
     if crud.get_user_by_username(db, user_in.username):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Username already taken"
         )
-    user_in = schemas.UserCreate(email=email, username=username, password=password)
+    
+    # Crear el usuario
     user = crud.create_user(db, user_in)
-
     return schemas.UserOut.from_orm(user)
-
 
 
 @router.post("/token", response_model=schemas.Token)

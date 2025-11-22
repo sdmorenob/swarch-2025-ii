@@ -1,10 +1,10 @@
 package com.proyecto.spring.social_service.controllers;
 
-import com.proyecto.spring.social_service.model.EstadoSolicitud;
-import com.proyecto.spring.social_service.model.SolicitudAmistad;
-import com.proyecto.spring.social_service.model.Usuario;
-import com.proyecto.spring.social_service.repository.SolicitudAmistadRepository;
-import com.proyecto.spring.social_service.repository.UsuarioRepository;
+import com.proyecto.spring.social_service.model.relations.EstadoSolicitud;
+import com.proyecto.spring.social_service.model.relations.SolicitudAmistad;
+import com.proyecto.spring.social_service.model.relations.Usuario;
+import com.proyecto.spring.social_service.repository.relations.SolicitudAmistadRepository;
+import com.proyecto.spring.social_service.repository.relations.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

@@ -9,16 +9,43 @@ api:
 entryPoints:
   web:
     address: ":80"
+    # Agregar un middleware global que redirige automáticamente cualquier tráfico HTTP al canal HTTPS.
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+
+  # Habilitar el puerto 443 dentro del contenedor de Traefik para manejar conexiones HTTPS
+  websecure:
+    address: ":443"
 
 # Define los proveedores de configuración (providers)
 providers:
   docker:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
+    # Habilitar el watch para detectar cambios en contenedores automáticamente
+    watch: true
+    # Configuración de redes
+    network: backend_net
 
-# Habilita los logs de acceso para ver el tráfico
 accessLog: {}
 
 # Configuración de logs de Traefik para depuración
 log:
-  level: DEBUG
+  level: INFO
+
+# Configuración del balanceador de carga y métricas
+# Algoritmo por defecto: round-robin (configurable por labels)
+
+# Métricas Prometheus (stack simplificado)
+metrics:
+  prometheus:
+    addEntryPointsLabels: true
+    addServicesLabels: true
+    buckets: [0.1,0.3,1.2,5.0]
+
+# Health check global
+ping:
+  entryPoint: web

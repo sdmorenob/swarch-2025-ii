@@ -50,7 +50,7 @@ uploadTrackBtn.addEventListener("click", async () => {
   formData.append("tags", tags);
 
   try {
-    const response = await fetch("http://localhost/api/music/api/v1/tracks/upload", {
+    const response = await fetch("https://localhost/api/music/api/v1/tracks/upload", {
       method: "POST",
       body: formData,
     });
@@ -91,7 +91,7 @@ createPostBtn.addEventListener("click", async () => {
   };
 
   try {
-    const response = await fetch("http://localhost/api/social/api/social/posts", {
+    const response = await fetch("https://localhost/api/social/api/social/posts", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -1,7 +1,7 @@
 package com.proyecto.spring.social_service.controllers;
 
-import com.proyecto.spring.social_service.model.Post;
-import com.proyecto.spring.social_service.repository.PostRepository;
+import com.proyecto.spring.social_service.model.social.Post;
+import com.proyecto.spring.social_service.repository.social.PostRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -70,7 +70,7 @@ public class PostController {
     @GetMapping("/usuario/{userId}")
     public List<Post> obtenerPorUsuario(
             @Parameter(description = "ID del usuario")    
-            @PathVariable UUID userId) {
+            @PathVariable int userId) {
         return postRepository.findByUserId(userId);
     }
 

@@ -1,0 +1,7 @@
+-- Initialize databases and retention policies for InfluxDB v1
+CREATE DATABASE traefik;
+CREATE DATABASE k6;
+
+-- Retention policies (1 week default)
+CREATE RETENTION POLICY "one_week" ON "traefik" DURATION 7d REPLICATION 1 DEFAULT;
+CREATE RETENTION POLICY "one_week" ON "k6" DURATION 7d REPLICATION 1 DEFAULT;
