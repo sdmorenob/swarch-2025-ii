@@ -1,0 +1,78 @@
+{
+  "id": null,
+  "title": "Service Detail",
+  "tags": ["tasknotes", "service"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "type": "query",
+        "datasource": "Prometheus",
+        "refresh": 1,
+        "query": "label_values(up, service)",
+        "hide": 0,
+        "includeAll": false,
+        "multi": false
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "graph",
+      "title": "Requests per second",
+      "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum by (method) (rate({__name__=~\".*requests.*total\", service=\"$service\"}[5m]))",
+          "legendFormat": "{{method}}"
+        }
+      ],
+      "lines": true,
+      "linewidth": 2
+    },
+    {
+      "type": "stat",
+      "title": "Error rate %",
+      "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "(sum(rate({__name__=~\".*requests.*total\", service=\"$service\", status=~\"5..\"}[5m])) / sum(rate({__name__=~\".*requests.*total\", service=\"$service\"}[5m]))) * 100",
+          "legendFormat": "error%"
+        }
+      ],
+      "options": {"reduceOptions": {"calcs": ["last"]}},
+      "fieldConfig": {"defaults": {"unit": "percent"}}
+    },
+    {
+      "type": "graph",
+      "title": "Latency (P50/P90/P99)",
+      "gridPos": {"x": 0, "y": 8, "w": 24, "h": 8},
+      "datasource": "Prometheus",
+      "targets": [
+        {"expr": "histogram_quantile(0.50, sum(rate({__name__=~\".*request.*duration.*_bucket\", service=\"$service\"}[5m])) by (le))", "legendFormat": "P50"},
+        {"expr": "histogram_quantile(0.90, sum(rate({__name__=~\".*request.*duration.*_bucket\", service=\"$service\"}[5m])) by (le))", "legendFormat": "P90"},
+        {"expr": "histogram_quantile(0.99, sum(rate({__name__=~\".*request.*duration.*_bucket\", service=\"$service\"}[5m])) by (le))", "legendFormat": "P99"}
+      ],
+      "lines": true,
+      "linewidth": 2
+    },
+    {
+      "type": "graph",
+      "title": "Saturation (CPU & Memory)",
+      "gridPos": {"x": 0, "y": 16, "w": 24, "h": 8},
+      "datasource": "Prometheus",
+      "targets": [
+        {"expr": "rate(process_cpu_seconds_total{service=\"$service\"}[5m])", "legendFormat": "CPU (cores)"},
+        {"expr": "process_resident_memory_bytes{service=\"$service\"}", "legendFormat": "Memory (bytes)"}
+      ],
+      "lines": true,
+      "linewidth": 2
+    }
+  ]
+}

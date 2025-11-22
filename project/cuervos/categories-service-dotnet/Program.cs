@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using CategoriesServiceDotnet.Data;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,8 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
+app.UseRouting();
+app.UseHttpMetrics();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -25,5 +28,8 @@ using (var scope = app.Services.CreateScope())
 app.MapGet("/healthz", () => Results.Ok(new { ok = true }));
 
 app.MapControllers();
+
+// Metrics endpoint
+app.MapMetrics();
 
 app.Run();

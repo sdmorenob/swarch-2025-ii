@@ -149,15 +149,46 @@ class NotesSearchServicer(notes_search_pb2_grpc.NotesSearchServiceServicer):
 
 async def serve_grpc():
     """Inicia el servidor gRPC"""
+    import os
     server = grpc.aio.server(futures.ThreadPoolExecutor(max_workers=10))
     notes_search_pb2_grpc.add_NotesSearchServiceServicer_to_server(
         NotesSearchServicer(), server
     )
     
     listen_addr = '[::]:50051'
-    server.add_insecure_port(listen_addr)
-    
-    print(f"Starting Notes gRPC server on {listen_addr}")
+
+    # Soporte TLS/mTLS opcional por entorno
+    enable_tls = os.getenv('GRPC_TLS_ENABLE', 'false').lower() == 'true'
+    if enable_tls:
+        cert_path = os.getenv('GRPC_TLS_CERT_PATH', '')
+        key_path = os.getenv('GRPC_TLS_KEY_PATH', '')
+        ca_path = os.getenv('GRPC_TLS_CLIENT_CA_PATH', '')
+        try:
+            with open(cert_path, 'rb') as f:
+                cert_chain = f.read()
+            with open(key_path, 'rb') as f:
+                private_key = f.read()
+            root_certs = None
+            require_client_auth = False
+            if ca_path:
+                with open(ca_path, 'rb') as f:
+                    root_certs = f.read()
+                    require_client_auth = True
+
+            creds = grpc.ssl_server_credentials(
+                [(private_key, cert_chain)],
+                root_certificates=root_certs,
+                require_client_auth=require_client_auth,
+            )
+            server.add_secure_port(listen_addr, creds)
+            print(f"Starting Notes gRPC server (TLS) on {listen_addr}")
+        except Exception as e:
+            # Fallback a inseguro si falla la carga de credenciales
+            server.add_insecure_port(listen_addr)
+            print(f"[WARN] TLS disabled due to error: {e}. Starting insecure gRPC at {listen_addr}")
+    else:
+        server.add_insecure_port(listen_addr)
+        print(f"Starting Notes gRPC server on {listen_addr}")
     await server.start()
     await server.wait_for_termination()
 
