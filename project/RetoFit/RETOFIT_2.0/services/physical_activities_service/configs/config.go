@@ -1,7 +1,6 @@
 package configs
 
 import (
-	"RetoFit-App/services/physical_activities_service/internal/app/rest_api/constants"
 	"fmt"
 	"os"
 
@@ -24,20 +23,26 @@ type databaseConfig struct {
 }
 
 func NewConfig() *Config {
-	err := godotenv.Load("./configs/dev.env")
+	_ = godotenv.Load("./dev.env")
 
-	if err != nil {
-		fmt.Print(err)
-		panic("Error loading .env file")
-	}
+	// Luego lee las variables normalmente
+	//serverAddress := os.Getenv("SERVER_ADDRESS")
+	//dbDriver := os.Getenv("DB_DRIVER")
+	//dbSource := os.Getenv("DB_SOURCE")
+	//err := godotenv.Load("dev.env")
+
+	//if err != nil {
+	//	fmt.Print(err)
+	//	panic("Error loading .env file")
+	//}
 
 	c := &Config{
 		Server: serverConfig{
-			Address: GetEnvOrPanic(constants.EnvKeys.ServerAddress),
+			Address: GetEnvOrPanic("SERVER_ADDRESS"),
 		},
 		Database: databaseConfig{
-			DatabaseDriver: GetEnvOrPanic(constants.EnvKeys.DBDriver),
-			DatabaseSource: GetEnvOrPanic(constants.EnvKeys.DBSource),
+			DatabaseDriver: GetEnvOrPanic("DB_DRIVER"),
+			DatabaseSource: GetEnvOrPanic("DB_SOURCE"),
 		},
 	}
 

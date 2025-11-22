@@ -65,8 +65,10 @@ export default function AdminUsersPanel() {
         setError(null);
         setLoading(true);
         const result = await getAdminUsersData();
+        console.log(result)
         setData(result);
       } catch (err: any) {
+        console.log("Error: ", err)
         setError(err.message || 'Error al cargar los datos de usuarios.');
       } finally {
         setLoading(false);

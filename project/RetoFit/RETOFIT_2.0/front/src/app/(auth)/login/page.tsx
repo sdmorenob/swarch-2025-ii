@@ -120,16 +120,29 @@ export default function LoginPage() {
 
   return (
     <div className="flex h-full items-center justify-center p-4">
-      <Card className="mx-auto w-full max-w-sm">
-        <CardHeader>
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Logo className="h-8 w-8 text-primary" />
-            <CardTitle className="text-2xl font-headline">Reto-Fit</CardTitle>
-          </div>
-          <CardDescription>
-            Ingresa tu correo para acceder a tu cuenta
-          </CardDescription>
-        </CardHeader>
+      <div className="w-full max-w-sm">
+        {/* Botón centrado encima del card */}
+        <div className="mb-4 text-center">
+          <Link href="/">
+            <Button 
+              variant="outline" 
+              className="shadow-md hover:shadow-lg transition-all border-orange-500 text-orange-500 hover:bg-orange-50"
+            >
+              ¿Qué es Reto-Fit?
+            </Button>
+          </Link>
+        </div>
+
+        <Card className="mx-auto w-full">
+          <CardHeader>
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Logo className="h-8 w-8 text-orange-500" />
+              <CardTitle className="text-2xl font-headline">Reto-Fit</CardTitle>
+            </div>
+            <CardDescription>
+              Ingresa tu correo para acceder a tu cuenta
+            </CardDescription>
+          </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="grid gap-4">
             <div className="grid gap-2">
@@ -181,6 +194,7 @@ export default function LoginPage() {
           </div>
         </CardContent>
       </Card>
+      </div>
 
       {/* Modal para Olvidé mi Contraseña */}
       {showForgotPasswordModal && (

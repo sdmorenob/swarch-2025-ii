@@ -12,6 +12,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+
+	"github.com/rs/zerolog/log"
 )
 
 type Activity struct {
@@ -37,14 +39,19 @@ func (h *Activity) GetAllActivitiesByUser(ctx *gin.Context) {
 
 	resp, errRGCP := h.UserClient.GetUserByID(ctx, int32(userId))
 	if errRGCP != nil {
+		log.Error().
+			Err(errRGCP).
+			Msg("Error al obtener usuario por gRPC")
 		ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": fmt.Sprintf("User %d not found in Python service", userId)})
 		return
 	}
 
 	fmt.Printf("✅ Usuario recibido de Python: %+v\n", resp)
+	log.Info().Msg("✅ Usuario recibido de Python")
 
 	allActivities, err := h.ActivityService.GetAllActivitiesByUser(userId)
 	fmt.Println("Obteniendo las actividades para el usuario ID:", allActivities)
+	log.Info().Msg("Obteniendo las actividades para el usuario")
 
 	if err != nil {
 		fmt.Println("Error al obtener las actividades:", err)

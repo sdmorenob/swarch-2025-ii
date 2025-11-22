@@ -1,0 +1,175 @@
+server:
+  port: 8080
+  # Esta estrategia es crucial para que Spring Cloud Gateway reconozca los encabezados
+  # X-Forwarded-* que envía el proxy Nginx. Asegura que el gateway sepa que la
+  # conexión original fue HTTPS.
+  forward-headers-strategy: framework
+
+jwt:
+  # Lee la variable de entorno SECRET_KEY para la validación de tokens.
+  # Debes asegurarte de que esta variable esté definida en tu docker-compose.yaml
+  # para el servicio api-gateway.
+  secret: ${SECRET_KEY:f40cf292b97e6ec1e40e6a376e035ee9ebd9369c9dc233c474216ec0fe1b54aa}
+
+spring:
+  cloud:
+    gateway:
+      # Configuración global de Circuit Breaker usando Resilience4j
+      default-filters:
+        - name: CircuitBreaker
+          args:
+            name: defaultCircuitBreaker
+            fallbackUri: forward:/fallback
+      server:
+        webflux:
+          routes:
+            # Ruta para el servicio de autenticación
+            # Petición: /api/auth/** -> auth-service:8000/auth/**
+            - id: auth-service
+              uri: http://auth-service:8001
+              filters:
+                - StripPrefix=1 # Transforma /api/auth/** en /auth/**
+                - name: CircuitBreaker
+                  args:
+                    name: authServiceCircuitBreaker
+                    fallbackUri: forward:/fallback/auth
+              predicates:
+                - Path=/api/auth/**
+
+            # Ruta para el admin auth service
+            # Petición: /api/auth_admin/admin/** -> auth-service:8000/admin/**
+            - id: admin-auth-service
+              uri: http://auth-service:8001
+              filters:
+                - StripPrefix=1 # Transforma /api/auth_admin/** en /auth_admin/**
+                - name: CircuitBreaker
+                  args:
+                    name: adminAuthServiceCircuitBreaker
+                    fallbackUri: forward:/fallback/auth
+              predicates:
+                - Path=/api/auth_admin/admin/**
+
+            # Ruta para el servicio de usuarios
+            # Petición: /api/users/** -> users-service:8000/users/**
+            - id: users-service
+              uri: http://users-service:8004
+              filters:
+                - StripPrefix=1 # Transforma /api/users/** en /users/**
+                - name: CircuitBreaker
+                  args:
+                    name: usersServiceCircuitBreaker
+                    fallbackUri: forward:/fallback/users
+              predicates:
+                - Path=/api/users/**
+
+            # Ruta para el servicio de actividades
+            # Petición: /api/activities/** -> activities-service:8002/activities/**
+            - id: activities-service
+              uri: http://activities-service:8002
+              filters:
+                - StripPrefix=1 # Transforma /api/activities/** en /activities/**
+                - name: CircuitBreaker
+                  args:
+                    name: activitiesServiceCircuitBreaker
+                    fallbackUri: forward:/fallback/activities
+              predicates:
+                - Path=/api/activities/**, /api/physical-activities/**
+
+            # Ruta para el servicio de gamificación
+            # Petición: /api/gamification/** -> gamification-service:8000/gamification/**
+            - id: gamification-service
+              uri: http://gamification-service:8003
+              filters:
+                - StripPrefix=1 # Transforma /api/gamification/** en /gamification/**
+                - name: CircuitBreaker
+                  args:
+                    name: gamificationServiceCircuitBreaker
+                    fallbackUri: forward:/fallback/gamification
+              predicates:
+                - Path=/api/gamification/**
+
+            # Ruta para el servicio de publicaciones
+            # Petición: /api/posts/** -> posts-service:8000/posts/**
+            - id: posts-service
+              uri: http://posts-service:8000
+              filters:
+                - StripPrefix=1
+                - name: CircuitBreaker
+                  args:
+                    name: postsServiceCircuitBreaker
+                    fallbackUri: forward:/fallback/posts
+              predicates:
+                - Path=/api/posts/**
+
+            # Ruta para el servicio de administración
+            # Petición: /api/admin/** -> admin-service:8000/admin/**
+            - id: admin-service
+              uri: http://admin-service:8006
+              filters:
+                - StripPrefix=1 # Elimina solo /api
+                - name: CircuitBreaker
+                  args:
+                    name: adminServiceCircuitBreaker
+                    fallbackUri: forward:/fallback/admin
+              predicates:
+                - Path=/api/admin/**
+
+# Configuración de Resilience4j Circuit Breaker
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        # Número mínimo de llamadas antes de calcular la tasa de errores
+        minimumNumberOfCalls: 5
+        # Porcentaje de fallos permitido antes de abrir el circuito
+        failureRateThreshold: 50
+        # Tiempo en estado OPEN antes de pasar a HALF_OPEN (en milisegundos)
+        waitDurationInOpenState: 10000
+        # Número de llamadas permitidas en estado HALF_OPEN
+        permittedNumberOfCallsInHalfOpenState: 3
+        # Tamaño de la ventana deslizante para calcular la tasa de errores
+        slidingWindowSize: 10
+        # Tipo de ventana deslizante: COUNT_BASED o TIME_BASED
+        slidingWindowType: COUNT_BASED
+        # Registrar eventos del circuit breaker para monitoreo
+        registerHealthIndicator: true
+    instances:
+      authServiceCircuitBreaker:
+        baseConfig: default
+      adminAuthServiceCircuitBreaker:
+        baseConfig: default
+      usersServiceCircuitBreaker:
+        baseConfig: default
+      activitiesServiceCircuitBreaker:
+        baseConfig: default
+      gamificationServiceCircuitBreaker:
+        baseConfig: default
+      postsServiceCircuitBreaker:
+        baseConfig: default
+      adminServiceCircuitBreaker:
+        baseConfig: default
+      defaultCircuitBreaker:
+        baseConfig: default
+
+  timelimiter:
+    configs:
+      default:
+        # Timeout para las llamadas a los servicios (en segundos)
+        timeoutDuration: 5s
+    instances:
+      authServiceCircuitBreaker:
+        baseConfig: default
+      adminAuthServiceCircuitBreaker:
+        baseConfig: default
+      usersServiceCircuitBreaker:
+        baseConfig: default
+      activitiesServiceCircuitBreaker:
+        baseConfig: default
+      gamificationServiceCircuitBreaker:
+        baseConfig: default
+      postsServiceCircuitBreaker:
+        baseConfig: default
+      adminServiceCircuitBreaker:
+        baseConfig: default
+      defaultCircuitBreaker:
+        baseConfig: default

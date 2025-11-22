@@ -231,16 +231,29 @@ export default function SignupPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
-      <Card className="mx-auto w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Logo className="h-8 w-8 text-primary" />
-            <CardTitle className="text-2xl font-headline">Reto-Fit</CardTitle>
-          </div>
-          <CardDescription className="text-lg">
-            Crea una cuenta para comenzar tu viaje de fitness
-          </CardDescription>
-        </CardHeader>
+      <div className="w-full max-w-md">
+        {/* Botón centrado encima del card */}
+        <div className="mb-4 text-center">
+          <Link href="/">
+            <Button 
+              variant="outline" 
+              className="shadow-md hover:shadow-lg transition-all border-orange-500 text-orange-500 hover:bg-orange-50"
+            >
+              ¿Qué es Reto-Fit?
+            </Button>
+          </Link>
+        </div>
+
+        <Card className="mx-auto w-full">
+          <CardHeader className="text-center">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Logo className="h-8 w-8 text-orange-500" />
+              <CardTitle className="text-2xl font-headline">Reto-Fit</CardTitle>
+            </div>
+            <CardDescription className="text-lg">
+              Crea una cuenta para comenzar tu viaje de fitness
+            </CardDescription>
+          </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="grid gap-4">
             <div className="grid grid-cols-2 gap-4">
@@ -462,6 +475,7 @@ export default function SignupPage() {
           </Card>
         </div>
       )}
+      </div>
     </div>
   );
 }

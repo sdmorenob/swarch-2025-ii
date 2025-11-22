@@ -1,0 +1,39 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "project", "project", "{EB1B1211-640D-0C76-A929-990D115248FD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "cuervos", "cuervos", "{DEC07C47-CEA3-F712-1378-45260F43BB0E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UserProfileService", "project\cuervos\user-profile-service\UserProfileService.csproj", "{6B4FCD6F-97CC-A5D0-A77F-03F3EC4E7D6C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CategoriesService", "project\cuervos\categories-service-dotnet\CategoriesService.csproj", "{ADAD1702-7E47-D574-626A-BEF43B46744C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6B4FCD6F-97CC-A5D0-A77F-03F3EC4E7D6C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6B4FCD6F-97CC-A5D0-A77F-03F3EC4E7D6C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6B4FCD6F-97CC-A5D0-A77F-03F3EC4E7D6C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6B4FCD6F-97CC-A5D0-A77F-03F3EC4E7D6C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ADAD1702-7E47-D574-626A-BEF43B46744C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ADAD1702-7E47-D574-626A-BEF43B46744C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ADAD1702-7E47-D574-626A-BEF43B46744C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ADAD1702-7E47-D574-626A-BEF43B46744C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{DEC07C47-CEA3-F712-1378-45260F43BB0E} = {EB1B1211-640D-0C76-A929-990D115248FD}
+		{6B4FCD6F-97CC-A5D0-A77F-03F3EC4E7D6C} = {DEC07C47-CEA3-F712-1378-45260F43BB0E}
+		{ADAD1702-7E47-D574-626A-BEF43B46744C} = {DEC07C47-CEA3-F712-1378-45260F43BB0E}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2D8320B8-D221-4A0B-9362-38EFCF5FE14D}
+	EndGlobalSection
+EndGlobal

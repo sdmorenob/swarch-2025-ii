@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Routes;
 
 use Psr\Http\Message\ResponseInterface as Response;
@@ -16,19 +15,25 @@ class UserRoutes
         $group->get('/users', function (Request $request, Response $response, $args) use ($userServiceClient, $authServiceClient) {
             try {
             
-                $authUsersResponse = $authServiceClient->get('/api/auth_admin/admin/users');
+                $authUsersResponse = $authServiceClient->get('/admin/users');
                 $authUsers = $authUsersResponse->getStatusCode() === 200 ? json_decode($authUsersResponse->getBody()->getContents(), true) : [];
-                $profileUsersResponse = $userServiceClient->get('/api/users_admin/admin/users');
+                $profileUsersResponse = $userServiceClient->get('/admin/users');
                 $profileUsers = $profileUsersResponse->getStatusCode() === 200 ? json_decode($profileUsersResponse->getBody()->getContents(), true) : [];
 
-                $statsResponse = $authServiceClient->get('/api/auth_admin/admin/users/stats');
+                $statsResponse = $authServiceClient->get('/admin/users/stats');
                 $stats = $statsResponse->getStatusCode() === 200 ? json_decode($statsResponse->getBody()->getContents(), true) : ['total_users' => 0, 'active_users' => 0, 'suspended_users' => 0];
 
                 // Crear un mapa con los detalles de perfil para una búsqueda rápida y eficiente
                 $profileMap = [];
                 foreach ($profileUsers as $profile) {
                     // El user-service devuelve 'id', 'username', 'email' debido a los alias de Pydantic
-                    $profileMap[$profile['id']] = $profile;
+                    // ✅ VERIFICAR que existe la clave 'id' antes de usarla
+                    if (isset($profile['id']) && !empty($profile['id'])) {
+                        $profileMap[$profile['id']] = $profile;
+                    } else {
+                        // Log para debugging sin romper la respuesta
+                        error_log("Perfil sin ID: " . print_r($profile, true));
+                    }
                 }
 
             } catch (GuzzleException $e) {
@@ -58,7 +63,9 @@ class UserRoutes
                     'delete' => "/admin/users/{$userId}",
                 ];
                 return $mappedUser;
-            }, $authUsers);
+            }, $authUsers);  
+            
+            error_log("Processed " . count($enrichedUsers) . " users");
 
             $data = ['stats' => $stats, 'users' => $enrichedUsers];
             $payload = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
@@ -75,7 +82,7 @@ class UserRoutes
             }
 
             try {
-                $authResponse = $authServiceClient->post('/api/auth_admin/auth/register', [
+                $authResponse = $authServiceClient->post('/auth/register', [
                     'json' => [
                         'name' => $data['name'],
                         'last_name' => $data['last_name'] ?? '',
@@ -105,7 +112,7 @@ class UserRoutes
             }
 
             try {
-                $authServiceClient->patch("/api/auth_admin/admin/users/{$userId}/status", [
+                $authServiceClient->patch("/admin/users/{$userId}/status", [
                     'json' => ['status' => $newStatus]
                 ]);
             } catch (GuzzleException $e) {
@@ -125,8 +132,8 @@ class UserRoutes
             
             try {
                
-                $authServiceClient->delete("/api/auth_admin/admin/users/{$userId}");
-                $userServiceClient->delete("/api/users_admin/admin/users/{$userId}");
+                $authServiceClient->delete("/admin/users/{$userId}");
+                $userServiceClient->delete("/admin/users/{$userId}");
             } catch (GuzzleException $e) {
                 
                 $response->getBody()->write(json_encode(['error' => 'No se pudo eliminar el usuario: ' . $e->getMessage()]));
