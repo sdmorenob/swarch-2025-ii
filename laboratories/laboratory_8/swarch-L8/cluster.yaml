@@ -30,7 +30,7 @@ metadata:
   name: mysql
 spec:
   serviceName: mysql
-  replicas: 4
+  replicas: 3
   selector:
     matchLabels:
       app: mysql
