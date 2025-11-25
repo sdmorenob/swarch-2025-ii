@@ -13,7 +13,7 @@ spec:
         app: mysql-router
     spec:
       containers:
-      - name: router
+      - name: mysql-router
         image: mysql/mysql-router:8.0
         env:
         - name: MYSQL_HOST
