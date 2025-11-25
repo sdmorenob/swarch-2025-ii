@@ -1,0 +1,266 @@
+# ========================
+# DEPLOYMENT - APP
+# ========================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+  labels:
+    app: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app
+  template:
+    metadata:
+      labels:
+        app: app
+    spec:
+      containers:
+        - name: app-container
+          image: swarch-l7-app:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DB_USERNAME
+              value: "app"
+            - name: DB_PASSWORD
+              value: "123"
+            - name: DB_HOSTNAME
+              value: "database"
+            - name: DB_DATABASE
+              value: "performance_db"
+          resources:
+            requests:
+              cpu: 100m
+            limits:
+              cpu: 200m
+---
+# ========================
+# SERVICE - APP
+# ========================
+apiVersion: v1
+kind: Service
+metadata:
+  name: app
+spec:
+  selector:
+    app: app
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: ClusterIP
+
+---
+# ========================
+# DEPLOYMENT - DATABASE
+# ========================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database
+  labels:
+    app: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: database
+  template:
+    metadata:
+      labels:
+        app: database
+    spec:
+      containers:
+        - name: mysql-container
+          image: mysql:8.0
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "123"
+            - name: MYSQL_DATABASE
+              value: "performance_db"
+            - name: MYSQL_USER
+              value: "app"
+            - name: MYSQL_PASSWORD
+              value: "123"
+          ports:
+            - containerPort: 3306
+
+---
+# ========================
+# SERVICE - DATABASE
+# ========================
+apiVersion: v1
+kind: Service
+metadata:
+  name: database
+spec:
+  selector:
+    app: database
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+  type: ClusterIP
+
+---
+# ========================
+# DEPLOYMENT - INFLUXDB
+# ========================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: influxdb
+  labels:
+    app: influxdb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: influxdb
+  template:
+    metadata:
+      labels:
+        app: influxdb
+    spec:
+      containers:
+        - name: influxdb-container
+          image: influxdb:1.8
+          ports:
+            - containerPort: 8086
+
+---
+# ========================
+# SERVICE - INFLUXDB
+# ========================
+apiVersion: v1
+kind: Service
+metadata:
+  name: influxdb
+spec:
+  selector:
+    app: influxdb
+  ports:
+    - protocol: TCP
+      port: 8086
+      targetPort: 8086
+  type: ClusterIP
+
+---
+# ========================
+# DEPLOYMENT - GRAFANA
+# ========================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  labels:
+    app: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana
+          ports:
+            - containerPort: 3000
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              value: "admin"
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: "admin"
+        - name: sidecar-renderer
+          image: grafana/grafana-image-renderer
+          ports:
+            - containerPort: 8081
+
+---
+# ========================
+# SERVICE - GRAFANA
+# ========================
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+spec:
+  selector:
+    app: grafana
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+  type: ClusterIP
+
+---
+# ========================
+# CONFIGMAP - Test Script (k6)
+# ========================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k6
+  labels:
+    app: k6
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k6
+  template:
+    metadata:
+      labels:
+        app: k6
+    spec:
+      containers:
+        - name: k6-container
+          image: grafana/k6
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              while true; do
+                k6 run /scripts/strees-test.js --out influxdb=http://influxdb:8086/k6;
+                sleep 10;
+              done
+          volumeMounts:
+            - name: k6-script
+              mountPath: /scripts
+      volumes:
+        - name: k6-script
+          hostPath:
+            path: /k6/strees-test.js  # 👈 cambia esto según tu ruta local al proyecto
+            type: Directory
+
+
+---
+# ========================
+# HPA - Autoescalado para APP
+# ========================
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: app-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: app
+  minReplicas: 1
+  maxReplicas: 2
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
