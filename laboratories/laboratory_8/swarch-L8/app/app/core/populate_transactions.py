@@ -1,14 +1,14 @@
 import random
 
 from datetime import datetime as dt, timedelta as td
-from app.core.database import SessionLocal, Base, engine
+from app.core.database import WriteSessionLocal, Base, write_engine
 from app.models.Transaction import Transaction
 
-Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=write_engine)
 
 # Data generation
 def generate_transactions(n=1_000_000):
-    db = SessionLocal()
+    db = WriteSessionLocal()
     batch_size = 10_000
     now = dt.utcnow()
 
