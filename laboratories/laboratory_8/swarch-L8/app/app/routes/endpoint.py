@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from app.core.database import get_db
+from app.core.database import get_read_db
 from app.models.Transaction import Transaction
 
 router = APIRouter()
@@ -14,7 +14,7 @@ router = APIRouter()
 
 # Expensive endpoint
 @router.get("/metrics")
-def metrics(db: Session = Depends(get_db)):
+def metrics(db: Session = Depends(get_read_db)):
 
     start_time = time.time()
 

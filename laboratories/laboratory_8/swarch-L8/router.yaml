@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-router
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mysql-router
+  template:
+    metadata:
+      labels:
+        app: mysql-router
+    spec:
+      containers:
+      - name: mysql-router
+        image: mysql/mysql-router:8.0
+        env:
+        - name: MYSQL_HOST
+          value: "mysql-0.mysql"
+        - name: MYSQL_PORT
+          value: "3306"
+        - name: MYSQL_USER
+          value: "root"
+        - name: MYSQL_PASSWORD
+          value: "123"
+        - name: MYSQL_INNODB_CLUSTER_MEMBERS
+          value: "mysql-0.mysql,mysql-1.mysql,mysql-2.mysql,mysql-3.mysql"
+        ports:
+        - containerPort: 6446 # Writing Port
+        - containerPort: 6447 # Reading Port
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-router
+spec:
+  selector:
+    app: mysql-router
+  type: ClusterIP
+  ports:
+  - name: rw
+    port: 6446
+    targetPort: 6446
+  - name: ro
+    port: 6447
+    targetPort: 6447

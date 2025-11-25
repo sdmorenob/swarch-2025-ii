@@ -9,5 +9,5 @@ from app.core.database import Base
 class Transaction(Base):
     __tablename__ = "transaction"
     id = Column(Integer, primary_key=True, index=True)
-    amount = Column(Float)
+    amount = Column(Float, index=True)
     timestamp = Column(DateTime, default=datetime.utcnow())
