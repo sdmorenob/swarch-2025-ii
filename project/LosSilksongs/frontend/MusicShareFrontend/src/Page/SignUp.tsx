@@ -14,6 +14,8 @@ export default function SignUp({ theme }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [user, setUser] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
@@ -25,7 +27,7 @@ export default function SignUp({ theme }: Props) {
     setIsLoading(true);
 
     try {
-      const res = await fetch("http://localhost/api/users/auth/register", {
+      const res = await fetch("https://localhost/api/users/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -34,6 +36,8 @@ export default function SignUp({ theme }: Props) {
           email: email,       
           password: password,
           username: user,
+          first_name: firstName,
+          last_name: lastName,
         }),
       });
 
@@ -84,15 +88,29 @@ export default function SignUp({ theme }: Props) {
                 Únete a nuestra comunidad musical
               </p>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <TextInput
                 placeholder="Usuario"
                 value={user}
                 onChange={setUser}
               />
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <TextInput
+                  placeholder="Nombre"
+                  value={firstName}
+                  onChange={setFirstName}
+                />
+                <TextInput
+                  placeholder="Apellido"
+                  value={lastName}
+                  onChange={setLastName}
+                />
+              </div>
+
               <MailInput onChange={setEmail} />
               <PasswordInput onChange={setPassword} />
+              
               <div className="flex items-center justify-start gap-2 text-sm">
                 <span className="opacity-80">¿Ya tienes una cuenta?</span>
                 <a
@@ -102,6 +120,7 @@ export default function SignUp({ theme }: Props) {
                   Inicia sesión aquí
                 </a>
               </div>
+              
               <button 
                 type="submit" 
                 className="btn btn-warning w-full"

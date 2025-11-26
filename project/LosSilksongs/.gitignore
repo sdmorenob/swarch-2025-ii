@@ -61,3 +61,8 @@ tmp/
 # Air (live reloading tool)
 tmp/
 .air.toml
+
+# Certificados SSL
+traefik/certs/
+*.crt
+*.key

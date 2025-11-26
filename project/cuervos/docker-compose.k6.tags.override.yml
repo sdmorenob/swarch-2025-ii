@@ -1,0 +1,41 @@
+services:
+  k6-tags:
+    image: grafana/k6:latest
+    entrypoint: ["/usr/bin/k6"]
+    restart: on-failure
+    depends_on:
+      prometheus:
+        condition: service_started
+      influxdb:
+        condition: service_started
+      api-gateway:
+        condition: service_healthy
+    volumes:
+      - ./perf/k6/service_scenario.js:/test.js:ro
+    environment:
+      K6_PROMETHEUS_RW_SERVER_URL: http://prometheus:9090/api/v1/write
+      K6_INSECURE_SKIP_TLS_VERIFY: "true"
+      BASE_URL: https://api-gateway:8443
+      DURATION: ${DURATION:-2m}
+      API_RPS: ${API_RPS:-50}
+      SCENARIO: ${SCENARIO:-stress}
+      STRESS_STYLE: progressive
+      STRESS_STEP_DURATION: 15s
+      STRESS_TARGETS: 5,10,15,20,25,30,35,40,45,50,60,70,80,90,100
+      STRESS_TARGETS_RATE: 5,10,15,20,25,30,35,40,45,50,60,70,80,90,100
+      METHOD: GET
+      PATH: /tags/
+      CONTENT_TYPE: application/json
+      SERVICE_NAME: tags-service
+      JWT_SECRET: change-me-in-prod
+      JWT_ISSUER: tasknotes-auth
+      JWT_AUDIENCE: tasknotes
+      USER_ID: "1"
+      JWT_OVERRIDE: ${JWT_OVERRIDE}
+      USE_LOGIN_TOKEN_FOR_API: ${USE_LOGIN_TOKEN_FOR_API:-true}
+      TEST_EMAIL: ${TEST_EMAIL:-perftest@example.com}
+      TEST_PASSWORD: ${TEST_PASSWORD:-Passw0rd!}
+      AUTH_BASE_URL: ${AUTH_BASE_URL:-https://api-gateway:8443}
+    networks:
+      - internal-net
+    command: ["run", "/test.js", "--tag", "testid=e2e-tags", "-o", "experimental-prometheus-rw", "-o", "influxdb=http://tasknotes:changeme@influxdb:8086/k6"]

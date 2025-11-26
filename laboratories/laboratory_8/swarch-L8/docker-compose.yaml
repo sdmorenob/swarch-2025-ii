@@ -1,0 +1,12 @@
+services:
+
+  app:
+    build: ./app
+    ports:
+    - "8000:8000"
+    restart: on-failure
+    environment:
+      DB_USERNAME: root
+      DB_PASSWORD: 123
+      DB_HOSTNAME: database
+      DB_DATABASE: performance_db

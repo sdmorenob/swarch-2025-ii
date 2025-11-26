@@ -1,7 +1,7 @@
 package com.proyecto.spring.social_service.controllers;
 
-import com.proyecto.spring.social_service.model.Like;
-import com.proyecto.spring.social_service.repository.LikeRepository;
+import com.proyecto.spring.social_service.model.social.Like;
+import com.proyecto.spring.social_service.repository.social.LikeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

@@ -13,9 +13,12 @@
 ## Sofware System
  - **Name:** MusicShare
  - **Logo**
+
 ![Logo](Logo.jpg)
+
+ 
  - **Description**
-**MusicShare** es una red social de música desarrollada con una **arquitectura distribuida de microservicios**, que integra presentación web en **React/TypeScript**, servicios de negocio independientes y bases de datos híbridas (**PostgreSQL y MongoDB/Elasticsearch**). El sistema permite a los usuarios compartir y descubrir música mientras garantiza **escalabilidad horizontal**, **baja latencia en streaming y alta disponibilidad**. La comunicación entre componentes se gestiona mediante **REST, gRPC y WebSockets**, bajo un esquema seguro con **OAuth2/JWT y TLS 1.2+**. Todo el software se despliega en entornos contenedorizados con Docker/Kubernetes, con monitoreo centralizado, pruebas automatizadas y cumplimiento de estándares de usabilidad, accesibilidad (WCAG 2.1 AA) y protección de datos (GDPR/legislación colombiana).
+**MusicShare** es una red social de música desarrollada con una **arquitectura distribuida de microservicios**, que integra presentación web en **React/TypeScript**, servicios de negocio independientes y bases de datos híbridas (**PostgreSQL y MongoDB**). El sistema permite a los usuarios compartir y descubrir música mientras garantiza **escalabilidad horizontal**, **baja latencia en streaming y alta disponibilidad**. La comunicación entre componentes se gestiona mediante **REST, gRPC y WebSockets**, bajo un esquema seguro con **OAuth2/JWT y TLS 1.2+**. Todo el software se despliega en entornos contenedorizados con Docker/Kubernetes, con monitoreo centralizado, pruebas automatizadas y cumplimiento de estándares de usabilidad, accesibilidad (WCAG 2.1 AA) y protección de datos (GDPR/legislación colombiana).
 # MusicShare - Red Social Musical
 ## Functional Requirements
 ### RF01 - Gestión de Usuarios
@@ -66,7 +69,7 @@ El sistema debe contar con un conjunto de componentes de lógica, representados 
 ### RNF-1.4 Componentes de Datos
 El sistema incluye componentes de datos de distinto tipo, específicamente:
 Base de datos relacional (PostgreSQL) para información estructurada de usuarios, relaciones sociales y metadatos clave.
-Base de datos NoSQL (MongoDB/Elasticsearch) para almacenamiento de metadatos musicales, búsqueda y análisis flexible.
+Base de datos NoSQL (MongoDB) para almacenamiento de metadatos musicales, búsqueda y análisis flexible.
 Conectividad y Protocolos
 ### RNF-2.1 conectores basados en HTTP:
 REST para operaciones CRUD y comunicación estándar entre frontend, gateway y microservicios.
@@ -128,7 +131,7 @@ Cada servicio expondrá un endpoint /health para chequeos automáticos por parte
 # Architectural Structures
 ## Components and Connectors (C&C) Structure
 C&C View:
-![C&C View](CyC.png)
+![C&C View](CyC_prototipo3.png)
 
 ## Description of architectural styles used.
 
@@ -168,8 +171,12 @@ C&C View:
   - Conexión MusicService con MetadataService
 
 ## Layered Structure
-Layered View:
-![Diagrama de capas](Diagrama_Capas.png)
+##### Layered View:
+![Diagrama de capas](Diagrama_Capas_2.png)
+
+##### Diagrama de capas de la capa de negocios:
+
+![Diagrama de capas de negocios](Capas_Business.png)
 
 ## Descripción de los Patrones Arquitectónicos Utilizados
 
@@ -211,8 +218,157 @@ Las relaciones entre capas son estrictamente descendentes (allowed-to-use), lo q
 Deployment View:
 ![Diagrama de despliegue](Diagrama_Despliegue.png)
 
+
+# Arquitectura de Despliegue – MusicShare
+
+Este documento describe la arquitectura física y el despliegue del ecosistema **MusicShare** utilizando contenedores Docker organizados dentro de una red interna. Cada microservicio, base de datos y componente de infraestructura se ejecuta de forma aislada, asegurando autonomía, escalabilidad y mantenibilidad.
+
+---
+
+## 🏗️ 1. Nodo Principal: Servidor Docker Host
+
+Toda la arquitectura se ejecuta sobre un **Servidor Docker Host**, que puede ser:
+
+- Linux / Windows / macOS
+- Máquina virtual (VM)
+- Infraestructura bare-metal
+- Instancia cloud
+
+Este nodo ejecuta todos los contenedores del sistema.
+
+---
+
+## 🌐 2. Red Interna Docker
+
+Se utiliza una red interna tipo bridge llamada:
+
+Esta red permite:
+
+- Comunicación entre microservicios  
+- Aislamiento de tráfico  
+- Control de seguridad interno  
+
+Todos los contenedores del ecosistema están dentro de esta red.
+
+---
+
+## 🚪 3. API Gateway (Traefik)
+
+**Contenedor:** `gateway`  
+**Tecnología:** Traefik  
+
+**Responsabilidades:**
+
+- Punto único de entrada al sistema  
+- Enrutamiento dinámico hacia microservicios  
+- Manejo de certificados  
+- Balanceo básico de carga  
+- Seguridad, CORS, logging  
+
+---
+
+## 🎨 4. Frontend Web
+
+**Contenedor:** `musicshare-frontend`  
+**Tecnología:** NGINX  
+**Puerto:** 80  
+
+Sirve la interfaz visual de MusicShare y se expone a través del Gateway.
+
+---
+
+## ⚙️ 5. Microservicios Backend
+
+Cada microservicio se despliega en contenedores independientes, con sus propias tecnologías y puertos.
+
+### **User Service**
+- **Contenedor:** `musicshare-userservice`
+- **Tecnología:** Python 3.11
+- **Puerto:** 8002
+
+### **Music Service**
+- **Contenedor:** `musicshare-music-service`
+- **Tecnología:** Go 1.24
+- **Puerto:** 8081
+
+### **Social Service**
+- **Contenedor:** `musicshare-social-service`
+- **Tecnología:** Java JDK 21
+- **Puerto:** 8083
+
+### **Metadata Service**
+- **Contenedor:** `musicshare-metadata-service`
+- **Tecnología:** Python 3.11
+- **Puerto:** 50051
+
+### **Notification Service**
+- **Contenedor:** `notificationservice`
+- **Tecnología:** Python 3.9
+- **Puerto:** 8082
+
+---
+
+## 🗄️ 6. Bases de Datos
+
+Cada microservicio cuenta con su propia base de datos, garantizando **independencia y bajo acoplamiento**.
+
+### PostgreSQL
+- **Contenedor:** `musicshare-postgres`
+  - Base de datos: `user_db`
+- **Contenedor:** `musicshare-postgres_social`
+  - Base de datos: `social_db`
+
+### MongoDB
+- **Contenedor:** `musicshare-mongodb`
+  - Base de datos: `music_db`
+
+---
+
+## 🔗 7. Conexiones y Relaciones
+
+- El **API Gateway** enruta peticiones hacia:
+  - Frontend  
+  - User Service  
+  - Music Service  
+  - Social Service  
+  - Metadata Service  
+  - Notification Service  
+
+- Cada microservicio se comunica directamente con su base de datos.
+- La red interna `musicshare-network` permite comunicación entre contenedores sin exponer puertos innecesarios al exterior.
+
+---
+
+## 📦 8. Artefactos Externos
+
+En la arquitectura se muestran los artefactos que generan cada microservicio:
+
+- `social_service.jar` (Java)
+- `metadata_service` (Python)
+- `notification_service` (Python)
+
+Estos artefactos son empaquetados previamente y utilizados para construir los contenedores.
+
+---
+
+## 🧩 Resumen General
+
+La arquitectura MusicShare está basada en microservicios altamente desacoplados, desplegados sobre Docker y organizados en una red interna. Sus características:
+
+- Gateway centralizado (Traefik)
+- Microservicios independientes
+- Bases de datos aisladas por servicio
+- Red Docker interna segura
+- Alta modularidad
+- Preparada para escalar o migrar a Kubernetes
+
+---
+
+
+
 ## Decomposition Structure
-![Diagrama de descomposición de Dominio](Diagrama_de_descomposicion_D.jpg)
+![Diagrama de descomposición de Dominio](general.png)
+
 ## Description 
 🎵 Estructura de Descomposición de Dominio — MusicShare
 Dominio Raíz: MusicShare
@@ -220,8 +376,13 @@ Dominio Raíz: MusicShare
 Descripción general:
 MusicShare es una plataforma colaborativa para compartir, reproducir y descubrir música. El sistema está diseñado bajo una arquitectura basada en microservicios, donde cada dominio encapsula una funcionalidad específica, comunicándose entre sí mediante un API Gateway.
 Su estructura promueve la escalabilidad, la independencia de desarrollo y el despliegue modular de componentes.
+Cliente para funcionalidades principales
 
-### 1. web_frontend
+
+### 1. frontend
+
+![Frontend](frontend.png)
+
 
 - **Responsabilidad principal**:
   - Proporcionar la interfaz gráfica principal para los usuarios finales.
@@ -233,16 +394,21 @@ Su estructura promueve la escalabilidad, la independencia de desarrollo y el des
   - Comunicación directa con el API Gateway para consumir servicios REST.
   - Implementación adaptable para navegadores web.
 
-### 2. post_frontend
+### 2. frontendSSR
+
+![FrontendSSR](frontendSSR.png)
+
 
 - **Responsabilidad principal**:
-  - Gestionar la interfaz y funcionalidad relacionada con la publicación y visualización de contenido social (por ejemplo, publicaciones, comentarios o interacciones).
+  - Cliente con Server-Side Rendering que carga el formulario para enviar al cliente para crear los POST
 - **Funciones clave:**
-  - Creación de publicaciones relacionadas con canciones o playlists.
-  - Interacción entre usuarios mediante comentarios o reacciones.
-  - Integración directa con el SocialService.
+  - Permite arrastar canciones
+  - Insersión de Tags, 
+  - Definir si es de tipo de publica, agrega descripción y hashtags
 
 ### 3. SocialService
+
+![socialservice](socialservice.png)
 
 - **Responsabilidad principal:**
   - Encargado del componente social de la plataforma. Administra las interacciones, conexiones y actividades entre los usuarios.
@@ -253,29 +419,45 @@ Su estructura promueve la escalabilidad, la independencia de desarrollo y el des
   - Integración con el NotificationService para alertas sociales.
   - Conexión con UserService para obtener perfiles.
 
-4. MusicService
+### 4. MusicService
+
+![musicservice](musicservice.png)
 
 - **Responsabilidad principal:**
   - Administrar los recursos musicales y su ciclo de vida dentro del sistema.
 
-**- Funciones clave:**
+- **Funciones clave:**
   - Almacenamiento y gestión de canciones y álbumes.
   - Control de derechos, autoría y acceso.
   - Integración con el MetadataService para obtener información descriptiva.
   - Exposición de endpoints para streaming o descarga.
 
-### 5. APIGateway
+### 5. Traekik
+
+![traefik](traefik.png)
+
+
+## Apigateway
 - **Responsabilidad principal:**
   - Centralizar y gestionar todas las solicitudes externas hacia los microservicios.
   - Actúa como punto único de entrada al ecosistema MusicShare.
 
 -**Funciones clave**:
-  - Enrutamiento y balanceo de peticiones.
   - Seguridad, autenticación y autorización.
   - Control de tráfico, logging y CORS.
   - Comunicación entre frontends y los servicios internos.
 
+## Load Balancer
+- **Responsabilidad principal:**
+  - Distribuir equitativamente las solicitudes entrantes entre múltiples instancias de un servicio.
+
+-**Funciones clave**:
+  - Garantizar alta disponibilidad del ecosistema MusicShare.
+  - Garantizar escalabilidad del ecosistema MusicShare.
+
 ### 6. MetadataService
+
+![metadataservice](metadataservice.png)
 
 - **Responsabilidad principal:**
   - Gestionar y proveer información descriptiva asociada al contenido musical.
@@ -287,6 +469,9 @@ Su estructura promueve la escalabilidad, la independencia de desarrollo y el des
   - Posible integración con APIs externas para completar metadatos.
 
 ### 7. UserService
+
+![userservice](userservice.png)
+
 - **Responsabilidad principal:**
   - Gestionar la información y autenticación de los usuarios del sistema.
 
@@ -297,6 +482,8 @@ Su estructura promueve la escalabilidad, la independencia de desarrollo y el des
   - Almacenamiento seguro de credenciales (posiblemente con JWT o OAuth2).
 
 ### 8. NotificationService
+
+![notificationservice](notificationservice.png)
 
 - **Responsabilidad principal:**
   - Coordinar y enviar notificaciones a los usuarios según eventos del sistema.
@@ -313,35 +500,20 @@ Registro de eventos relevantes para los usuarios.
 ## Correciones entrga anterior y cumplimiento de requisitos actuales
 
 ### Correciones hechas:
-- Ya se implementó una funcionalidad equivalente a un MVP.
-- Se mejoró la consistencia de la documentación.
-- El sistema se despliega correctamente.
-- La capa de presentación ya está activa y funcionando.
-- Ya se hace uso del conector gRPC para comunicar MusicService con MetadataService.
-- La vista CyC fue correjida teniendo en cuenta los comentarios realizados por el profesor.
+- Ya se agregó el cuarto componente de la capa de base de datos.
+- Se implementó un componente SSR. Este componente corresponde al formulario para hacer un post de una canción.
+- Se corrigió la documentación inconsistente.
+- Cada vista ya tiene su propósito principal. Se revisó y corrigió la descripción de los elementos, relaciones y propiedades de cada vista.
 
-### Cumplimientos del prototipo 2:
-- El sistema implementa una arquitectura distribuida.
-- Se implementarios dos componentes de presentación (Web frontent y Post frontend)
-> ⚠️ **Aclaración importante:**  
-> Originalmente se planeó manejar los microfrontends como uno para **web** y otro para **móvil**.  
-> Sin embargo, debido a que la persona encargada del móvil se retiró del equipo, se decidió como solución rápida **separar una parte del web frontend original y manejarla como microfrontend independiente**.  
->  
-> Por esta razón existe un **formulario de post** tanto en el *Web Frontend* como en el *Post Frontend*.  
-> Cada frontend corre en su propio contenedor, **cumpliendo así el requisito de arquitectura basada en microfrontends**.
-- Se implementaron 5 componentes lógicos (MetadataService, MusicService, SocialService, UserService y NotificationService)
-- Se implementó un componente de comunicación entre los componentes lógicos. (API Gateway cuya configuración se puede ver en el archivo docker-compose.yml)
-- El API Gateway cumple con ser un componente encargado de manejar procesos asíncronos.
-- Se implementaron conectores REST y un conector gRPC.
-- Se usan 5 lenguajes de propósito general diferentes (Go, Python, Java, TypeScript, JavaScript)
-> ⚠️ **:**  
-> Se pensaba realizar el microfrontend orientado a móbil con el lenguaje Flutter.
-> Debido a que la persona encargada se retiró del grupo, no se pudo realizar para esta entrega  
-- El desplieque del sistema es orientado a contenedores.
-
-### No se cumplió:
-- Implementación de subarquitectura SSR.
-- No se implementó un cuarto componente de data-type. Hay tres componentes actualmente (user_db, music_db, social_db). El cuarto componente podría ser el almacenamiento de las canciones pero no ha sido implementado en nube.
+### Cumplimientos del prototipo 3:
+- Escenarios de seguridad:
+  - Escenario 1: Se implementó el patrón de [Secure Channel Pattern](#-secure-channel-pattern-tlshttps-con-traefik) para proteger la comunicación entre el cliente y los servicios.  
+  - Escenario 2: Se implementó el patrón de [Reverse Proxy Pattern](#-reverse-proxy-pattern) para centralizar todo el tráfico de red en un único punto de entrada.  
+  - Escenario 3: Se implementó el patrón de [Network Segmentation Pattern](#-network-segmentation-pattern) para aislar las capas de la aplicación.  
+  - Escenario 4: Se implementó el patrón de [Access Token Pattern](#-access-token-pattern) para manejar sesiones y autenticación en los microservicios.
+- Escenarios de seguridad:
+    - Escenario 1: Se implementó el patrón de [Load Balancer](#balanceo-de-carga-y-escalado) y se realizaron pruebas de estrés a tres servicios.
+    - Escenario 2: Se implementó el patrón de [Auto Scaling](#balanceo-de-carga-y-escalado) ajusta el número de recursos computacionales.
 
 ---
 
@@ -373,10 +545,21 @@ touch .env
 
 # 📋 Copiar el contenido del archivo de ejemplo (.env.example) al nuevo archivo
 cp .env.example .env
+```
 
-# ✏️ Agregar tus credenciales del API de Spotify dentro del archivo .env
-echo "SPOTIFY_CLIENT_ID=ac2b79b47a0643bd824d4fece4d8d110" >> .env
-echo "SPOTIFY_CLIENT_SECRET=3a61c9187a674bf9a505e9a810700e6d" >> .env
+##### ✏️ Agregar las credenciales del API de Spotify dentro del archivo .env
+Reemplaza las siguientes líneas
+SPOTIFY_CLIENT_ID=ac2b79b47a0643bd824d4fece4d8d110
+SPOTIFY_CLIENT_SECRET=3a61c9187a674bf9a505e9a810700e6d
+
+```bash
+# Generar certificados locales con el comando:
+docker run --rm -it \
+  -v ./traefik/certs:/certs \
+  alpine/openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout /certs/musicshare.key \
+  -out /certs/musicshare.crt \
+  -subj "/C=CO/ST=Bogota/L=Bogota/O=Universidad Nacional de Colombia/CN=localhost"
 ```
 
 ```bash
@@ -393,11 +576,10 @@ docker compose ps
 
 ## 🚀 Servicios levantados
 
-- **Web Frontend** → [http://localhost](http://localhost)
-- **Post Frontend** → [http://localhost/formulario-post/index.html](http://localhost/formulario-post/index.html)
-- **User Service** → [http://localhost/api/users](http://localhost/api/users)
-- **Music Service** → [http://localhost/api/music](http://localhost/api/music)
-- **Social Service** → [http://localhost/api/social](http://localhost/api/social)
+- **Web Frontend** → [https://localhost](http://localhost)
+- **User Service** → [https://localhost/api/users/docs](http://localhost/api/users)
+- **Music Service** → [https://localhost/api/music/swagger/index.html](http://localhost/api/music)
+- **Social Service** → [https://localhost/api/social/swagger-ui/index.html](http://localhost/api/social)
 - **Postgres** → puerto `5432`
 - **MongoDB** → puerto `27017`
 
@@ -421,7 +603,7 @@ Para verificar que la subida de la canción y el post ha sido satisfactoria pued
 ## 📖 Endpoints principales de los servicios
 
 ### UserService
-**Documentacion** [http://localhost/api/users/docs](http://localhost/api/users/docs)
+**Documentacion** [https://localhost/api/users/docs](http://localhost/api/users/docs)
 - **Health**: `GET /health`
 - **Registro**: `POST /auth/register`
 - **Login**: `POST /auth/token` (devuelve JWT)
@@ -429,7 +611,7 @@ Para verificar que la subida de la canción y el post ha sido satisfactoria pued
 - **Proxy playlists**: `GET /proxy/users/{id}/playlists`
 
 ### MusicService
-**Documentacion** [http://localhost/api/music/swagger/index.html](http://localhost/api/music/swagger/index.html)
+**Documentacion** [https://localhost/api/music/swagger/index.html](http://localhost/api/music/swagger/index.html)
 - `POST /api/v1/tracks/upload` - Subir audio
 - `GET /api/v1/tracks` - Listar tracks
 - `GET /api/v1/tracks/{id}/stream` - Stream de audio
@@ -437,7 +619,7 @@ Para verificar que la subida de la canción y el post ha sido satisfactoria pued
 - Healthcheck en `/health`
 
 ### SocialService
-**Documentacion** [http://localhost/api/social/swagger-ui/index.html](http://localhost/api/social/swagger-ui/index.html)
+**Documentacion** [https://localhost/api/social/swagger-ui/index.html](http://localhost/api/social/swagger-ui/index.html)
 
 #### Posts
 - `POST /api/social/posts` — Crear una publicación  
@@ -458,3 +640,673 @@ Para verificar que la subida de la canción y el post ha sido satisfactoria pued
 - `DELETE /api/social/likes/{likeId}` — Quitar un like
 
 ---
+
+# 🧩 Network Segmentation Pattern
+
+### 🎯 Objetivo
+
+Implementar **segmentación de red** entre los distintos componentes de MusicShare para aislar las capas de la aplicación (presentación, negocio y datos) y limitar el alcance de la comunicación entre contenedores.
+
+Este patrón mejora la seguridad y la mantenibilidad al aplicar el **principio de mínimo privilegio** en la red de Docker.
+
+---
+
+### ⚙️ Implementación
+
+1. **Creación de redes separadas** en el archivo `docker-compose.yml`:
+
+   ```yaml
+   networks:
+     frontend_net:
+       driver: bridge
+     backend_net:
+       driver: bridge
+     data_net:
+       driver: bridge
+   ```
+
+2. **Asignación de redes a los servicios** según su capa:
+
+   | Capa         | Redes          | Servicios incluidos                                                                                    |
+   | ------------ | -------------- | ------------------------------------------------------------------------------------------------------ |
+   | Presentación | `frontend_net` | `frontend`, `formulario-post-front`, `traefik`                                                         |
+   | Negocio      | `backend_net`  | `userservice`, `music-service`, `social-service`, `metadata-service`, `notificationservice`, `traefik` |
+   | Datos        | `data_net`     | `postgres`, `postgres-social`, `mongodb`, `rabbitmq`                                                   |
+
+3. **Puentes de conexión controlados**:
+
+   * `traefik` conecta `frontend_net` ↔ `backend_net`.
+   * Cada microservicio que requiere acceso a una base de datos también pertenece a `data_net`.
+
+   Ejemplo:
+
+   ```yaml
+   userservice:
+     networks:
+       - backend_net
+       - data_net
+   ```
+
+4. **Aislamiento verificado**:
+
+   * Los frontends **no tienen acceso** directo a las bases de datos ni a los microservicios.
+   * Los microservicios solo pueden ver los recursos que realmente necesitan.
+   * El API Gateway (`traefik`) es el **único punto de interconexión** entre capas.
+
+---
+
+### 🧪 Pruebas de verificación
+
+1. **Levantar la infraestructura:**
+
+   ```bash
+   docker compose up -d
+   ```
+
+2. **Listar redes creadas:**
+
+   ```bash
+   docker network ls
+   ```
+
+   Deben aparecer:
+
+   ```
+   frontend_net
+   backend_net
+   data_net
+   ```
+
+3. **Ver los contenedores conectados a cada red:**
+
+   ```bash
+   docker network inspect frontend_net
+   docker network inspect backend_net
+   docker network inspect data_net
+   ```
+
+4. **Probar conectividad con `ping` o `curl`:**
+
+   Instalar herramientas en el contenedor (solo para pruebas):
+
+   ```bash
+   docker exec -it musicshare-frontend sh
+   apk add --no-cache iputils
+   ```
+
+   * Desde el `frontend`:
+
+     ```bash
+     ping formulario-post-front       # ✅ debería responder
+     ping postgres                    # ❌ debería fallar
+     ping userservice                 # ❌ debería fallar
+     ```
+
+   * Desde `userservice`:
+
+     ```bash
+     ping postgres                    # ✅ debería responder
+     ping frontend                    # ❌ debería fallar
+     ```
+
+   * Desde `traefik`:
+
+     ```bash
+     ping frontend                    # ✅
+     ping userservice                 # ✅
+     ```
+
+   Estos resultados confirman el **aislamiento por capas**.
+
+---
+
+### ✅ Resultado
+
+La red de MusicShare queda estructurada de la siguiente forma:
+
+```
+[ Frontend, Formulario Front ]
+           │
+     (frontend_net)
+           │
+        [ Traefik ]
+           │
+     (backend_net)
+           │
+ [ User, Music, Social, Metadata, Notification Services ]
+           │
+     (data_net)
+           │
+ [ Postgres, MongoDB, RabbitMQ ]
+```
+
+Con esta segmentación:
+
+* Los frontends no acceden directamente a los backends ni a las bases de datos.
+* El gateway controla todo el flujo de red.
+* Se reduce la superficie de ataque y se refuerza el aislamiento de servicios.
+
+---
+
+# 🌐 Reverse Proxy Pattern
+
+### 🎯 Objetivo
+
+El **Reverse Proxy Pattern** busca centralizar todo el tráfico de red de una aplicación distribuida en un único punto de entrada.
+Este proxy inverso actúa como intermediario entre los clientes externos y los servicios internos, gestionando el enrutamiento de peticiones, el control de acceso y la seguridad.
+
+En MusicShare, el servicio **Traefik** cumple este rol, funcionando como **reverse proxy y API Gateway** al mismo tiempo.
+
+
+### ⚙️ Implementación en MusicShare
+
+1. **Servicio Traefik**
+
+   * El contenedor `traefik` se definió en el `docker-compose.yml` como el **único servicio que expone puertos al exterior**:
+
+     ```yaml
+     traefik:
+       image: traefik:v3.0
+       ports:
+         - "80:80"       # tráfico HTTP público
+         - "8080:8080"   # dashboard (solo desarrollo)
+       volumes:
+         - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+         - /var/run/docker.sock:/var/run/docker.sock:ro
+       networks:
+         - frontend_net
+         - backend_net
+     ```
+
+     Esto permite que Traefik escuche peticiones externas (HTTP) y se comunique con los microfrontends y microservicios internos en las redes segmentadas.
+
+2. **Configuración base (`traefik/traefik.yml`)**
+
+   ```yaml
+   api:
+     dashboard: true
+     insecure: true
+
+   entryPoints:
+     web:
+       address: ":80"
+
+   providers:
+     docker:
+       endpoint: "unix:///var/run/docker.sock"
+       exposedByDefault: false
+   ```
+
+   Con esto, Traefik:
+
+   * Habilita un **dashboard** para monitorear los routers y servicios detectados.
+   * Define el punto de entrada HTTP en el puerto `80`.
+   * Obtiene dinámicamente la configuración de ruteo a partir de las etiquetas (`labels`) de Docker.
+
+3. **Ruteo basado en etiquetas (`labels`)**
+   Cada microfrontend y microservicio declara etiquetas que indican cómo deben manejarse las solicitudes.
+   Por ejemplo:
+
+   ```yaml
+   userservice:
+     labels:
+       - "traefik.enable=true"
+       - "traefik.http.routers.user.rule=PathPrefix(`/api/users`)"
+       - "traefik.http.services.user.loadbalancer.server.port=8080"
+   ```
+
+   Esto le indica a Traefik que todas las solicitudes que empiecen por `/api/users` deben ser dirigidas al contenedor `userservice`.
+
+   De igual forma:
+
+   * `/` → `frontend`
+   * `/formulario-post` → `formulario-post-front`
+   * `/api/music` → `music-service`
+   * `/api/social` → `social-service`
+   * etc.
+
+4. **Integración con la segmentación de red**
+
+   * Traefik está conectado a las redes `frontend_net` y `backend_net`.
+   * Los contenedores internos **no exponen puertos**; solo Traefik los conoce y los enruta internamente.
+   * Esto asegura que ningún servicio sea accesible directamente desde fuera del entorno Docker.
+
+
+### 🔍 Verificación
+
+1. Levanta la aplicación:
+
+   ```bash
+   docker compose up -d
+   ```
+2. Abre el dashboard de Traefik:
+
+   ```
+   http://localhost:8080/dashboard/
+   ```
+
+   Aquí podrás visualizar todos los routers y middlewares activos.
+3. Accede a las rutas expuestas:
+
+   * `http://localhost/` → frontend principal
+   * `http://localhost/formulario-post` → microfrontend de publicación
+   * `http://localhost/api/users` → microservicio de usuarios
+   * `http://localhost/api/music` → microservicio de música
+
+Solo el contenedor `traefik` debe tener puertos publicados externamente (verificable con `docker ps`).
+
+
+### ⚖️ Comparación: Traefik vs NGINX
+
+| Característica                     | **Traefik**                                                            | **NGINX**                                                     |
+| ---------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------- |
+| **Naturaleza**                     | Proxy inverso dinámico y API Gateway moderno.                          | Servidor web y proxy inverso tradicional.                     |
+| **Configuración**                  | Basada en etiquetas y detección automática de servicios Docker.        | Requiere un archivo `nginx.conf` estático con rutas manuales. |
+| **Soporte nativo de contenedores** | ✅ Sí, detecta contenedores y redes Docker automáticamente.             | ⚙️ No, requiere configuración manual o scripts externos.      |
+| **Balanceo de carga y middleware** | Integrados, configurables vía labels o API.                            | Requiere módulos o configuración extra.                       |
+| **TLS automático (Let's Encrypt)** | ✅ Nativo.                                                              | ⚙️ Manual o con scripts externos.                             |
+| **Dashboard**                      | ✅ Web GUI en `:8080` con routers, servicios y logs.                    | ❌ No tiene dashboard nativo.                                  |
+| **Orientación**                    | Diseñado para entornos de microservicios, Kubernetes y Docker Compose. | Más usado para servidores web o APIs monolíticas.             |
+
+🔹 En el laboratorio anterior, **NGINX** se configuró manualmente como reverse proxy, especificando rutas en `nginx.conf`.
+🔹 En MusicShare, **Traefik** automatiza este proceso detectando servicios y aplicando reglas declarativas desde las etiquetas Docker.
+Ambos cumplen el mismo patrón **Reverse Proxy**, pero Traefik está optimizado para arquitecturas distribuidas y dinámicas como la tuya.
+
+
+### ✅ Resultado
+
+Con Traefik funcionando como reverse proxy:
+
+* Solo el contenedor `traefik` está expuesto al exterior.
+* Todo el tráfico HTTP pasa primero por el proxy.
+* Los microservicios internos están aislados y se comunican solo dentro de las redes segmentadas.
+* El ruteo es dinámico, declarativo y fácilmente extensible.
+
+Esto completa la implementación del **Reverse Proxy Pattern** en MusicShare, preparando el entorno para el siguiente patrón:
+🔐 **Secure Channel Pattern (TLS/HTTPS)**.
+
+---
+
+## 🌐 API Gateway - Arquitectura y Configuración
+
+### 📋 Descripción General
+
+MusicShare utiliza **Traefik** como API Gateway, proporcionando un punto de entrada unificado para todos los servicios del sistema. El gateway gestiona:
+
+- **Enrutamiento automático** basado en prefijos de ruta
+- **Descubrimiento dinámico** de servicios vía Docker labels
+- **Seguridad TLS/SSL** con redirección automática HTTP → HTTPS
+- **Balanceo de carga** entre instancias de servicios
+- **Middlewares** para transformación de rutas (strip prefix)
+
+📖 Para documentación detallada sobre el API Gateway, consulta: **[APIGateway.md](./APIGateway.md)**
+
+### 🗺️ Mapa de Rutas
+
+```
+https://localhost/
+├── /                          → Frontend React (Puerto 80) [Prioridad 1]
+├── /upload                    → Next.js SSR (Puerto 3000) [Prioridad 2]
+├── /formulario-post           → Formulario Post Frontend (Puerto 80)
+├── /api/users/*               → UserService (Puerto 8002)
+├── /api/music/*               → MusicService (Puerto 8081)
+├── /api/social/*              → SocialService (Puerto 8083)
+├── /api/notifications/*       → NotificationService (Puerto 8082)
+└── /ws                        → NotificationService WebSocket (Puerto 8082)
+```
+
+### ✅ Servicios Configurados
+
+| Servicio | Ruta Externa | Puerto Interno | Strip Prefix | Estado |
+|----------|--------------|----------------|--------------|--------|
+| Frontend React | `/` | 80 | ❌ | ✅ Activo |
+| Next.js SSR | `/upload` | 3000 | ❌ | ✅ Activo |
+| Formulario Post | `/formulario-post` | 80 | ✅ | ✅ Activo |
+| UserService | `/api/users` | 8002 | ✅ | ✅ Activo |
+| MusicService | `/api/music` | 8081 | ✅ | ✅ Activo |
+| SocialService | `/api/social` | 8083 | ✅ | ✅ Activo |
+| NotificationService | `/api/notifications` | 8082 | ✅ | ✅ Activo |
+| NotificationService WS | `/ws` | 8082 | ❌ | ✅ Activo |
+| **MetadataService** | - | 50051 (gRPC) | - | 🔒 **Interno** |
+
+> 💡 **Nota sobre MetadataService**: Este servicio utiliza gRPC y es consumido **únicamente por MusicService** de forma interna. Por diseño arquitectónico correcto, **no está expuesto** a través del API Gateway.
+
+### ⚠️ Servicios Pendientes
+
+#### SearchService ❌
+- **Estado**: No implementado (carpeta vacía)
+- **Ruta sugerida**: `/api/search`
+- **Acción requerida**: Implementar el servicio antes de configurar en el gateway
+
+### 🔧 Configuración del Gateway
+
+#### Archivo `traefik/traefik.yml`
+```yaml
+api:
+  dashboard: true
+  insecure: true  # Dashboard en puerto 8080 (solo desarrollo)
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https  # Redirección HTTP → HTTPS
+
+  websecure:
+    address: ":443"  # HTTPS
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false  # Requiere traefik.enable=true explícito
+
+log:
+  level: DEBUG
+```
+
+#### Puertos Expuestos
+- **80**: HTTP (redirige automáticamente a HTTPS)
+- **443**: HTTPS (punto de entrada principal)
+- **8080**: Dashboard de Traefik (monitoreo en tiempo real)
+
+### 📊 Dashboard de Monitoreo
+
+Accede al dashboard de Traefik para ver:
+- Routers activos y sus reglas
+- Estado de servicios backend y sus réplicas
+- Middlewares aplicados
+- Métricas de tráfico en tiempo real
+- Distribución de carga entre réplicas
+
+```
+http://localhost:8080/dashboard/
+```
+
+---
+
+# Balanceo de Carga y Escalado
+
+MusicShare implementa **balanceo de carga automático** con Traefik. Los servicios backend se ejecutan con **múltiples réplicas** para alta disponibilidad y mejor rendimiento.
+
+#### Servicios Escalables
+
+| Servicio | Réplicas Iniciales | Algoritmo | Sticky Sessions |
+|----------|-------------------|-----------|-----------------|
+| UserService | 2 | Round Robin | ✅ Habilitadas |
+| MusicService | 2 | Round Robin | ✅ Habilitadas |
+| SocialService | 2 | Round Robin | ✅ Habilitadas |
+| NotificationService | 2 | Round Robin | ✅ Habilitadas |
+
+#### Escalar Servicios Manualmente
+
+```powershell
+# Usando Docker Compose directamente
+docker compose up -d --scale userservice=5 --no-recreate
+
+# Usando el script de escalado (recomendado)
+.\scripts\scale-service.ps1 -Service userservice -Replicas 5
+.\scripts\scale-service.ps1 -Service all -Replicas 3
+```
+
+#### Probar el Balanceo de Carga
+
+```powershell
+# Ejecutar prueba de carga
+.\scripts\load-test.ps1 -Service userservice -Requests 20 -Delay 500
+
+# El script mostrará:
+# - Estado de cada petición
+# - Tiempos de respuesta
+# - Distribución entre réplicas
+```
+
+#### Características del Balanceo
+
+- ✅ **Round Robin**: Distribución equitativa de peticiones
+- ✅ **Health Checks**: Verificación automática cada 10s
+- ✅ **Sticky Sessions**: Mantiene sesiones de usuario consistentes
+- ✅ **Failover Automático**: Si una réplica falla, el tráfico va a las sanas
+- ✅ **Límites de Recursos**: CPU y RAM controlados por réplica
+
+### 🔄 Ejemplo de Configuración de Servicio
+
+Cuando agregas un nuevo servicio al `docker-compose.yml`, la configuración de Traefik se hace mediante labels:
+
+```yaml
+nuevo-servicio:
+  build:
+    context: ./nuevo-servicio
+  container_name: musicshare-nuevo-servicio
+  networks:
+    - backend_net
+  labels:
+    # Habilitar en Traefik
+    - "traefik.enable=true"
+    
+    # Regla de enrutamiento
+    - "traefik.http.routers.nuevo-servicio.rule=PathPrefix(`/api/nuevo`)"
+    
+    # Middleware para eliminar prefijo
+    - "traefik.http.middlewares.nuevo-servicio-stripprefix.stripprefix.prefixes=/api/nuevo"
+    - "traefik.http.routers.nuevo-servicio.middlewares=nuevo-servicio-stripprefix"
+    
+    # Puerto del contenedor
+    - "traefik.http.services.nuevo-servicio.loadbalancer.server.port=8000"
+    
+    # Punto de entrada y TLS
+    - "traefik.http.routers.nuevo-servicio.entrypoints=websecure"
+    - "traefik.http.routers.nuevo-servicio.tls=true"
+```
+
+### 🎯 Ventajas del API Gateway
+
+1. **Punto único de entrada**: Simplifica la gestión de seguridad y monitoreo
+2. **Desacoplamiento**: Los clientes no necesitan conocer las ubicaciones de los servicios
+3. **Flexibilidad**: Cambios en servicios backend sin afectar al frontend
+4. **Escalabilidad**: Permite balanceo de carga automático
+5. **Seguridad**: Centraliza autenticación, rate limiting y TLS
+6. **Descubrimiento dinámico**: Detecta automáticamente nuevos servicios
+
+### 🚀 Agregar un Nuevo Servicio
+
+1. Define el servicio en `docker-compose.yml` con las labels de Traefik
+2. Levanta el servicio: `docker compose up -d nuevo-servicio`
+3. Traefik detecta automáticamente y comienza a enrutar tráfico
+4. Verifica en el dashboard: `http://localhost:8080`
+
+**No es necesario reiniciar Traefik** - la configuración se actualiza dinámicamente.
+
+---
+
+# 🧩 Secure Channel Pattern (TLS/HTTPS con Traefik)
+
+Para proteger la comunicación entre el cliente y los servicios, se implementó el **Secure Channel Pattern** mediante **Traefik** actuando como *terminador TLS*.
+Todas las conexiones externas ahora usan HTTPS con certificados locales.
+
+#### 🔧 Configuración principal
+
+* **Entrypoints:**
+
+  * `web` (puerto 80) → redirige automáticamente a `websecure`
+  * `websecure` (puerto 443) → maneja el canal cifrado HTTPS
+* **Certificados locales:**
+  Generados con:
+
+  ```bash
+  docker run --rm -it \
+    -v ./traefik/certs:/certs \
+    alpine/openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout /certs/musicshare.key \
+    -out /certs/musicshare.crt \
+    -subj "/C=CO/ST=Bogota/L=Bogota/O=Universidad Nacional de Colombia/CN=localhost"
+  ```
+
+  > ⚠️ Los certificados se excluyen del repositorio mediante `.gitignore`.
+
+#### 🔐 Funcionamiento
+
+* Traefik escucha en `80` y `443`, redirigiendo automáticamente HTTP → HTTPS.
+* Termina las conexiones TLS usando los certificados locales.
+* El tráfico interno entre contenedores sigue siendo HTTP dentro de redes aisladas (`frontend_net`, `backend_net`, `data_net`).
+
+#### 🌍 Resultado
+
+* Todas las rutas públicas (`/`, `/api/users`, `/api/music`, etc.) son accesibles en **[https://localhost](https://localhost)**.
+* Los intentos de conexión HTTP son redirigidos automáticamente a HTTPS.
+* Se elimina el riesgo de *mixed content* y se garantiza la confidencialidad de las credenciales de usuario y datos transmitidos.
+
+---
+
+# 🔑 Access Token Pattern
+
+## 🎯 Objetivo
+
+El **Access Token Pattern** permite autenticar y autorizar solicitudes en aplicaciones distribuidas mediante el uso de **tokens firmados**, evitando el uso de sesiones tradicionales basadas en cookies o almacenamiento centralizado.
+
+Este patrón es esencial en MusicShare para:
+
+* Manejar **sesiones de usuario** entre microfrontends y microservicios.
+* Garantizar que cada solicitud lleve información verificable sobre el usuario.
+* Obtener el **ID del usuario autenticado** cuando se realizan acciones sensibles (como subir un post, crear comentarios, dar like, etc.).
+* Evitar dependencias entre servicios o estado compartido en memoria.
+
+
+## 🔧 ¿Cómo funciona en MusicShare?
+
+MusicShare implementa un esquema **JWT-based Access Token**, donde el microservicio de usuarios (`userservice`) es responsable de:
+
+1. **Verificar credenciales** cuando un usuario inicia sesión.
+
+2. **Emitir un access token** con datos esenciales del usuario:
+
+   * `userId`
+   * `username` (si aplica)
+   * fecha de expiración
+   * firma criptográfica para evitar manipulación
+
+3. Entregar el token al cliente (frontend).
+
+4. El cliente almacena temporalmente el token (ej. `localStorage`).
+
+5. Todas las solicitudes a microservicios incluyen el token en la cabecera HTTP:
+
+   ```
+   Authorization: Bearer <token>
+   ```
+
+6. Cada microservicio valida el token localmente sin necesidad de contactar al userservice.
+
+
+## 📦 Implementación del patrón
+
+### 1. Emisión del token (login)
+
+Cuando el usuario inicia sesión correctamente:
+
+```json
+{
+  "token": "<JWT generado>",
+  "expiresIn": 3600
+}
+```
+
+El frontend guarda este token y lo envía en todas las peticiones subsecuentes.
+
+
+### 2. Inclusión del token en solicitudes
+
+Ejemplo desde un frontend:
+
+```js
+fetch("https://localhost/api/social/posts", {
+  method: "POST",
+  headers: {
+    "Authorization": `Bearer ${token}`,
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({ text: "Mi nueva publicación" })
+});
+```
+
+
+### 3. Validación del token en microservicios
+
+Cada microservicio tiene un middleware o filtro que:
+
+1. **Extrae** el token del header.
+2. **Verifica la firma** usando la clave secreta compartida.
+3. **Comprueba expiración**.
+4. Recupera el `userId` para vincular la acción con el usuario autenticado.
+
+Ejemplo de extracción:
+
+```java
+String token = request.getHeader("Authorization").replace("Bearer ", "");
+String userId = jwtService.getUserIdFromToken(token);
+```
+
+Esto permite, por ejemplo, crear un post asociado al usuario correcto sin que el frontend envíe manualmente el campo `userId`.
+
+
+## 🔐 Beneficios del Patrón
+
+### ✔ No requiere estado compartido entre servicios
+
+Cada microservicio puede validar tokens por sí mismo.
+
+### ✔ Escala de forma natural en entornos de microservicios
+
+No requiere sesiones centralizadas ni sticky sessions.
+
+### ✔ Reduce superficie de ataque
+
+No se envían credenciales en cada solicitud, solo tokens firmados.
+
+### ✔ Simplifica autorización
+
+El backend recibe directamente el `userId` en el token sin confiar en valores proporcionados desde el cliente.
+
+### ✔ Ideal para arquitecturas basadas en API Gateway
+
+Traefik pasa el token sin inspección; la autenticación se maneja internamente.
+
+
+## 🛡️ Pruebas de verificación
+
+1. **Iniciar sesión** y verificar que el servidor responde con un token válido.
+
+2. Enviar una solicitud autenticada:
+
+   ```bash
+   curl -X GET https://localhost/api/social/feed \
+     -H "Authorization: Bearer <token>"
+   ```
+
+3. Enviar una solicitud **sin token** o con token inválido y verificar que retorna `401 Unauthorized`.
+
+4. Crear un post y verificar en base de datos que:
+
+   * el post está asociado al `userId` que viene dentro del token,
+   * no depende de valores enviados desde el frontend.
+
+
+## 🧩 Integración con otros patrones de MusicShare
+
+| Patrón                              | Relación con Access Token Pattern                                                                                   |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **Reverse Proxy Pattern (Traefik)** | Traefik enruta las peticiones, pero **no interpreta tokens**. El token fluye transparente hacia los microservicios. |
+| **Secure Channel Pattern (HTTPS)**  | Los tokens viajan cifrados, evitando robo de credenciales (MitM, sniffing).                                         |
+| **Network Segmentation Pattern**    | Los tokens permiten que el API Gateway dirija tráfico sin exponer servicios ni almacenar sesiones.                  |
+
+
+## ✅ Resultado
+
+Con el **Access Token Pattern**, MusicShare garantiza:
+
+* Autenticación y autorización seguras entre microservicios.
+* Sesiones sin estado (**stateless authentication**).
+* Extracción confiable del `userId` para acciones como subir posts, comentarios o likes.
+* Un modelo de seguridad consistente, escalable y compatible con arquitecturas distribuidas.

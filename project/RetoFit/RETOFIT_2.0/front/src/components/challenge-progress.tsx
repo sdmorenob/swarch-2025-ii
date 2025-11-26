@@ -2,7 +2,6 @@
 
 // Añadimos 'useEffect'
 import { useState, useEffect, useActionState } from 'react'; // <-- Añade useActionState
-import { useFormStatus } from 'react-dom'; // <-- Quita useFormState de aquí
 import {
   Card,
   CardContent,
@@ -55,8 +54,11 @@ export function ChallengeProgress({
       }
 
       try {
-        // 2. Validamos el token contra el auth-service (puerto 8001)
-        const authRes = await fetch('http://127.0.0.1:8080/api/auth/validate-token', {
+        // 2. Validamos el token contra el auth-service a través del proxy Nginx,
+        //    respetando la arquitectura y usando la variable de entorno designada.
+        const authApiUrl = process.env.NEXT_PUBLIC_AUTH_API_URL || '';
+        const validationUrl = `${authApiUrl}/validate-token`;
+        const authRes = await fetch(validationUrl, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -158,7 +160,9 @@ export function ChallengeProgress({
     }
   }
 
-  const [state, formAction] = useActionState(handleLogProgress, { message: null, error: null });
+  // 1. Capturamos `isPending` y eliminamos `pending` del estado inicial.
+  const [state, formAction, isPending] = useActionState(handleLogProgress, { message: null, error: null });
+
 
   // --- Renderizado Condicional ---
 
@@ -220,7 +224,8 @@ export function ChallengeProgress({
                 placeholder={`e.g., 5000 for ${challenge.unit}`}
                 required
               />
-              <SubmitButton />
+              {/* 2. Usamos `isPending` directamente */}
+              <SubmitButton pending={isPending} />
             </div>
             {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
             {state?.message && <p className="text-sm text-green-600">{state.message}</p>}
@@ -231,10 +236,9 @@ export function ChallengeProgress({
   );
 }
 
-function SubmitButton() {
-    const { pending } = useFormStatus();
+function SubmitButton({ pending }: { pending?: boolean | null | undefined }) {
     return (
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={!!pending}>
             {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Log
         </Button>

@@ -1,0 +1,102 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "RPS (1m)",
+      "datasource": {"type": "influxdb", "uid": "InfluxDB"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [
+        {
+          "refId": "A",
+          "query": "SELECT SUM(\"value\")/60 FROM \"http_reqs\" WHERE $timeFilter AND \"testid\" =~ /$testid/ GROUP BY time(1m) fill(null)",
+          "rawQuery": true,
+          "resultFormat": "time_series"
+        }
+      ],
+      "options": {"legend": {"showLegend": true}}
+    },
+    {
+      "type": "timeseries",
+      "title": "Error rate % (1m)",
+      "datasource": {"type": "influxdb", "uid": "InfluxDB"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "targets": [
+        {
+          "refId": "A",
+          "query": "SELECT 100.0 * MEAN(\"value\") FROM \"http_req_failed\" WHERE $timeFilter AND \"testid\" =~ /$testid/ GROUP BY time(1m) fill(null)",
+          "rawQuery": true,
+          "resultFormat": "time_series"
+        }
+      ],
+      "options": {"legend": {"showLegend": true}}
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency avg (1m)",
+      "datasource": {"type": "influxdb", "uid": "InfluxDB"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "targets": [
+        {
+          "refId": "A",
+          "query": "SELECT MEAN(\"value\") FROM \"http_req_duration\" WHERE $timeFilter AND \"testid\" =~ /$testid/ GROUP BY time($__interval) fill(null)",
+          "rawQuery": true,
+          "resultFormat": "time_series"
+        }
+      ],
+      "options": {"legend": {"showLegend": true}}
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency p95 (approx)",
+      "datasource": {"type": "influxdb", "uid": "InfluxDB"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "targets": [
+        {
+          "refId": "A",
+          "query": "SELECT percentile(\"value\", 95) FROM \"http_req_duration\" WHERE $timeFilter AND \"testid\" =~ /$testid/ GROUP BY time($__interval) fill(null)",
+          "rawQuery": true,
+          "resultFormat": "time_series"
+        }
+      ],
+      "options": {"legend": {"showLegend": true}}
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 36,
+  "style": "dark",
+  "tags": ["k6", "influxdb", "influxql"],
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "DS_INFLUX",
+        "label": "InfluxDB",
+        "query": "influxdb",
+        "current": {"text": "InfluxDB", "value": "InfluxDB"}
+      },
+      {
+        "type": "query",
+        "name": "testid",
+        "label": "Test ID",
+        "datasource": {"type": "influxdb", "uid": "InfluxDB"},
+        "query": "SHOW TAG VALUES WITH KEY = \"testid\" FROM \"http_reqs\"",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "hide": 0
+      }
+    ]
+  },
+  "time": {"from": "now-15m", "to": "now"},
+  "timepicker": {},
+  "timezone": "",
+  "title": "k6 InfluxDB (InfluxQL)",
+  "uid": "tasknotes-k6-influxql",
+  "version": 1
+}

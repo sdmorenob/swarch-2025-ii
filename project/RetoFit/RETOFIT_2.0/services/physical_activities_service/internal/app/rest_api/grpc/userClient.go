@@ -9,6 +9,8 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/rs/zerolog/log"
 )
 
 type UserClient struct {
@@ -19,6 +21,7 @@ func NewUserClient(address string) (*UserClient, error) {
 	conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		fmt.Printf("Error al conectar al servicio Python de usuarios: %v\n", err)
+
 		return nil, err
 		//log.Fatalf("No se pudo conectar al servicio Python: %v", err)
 	}
@@ -32,6 +35,7 @@ func (c *UserClient) GetUserByID(ctx context.Context, id int32) (*pb.UserRespons
 	defer cancel()
 
 	req := &pb.UserRequest{Id: id}
+	log.Info().Msg("Entro al gRPC")
 	return c.client.GetUser(ctx, req)
 
 }

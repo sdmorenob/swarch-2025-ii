@@ -11,4 +11,7 @@ require (
     github.com/golang-jwt/jwt/v5 v5.2.1
     google.golang.org/grpc v1.66.0
     google.golang.org/protobuf v1.33.0
+    github.com/prometheus/client_golang v1.18.0
+    github.com/redis/go-redis/v9 v9.4.0
+    github.com/rabbitmq/amqp091-go v1.9.0
 )

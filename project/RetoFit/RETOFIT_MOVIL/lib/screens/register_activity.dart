@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/activity_model.dart';
-import '../services/auth_service.dart';
 import '../services/gamification_service.dart';
 
 class ActivityScreen extends StatefulWidget {
@@ -182,10 +181,10 @@ class _ActivityScreenState extends State<ActivityScreen> with TickerProviderStat
                               color: Color(0xFFFF6B35))
                               : Column(
                             children: [
-                              Row(
+                              const Row(
                                 mainAxisAlignment:
                                 MainAxisAlignment.center,
-                                children: const [
+                                children: [
                                   Icon(Icons.emoji_events_rounded,
                                       color: Colors.amber, size: 22),
                                   SizedBox(width: 6),
@@ -217,7 +216,7 @@ class _ActivityScreenState extends State<ActivityScreen> with TickerProviderStat
 
                         const SizedBox(height: 30),
 
-                        // 📋 FORMULARIO
+                        // Formulario
                         Form(
                           key: _formKey,
                           child: Column(

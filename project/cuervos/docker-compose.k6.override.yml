@@ -1,0 +1,38 @@
+services:
+  k6:
+    image: grafana/k6:latest
+    restart: on-failure
+    depends_on:
+      prometheus:
+        condition: service_started
+      influxdb:
+        condition: service_started
+      api-gateway:
+        condition: service_healthy
+    # Monta el script genérico por servicio (solo load/stress)
+    volumes:
+      - ./perf/k6/service_scenario.js:/test.js:ro
+    environment:
+      # Output Prometheus Remote Write (usa el Prometheus del mismo compose)
+      K6_PROMETHEUS_RW_SERVER_URL: http://prometheus:9090/api/v1/write
+      K6_INSECURE_SKIP_TLS_VERIFY: "true"
+      # Variables para service_scenario.js (ajusta según el servicio)
+      BASE_URL: https://api-gateway:8443
+      DURATION: 2m
+      API_RPS: "50"
+      SCENARIO: ${SCENARIO:-load}
+      METHOD: POST
+      PATH: /search/
+      CONTENT_TYPE: application/json
+      BODY: "{\"query\":\"meeting\",\"user_id\":1,\"limit\":20,\"skip\":0}"
+      SERVICE_NAME: search-service
+      JWT_SECRET: change-me-in-prod
+      JWT_ISSUER: tasknotes-auth
+      JWT_AUDIENCE: tasknotes
+      USER_ID: "1"
+      JWT_OVERRIDE: ${JWT_OVERRIDE}
+      USE_LOGIN_TOKEN_FOR_API: ${USE_LOGIN_TOKEN_FOR_API:-true}
+      TEST_EMAIL: ${TEST_EMAIL:-perftest@example.com}
+      TEST_PASSWORD: ${TEST_PASSWORD:-Passw0rd!}
+      AUTH_BASE_URL: ${AUTH_BASE_URL:-http://api-gateway:8083}
+    command: ["run", "/test.js", "-o", "experimental-prometheus-rw", "-o", "influxdb=http://tasknotes:changeme@influxdb:8086/k6"]

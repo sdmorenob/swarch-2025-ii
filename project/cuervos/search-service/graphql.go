@@ -128,7 +128,8 @@ var schema, _ = graphql.NewSchema(graphql.SchemaConfig{
                     }
 
                     // Realizar búsqueda usando gRPC
-                    response, err := searchService.UnifiedSearch(context.Background(), searchReq)
+                    ctx := context.WithValue(context.Background(), "cache_source", "graphql")
+                    response, err := searchService.UnifiedSearchCached(ctx, searchReq)
                     if err != nil {
                         return nil, err
                     }

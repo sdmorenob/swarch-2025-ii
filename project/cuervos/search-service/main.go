@@ -18,18 +18,23 @@
 package main
 
 import (
-	"context"
-	"log"
-	"net/http"
-	"os"
-	"strconv"
-	"time"
+    "context"
+    "encoding/json"
+    "log"
+    "net/http"
+    "os"
+    "strconv"
+    "time"
 
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
+    "github.com/gin-contrib/cors"
+    "github.com/gin-gonic/gin"
+    "github.com/prometheus/client_golang/prometheus"
+    "github.com/prometheus/client_golang/prometheus/promhttp"
+    amqp "github.com/rabbitmq/amqp091-go"
+    "github.com/redis/go-redis/v9"
 
-	"search-service/grpc"
-	"search-service/services"
+    "search-service/grpc"
+    "search-service/services"
 )
 
 // Note struct removed - now using NoteDTO for REST responses
@@ -96,15 +101,75 @@ func main() {
 	}
 	defer grpcClients.Close()
 
-	// Inicializar servicio de búsqueda
-	searchService = services.NewSearchService(grpcClients)
+    // Inicializar servicio de búsqueda
+    searchService = services.NewSearchService(grpcClients)
+
+    // Configurar Redis (opcional) para Cache-Aside
+    redisURL := os.Getenv("REDIS_URL")
+    var redisClient *redis.Client
+    if redisURL != "" {
+        addr := redisURL
+        // aceptar formato redis://host:port
+        if len(addr) > 8 && addr[:8] == "redis://" {
+            addr = addr[8:]
+        }
+        redisClient = redis.NewClient(&redis.Options{Addr: addr})
+    }
 
 
 	// Configurar Gin
 	router := gin.Default()
 
-	// Configurar CORS
-	config := cors.DefaultConfig()
+    // Prometheus metrics
+    requestCounter := prometheus.NewCounterVec(prometheus.CounterOpts{
+        Name: "search_requests_total",
+        Help: "Total de solicitudes",
+    }, []string{"method", "endpoint", "status"})
+    requestDuration := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+        Name:    "search_request_duration_seconds",
+        Help:    "Duración de solicitudes en segundos",
+        Buckets: prometheus.DefBuckets,
+    }, []string{"method", "endpoint"})
+    cacheHits := prometheus.NewCounterVec(prometheus.CounterOpts{
+        Name: "search_cache_hits_total",
+        Help: "Total de aciertos de caché",
+    }, []string{"source"})
+    cacheMisses := prometheus.NewCounterVec(prometheus.CounterOpts{
+        Name: "search_cache_misses_total",
+        Help: "Total de fallos de caché",
+    }, []string{"source"})
+    prometheus.MustRegister(requestCounter, requestDuration, cacheHits, cacheMisses)
+
+	router.Use(func(c *gin.Context) {
+		start := time.Now()
+		c.Next()
+		duration := time.Since(start).Seconds()
+		endpoint := c.FullPath()
+		if endpoint == "" {
+			endpoint = c.Request.URL.Path
+		}
+		method := c.Request.Method
+		status := strconv.Itoa(c.Writer.Status())
+		requestDuration.WithLabelValues(method, endpoint).Observe(duration)
+		requestCounter.WithLabelValues(method, endpoint, status).Inc()
+	})
+
+    // Configurar caché en servicio si Redis está disponible
+    if redisClient != nil {
+        ttlSecs := 120
+        if v := os.Getenv("CACHE_TTL_SECONDS"); v != "" {
+            if i, err := strconv.Atoi(v); err == nil && i > 0 {
+                ttlSecs = i
+            }
+        }
+        searchService.WithCache(redisClient, time.Duration(ttlSecs)*time.Second, cacheHits, cacheMisses)
+    }
+
+    // Suscribir invalidación vía RabbitMQ (nota/tarea cambiadas)
+    go startCacheInvalidationSubscriber(redisClient, searchService)
+
+    // Configurar CORS
+    config := cors.DefaultConfig()
 	config.AllowAllOrigins = true
 	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization", "X-User-ID"}
 	router.Use(cors.New(config))
@@ -123,6 +188,9 @@ func main() {
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
+
+	// Metrics endpoint
+	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	// Obtener puerto
 	port := os.Getenv("PORT")
@@ -167,7 +235,8 @@ func searchNotes(c *gin.Context) {
 		Skip:     int32(skip),
 	}
 
-	resp, err := searchService.UnifiedSearch(context.Background(), grpcReq)
+    ctx := context.WithValue(context.Background(), "cache_source", "rest")
+    resp, err := searchService.UnifiedSearchCached(ctx, grpcReq)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -262,7 +331,8 @@ func searchNotesGET(c *gin.Context) {
 		Limit:    int32(req.Limit),
 		Skip:     int32(req.Skip),
 	}
-	resp, err := searchService.UnifiedSearch(context.Background(), grpcReq)
+    ctx := context.WithValue(context.Background(), "cache_source", "rest")
+    resp, err := searchService.UnifiedSearchCached(ctx, grpcReq)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -297,4 +367,61 @@ func searchNotesGET(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, SearchResponse{Notes: notes, Total: resp.Total, Query: req.Query})
+}
+
+// startCacheInvalidationSubscriber suscribe a eventos relevantes y limpia claves de usuario
+func startCacheInvalidationSubscriber(redisClient *redis.Client, svc *services.SearchService) {
+    if redisClient == nil || svc == nil {
+        return
+    }
+    url := os.Getenv("RABBITMQ_URL")
+    if url == "" {
+        url = "amqp://rabbitmq:5672"
+    }
+    conn, err := amqp.Dial(url)
+    if err != nil {
+        log.Printf("[cache-inv] RabbitMQ connection failed: %v", err)
+        return
+    }
+    ch, err := conn.Channel()
+    if err != nil {
+        log.Printf("[cache-inv] Channel error: %v", err)
+        return
+    }
+    // Declarar exchange si no existe
+    _ = ch.ExchangeDeclare("tasknotes.events", "topic", true, false, false, false, nil)
+    // Crear cola exclusiva para search-service
+    q, err := ch.QueueDeclare("search-service-cache-invalidation", true, false, false, false, nil)
+    if err != nil {
+        log.Printf("[cache-inv] Queue declare error: %v", err)
+        return
+    }
+    // Bindings relevantes
+    bindings := []string{"note.updated", "note.deleted", "task.updated", "task.deleted"}
+    for _, rk := range bindings {
+        _ = ch.QueueBind(q.Name, rk, "tasknotes.events", false, nil)
+    }
+    msgs, err := ch.Consume(q.Name, "", true, false, false, false, nil)
+    if err != nil {
+        log.Printf("[cache-inv] Consume error: %v", err)
+        return
+    }
+
+    go func() {
+        for d := range msgs {
+            // Esperamos JSON con user_id o sub
+            var m map[string]interface{}
+            if err := json.Unmarshal(d.Body, &m); err == nil {
+                var uid int32
+                if v, ok := m["user_id"].(float64); ok {
+                    uid = int32(v)
+                } else if v, ok := m["sub"].(float64); ok {
+                    uid = int32(v)
+                }
+                if uid > 0 {
+                    svc.InvalidateUserCache(context.Background(), uid)
+                }
+            }
+        }
+    }()
 }

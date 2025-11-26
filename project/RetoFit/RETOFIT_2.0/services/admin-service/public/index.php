@@ -27,12 +27,12 @@ $pdo_challenges->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 // --- Cliente HTTP para user service
 $userServiceClient = new Client([
-    'base_uri' => $_ENV['USER_SERVICE_URL'] ?? 'http://localhost:8080/api/users_admin',
+    'base_uri' => $_ENV['USER_SERVICE_URL'] ?? 'http://users-service:8000',
     'timeout'  => 5.0,
 ]);
 // --- Cliente HTTP para auth service
 $authServiceClient = new Client([
-    'base_uri' => $_ENV['AUTH_SERVICE_URL'] ?? 'http://localhost:8080/api/auth_admin',
+    'base_uri' => $_ENV['AUTH_SERVICE_URL'] ?? 'http://auth-service:8000',
     'timeout'  => 5.0,
 ]);
 
@@ -65,7 +65,7 @@ $app->group('/admin', function ($group) use ($userServiceClient, $authServiceCli
     $group->get('/dashboard-stats', function (Request $request, Response $response) use ($userServiceClient, $authServiceClient, $pdo_challenges) {
         try {
             // Petición al auth-service para obtener el conteo de usuarios registrados.
-            $authServiceResponse = $authServiceClient->get('/api/auth_admin/admin/users/stats');
+            $authServiceResponse = $authServiceClient->get('/admin/users/stats');
             $userStats = json_decode($authServiceResponse->getBody()->getContents(), true);
             $totalUsers = $userStats['total_users'] ?? 0;
 
@@ -90,7 +90,7 @@ $app->group('/admin', function ($group) use ($userServiceClient, $authServiceCli
     // Ruta para las analíticas de registro de usuarios
     $group->get('/analytics/user-registrations', function (Request $request, Response $response) use ($authServiceClient) {
         try {
-           // Este endpoint ahora existe en el auth-service $authServiceResponse = $authServiceClient->get('/admin/analytics/user-registrations');
+            $authServiceResponse = $authServiceClient->get('/admin/analytics/user-registrations');
             $data = json_decode($authServiceResponse->getBody()->getContents(), true);
 
             $response->getBody()->write(json_encode($data));
@@ -105,7 +105,7 @@ $app->group('/admin', function ($group) use ($userServiceClient, $authServiceCli
     $group->get('/analytics/users', function (Request $request, Response $response) use ($userServiceClient) {
         try {
             // Llama al nuevo endpoint en el user-service
-            $userServiceResponse = $userServiceClient->get('/api/users_admin/admin/analytics/users');
+            $userServiceResponse = $userServiceClient->get('/admin/analytics/users');
             $data = json_decode($userServiceResponse->getBody()->getContents(), true);
 
             $response->getBody()->write(json_encode($data));

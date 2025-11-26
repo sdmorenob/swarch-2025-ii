@@ -14,7 +14,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Expose port
-EXPOSE 8083
+EXPOSE 8083 8443
 
-# Run the ASGI app combining FastAPI and Socket.IO
-CMD ["uvicorn", "main:combined_app", "--host", "0.0.0.0", "--port", "8083"]
+# Startup script that switches HTTP/HTTPS based on env & certs
+COPY start.sh .
+CMD ["sh", "start.sh"]

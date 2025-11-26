@@ -1,25 +1,42 @@
 package services
 
 import (
-	"context"
-	"fmt"
-	"sort"
-	"strings"
+    "context"
+    "crypto/sha1"
+    "encoding/hex"
+    "encoding/json"
+    "fmt"
+    "sort"
+    "strings"
+    "time"
 
-	"search-service/grpc"
-	notespb "search-service/grpc/generated/notes"
-	"search-service/models"
+    "github.com/redis/go-redis/v9"
+    "github.com/prometheus/client_golang/prometheus"
+
+    "search-service/grpc"
+    notespb "search-service/grpc/generated/notes"
+    "search-service/models"
 )
 
 type SearchService struct {
-	grpcClients *grpc.GRPCClients
+    grpcClients *grpc.GRPCClients
+    cache      *redis.Client
+    cacheTTL   time.Duration
+    cacheHits  *prometheus.CounterVec
+    cacheMiss  *prometheus.CounterVec
 }
 
 // NewSearchService crea una nueva instancia del servicio de búsqueda
 func NewSearchService(grpcClients *grpc.GRPCClients) *SearchService {
-	return &SearchService{
-		grpcClients: grpcClients,
-	}
+    return &SearchService{grpcClients: grpcClients}
+}
+
+// WithCache configura Redis y métricas de caché en el servicio
+func (s *SearchService) WithCache(client *redis.Client, ttl time.Duration, hits, misses *prometheus.CounterVec) {
+    s.cache = client
+    s.cacheTTL = ttl
+    s.cacheHits = hits
+    s.cacheMiss = misses
 }
 
 // SearchRequest representa una solicitud de búsqueda
@@ -140,4 +157,83 @@ func (s *SearchService) sortResults(results []models.UnifiedSearchResult, query 
 		// Finalmente por fecha de actualización
 		return ri.UpdatedAt.After(rj.UpdatedAt)
 	})
+}
+
+// UnifiedSearchCached aplica Cache-Aside con Redis si está configurado
+func (s *SearchService) UnifiedSearchCached(ctx context.Context, req SearchRequest) (*models.UnifiedSearchResponse, error) {
+    if s.cache == nil {
+        return s.UnifiedSearch(ctx, req)
+    }
+
+    key := s.buildCacheKey(req)
+    // Intentar obtener de caché
+    val, err := s.cache.Get(ctx, key).Result()
+    if err == nil && val != "" {
+        var resp models.UnifiedSearchResponse
+        if jsonErr := json.Unmarshal([]byte(val), &resp); jsonErr == nil {
+            if s.cacheHits != nil {
+                src, _ := ctx.Value("cache_source").(string)
+                if src == "" { src = "core" }
+                s.cacheHits.WithLabelValues(src).Inc()
+            }
+            return &resp, nil
+        }
+        // Si falla parseo, continuar como miss
+    }
+
+    if s.cacheMiss != nil {
+        src, _ := ctx.Value("cache_source").(string)
+        if src == "" { src = "core" }
+        s.cacheMiss.WithLabelValues(src).Inc()
+    }
+
+    // Obtener datos frescos
+    resp, err := s.UnifiedSearch(ctx, req)
+    if err != nil {
+        return nil, err
+    }
+
+    // Guardar en caché
+    if b, mErr := json.Marshal(resp); mErr == nil {
+        _ = s.cache.Set(ctx, key, string(b), s.cacheTTL).Err()
+    }
+    return resp, nil
+}
+
+// InvalidateUserCache invalida todas las claves de caché para un usuario
+func (s *SearchService) InvalidateUserCache(ctx context.Context, userID int32) {
+    if s.cache == nil || userID <= 0 {
+        return
+    }
+    pattern := fmt.Sprintf("search:%d:*", userID)
+    var cursor uint64
+    for {
+        keys, cur, err := s.cache.Scan(ctx, cursor, pattern, 100).Result()
+        if err != nil {
+            return
+        }
+        if len(keys) > 0 {
+            _ = s.cache.Del(ctx, keys...).Err()
+        }
+        cursor = cur
+        if cursor == 0 {
+            break
+        }
+    }
+}
+
+func (s *SearchService) buildCacheKey(req SearchRequest) string {
+    // Estructura estable para hashing
+    payload := struct {
+        Q string   `json:"q"`
+        C string   `json:"c"`
+        T []string `json:"t"`
+        L int32    `json:"l"`
+        S int32    `json:"s"`
+    }{Q: strings.TrimSpace(req.Query), C: strings.TrimSpace(req.Category), T: append([]string{}, req.Tags...), L: req.Limit, S: req.Skip}
+    // Ordenar tags para determinismo
+    sort.Strings(payload.T)
+    b, _ := json.Marshal(payload)
+    h := sha1.Sum(b)
+    return fmt.Sprintf("search:%d:%s", req.UserID, hex.EncodeToString(h[:]))
 }

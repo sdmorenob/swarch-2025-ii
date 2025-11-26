@@ -1,16 +1,20 @@
 package grpc
 
 import (
-	"context"
-	"fmt"
-	"log"
-	"time"
+    "context"
+    "crypto/tls"
+    "crypto/x509"
+    "fmt"
+    "log"
+    "os"
+    "time"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+    "google.golang.org/grpc"
+    "google.golang.org/grpc/credentials"
+    "google.golang.org/grpc/credentials/insecure"
 
-	notespb "search-service/grpc/generated/notes"
-	taskspb "search-service/grpc/generated/tasks"
+    notespb "search-service/grpc/generated/notes"
+    taskspb "search-service/grpc/generated/tasks"
 )
 
 type GRPCClients struct {
@@ -22,24 +26,68 @@ type GRPCClients struct {
 
 // NewGRPCClients crea nuevos clientes gRPC para Notes y Tasks services
 func NewGRPCClients(notesAddr, tasksAddr string) (*GRPCClients, error) {
-	// Configuración de conexión
-	opts := []grpc.DialOption{
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithTimeout(10 * time.Second),
-	}
+    // Helper para crear credenciales por servicio, permitiendo SNI por separado
+    makeCreds := func(serverNameEnv string) (credentials.TransportCredentials, error) {
+        enableTLS := os.Getenv("GRPC_TLS_ENABLE") == "true"
+        if !enableTLS {
+            return insecure.NewCredentials(), nil
+        }
 
-	// Conectar a Notes Service
-	notesConn, err := grpc.Dial(notesAddr, opts...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to notes service: %v", err)
-	}
+        caPath := os.Getenv("GRPC_TLS_CA_CERT")
+        clientCert := os.Getenv("GRPC_TLS_CLIENT_CERT")
+        clientKey := os.Getenv("GRPC_TLS_CLIENT_KEY")
 
-	// Conectar a Tasks Service
-	tasksConn, err := grpc.Dial(tasksAddr, opts...)
-	if err != nil {
-		notesConn.Close()
-		return nil, fmt.Errorf("failed to connect to tasks service: %v", err)
-	}
+        // Cargar CA
+        certPool := x509.NewCertPool()
+        if caPath != "" {
+            caBytes, err := os.ReadFile(caPath)
+            if err != nil {
+                return nil, fmt.Errorf("failed to read CA cert: %v", err)
+            }
+            if ok := certPool.AppendCertsFromPEM(caBytes); !ok {
+                return nil, fmt.Errorf("failed to append CA cert")
+            }
+        }
+
+        tlsCfg := &tls.Config{RootCAs: certPool}
+
+        // Cliente mTLS si hay cert+key
+        if clientCert != "" && clientKey != "" {
+            cert, err := tls.LoadX509KeyPair(clientCert, clientKey)
+            if err != nil {
+                return nil, fmt.Errorf("failed to load client cert/key: %v", err)
+            }
+            tlsCfg.Certificates = []tls.Certificate{cert}
+        }
+
+        // SNI/ServerName por servicio
+        if sni := os.Getenv(serverNameEnv); sni != "" {
+            tlsCfg.ServerName = sni
+        }
+        return credentials.NewTLS(tlsCfg), nil
+    }
+
+    notesCreds, err := makeCreds("GRPC_TLS_SERVER_NAME_NOTES")
+    if err != nil {
+        return nil, err
+    }
+    tasksCreds, err := makeCreds("GRPC_TLS_SERVER_NAME_TASKS")
+    if err != nil {
+        return nil, err
+    }
+
+    // Conectar a Notes Service
+    notesConn, err := grpc.Dial(notesAddr, grpc.WithTransportCredentials(notesCreds), grpc.WithTimeout(10*time.Second))
+    if err != nil {
+        return nil, fmt.Errorf("failed to connect to notes service: %v", err)
+    }
+
+    // Conectar a Tasks Service
+    tasksConn, err := grpc.Dial(tasksAddr, grpc.WithTransportCredentials(tasksCreds), grpc.WithTimeout(10*time.Second))
+    if err != nil {
+        notesConn.Close()
+        return nil, fmt.Errorf("failed to connect to tasks service: %v", err)
+    }
 
 	return &GRPCClients{
 		NotesClient: notespb.NewNotesSearchServiceClient(notesConn),

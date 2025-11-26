@@ -19,7 +19,7 @@ export default function MainLayout() {
       }
 
       try {
-        const res = await fetch("http://localhost/api/users/users/me", {
+        const res = await fetch("https://localhost/api/users/users/me", {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,

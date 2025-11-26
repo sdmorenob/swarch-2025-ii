@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k6-script
+data:
+  test.js: |
+    import http from 'k6/http';
+    import { Trend } from 'k6/metrics';
+
+    const duration = '2m';
+    let requestDuration = new Trend('request_duration');
+
+    export let options = {
+      scenarios: {
+        stress_rps: {
+          executor: 'ramping-arrival-rate',
+          startRate: 1,
+          timeUnit: '1s',
+          preAllocatedVUs: 50,
+          maxVUs: 500,
+          stages: [
+            { target: 2, duration: duration },
+            { target: 5, duration: duration },
+            { target: 7, duration: duration },
+            { target: 10, duration: duration },
+            { target: 15, duration: duration },
+            { target: 20, duration: duration },
+            { target: 25, duration: duration },
+            { target: 30, duration: duration },
+            { target: 35, duration: duration },
+            { target: 40, duration: duration },
+            { target: 45, duration: duration },
+            { target: 50, duration: duration },
+            { target: 60, duration: duration },
+            { target: 70, duration: duration },
+            { target: 80, duration: duration },
+            { target: 90, duration: duration },
+            { target: 100, duration: duration },
+            { target: 125, duration: duration },
+            { target: 150, duration: duration },
+            { target: 175, duration: duration },
+            { target: 200, duration: duration }
+          ],
+        },
+      },
+    };
+
+    export default function () {
+      let res = http.get('http://app:8000/metrics');
+      check(res, { 'status is 200': (r) => r.status === 200 });
+      requestDuration.add(res.timings.duration);
+    }
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-loadtest
+spec:
+  template:
+    spec:
+      containers:
+      - name: k6
+        image: grafana/k6:latest
+        command: ["k6", "run", "/test/test.js", "--out", "influxdb=http://influxdb:8086/k6"]
+        volumeMounts:
+        - name: k6-script
+          mountPath: /test
+      restartPolicy: OnFailure
+      volumes:
+      - name: k6-script
+        configMap:
+          name: k6-script

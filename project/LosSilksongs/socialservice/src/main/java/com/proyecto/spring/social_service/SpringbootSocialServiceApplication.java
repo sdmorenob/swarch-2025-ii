@@ -1,9 +1,9 @@
 package com.proyecto.spring.social_service;
 
-import com.proyecto.spring.social_service.model.SolicitudAmistad;
-import com.proyecto.spring.social_service.model.Usuario;
-import com.proyecto.spring.social_service.repository.SolicitudAmistadRepository;
-import com.proyecto.spring.social_service.repository.UsuarioRepository;
+import com.proyecto.spring.social_service.model.relations.SolicitudAmistad;
+import com.proyecto.spring.social_service.model.relations.Usuario;
+import com.proyecto.spring.social_service.repository.relations.SolicitudAmistadRepository;
+import com.proyecto.spring.social_service.repository.relations.UsuarioRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

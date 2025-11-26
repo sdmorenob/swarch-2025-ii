@@ -15,3 +15,12 @@ logs:
   queue: ${LOGS_QUEUE:logs-service}
   # Comma-separated binding keys; defaults applied in code if not set
   bindings: ${LOGS_BINDINGS:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: always
