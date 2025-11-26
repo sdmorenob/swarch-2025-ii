@@ -1,0 +1,76 @@
+minikube stop
+minikube delete
+minikube start --cpus=4 --memory=4096
+docker compose build --no-cache
+minikube image load swarch-l8-app:latest
+minikube image load mysql:8.0
+minikube image load grafana/grafana
+minikube image load influxdb:1.8
+minikube image load grafana/k6
+kubectl apply -f cluster.yaml
+kubectl get pods
+
+----------------------------------------------------------------------------------------
+kubectl exec -it mysql-0 -- bash
+mysql -u root -p
+INSTALL PLUGIN group_replication SONAME 'group_replication.so';
+CREATE USER 'repl'@'%' IDENTIFIED WITH mysql_native_password BY 'replpass';
+GRANT REPLICATION SLAVE ON *.* TO 'repl'@'%';
+FLUSH PRIVILEGES;
+SET GLOBAL group_replication_group_name="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+SET GLOBAL group_replication_local_address="mysql-0.mysql:33061";
+SET GLOBAL group_replication_group_seeds="mysql-0.mysql:33061,mysql-1.mysql:33061,mysql-2.mysql:33061,mysql-3.mysql:33061";
+SET GLOBAL group_replication_single_primary_mode=OFF;
+SET GLOBAL group_replication_enforce_update_everywhere_checks=ON;
+SET GLOBAL group_replication_bootstrap_group=ON;
+SET GLOBAL super_read_only=OFF;
+START GROUP_REPLICATION;
+SET GLOBAL group_replication_bootstrap_group=OFF;
+exit
+exit
+---------------------------------------------------------------------------------------
+kubectl exec -it mysql-1 -- bash
+mysql -u root -p
+INSTALL PLUGIN group_replication SONAME 'group_replication.so';
+CHANGE REPLICATION SOURCE TO SOURCE_USER='repl', SOURCE_PASSWORD='replpass' FOR CHANNEL 'group_replication_recovery';
+SET GLOBAL group_replication_group_name="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+SET GLOBAL group_replication_local_address="mysql-1.mysql:33061";
+SET GLOBAL group_replication_group_seeds="mysql-0.mysql:33061,mysql-1.mysql:33061,mysql-2.mysql:33061,mysql-3.mysql:33061";
+SET GLOBAL group_replication_single_primary_mode=OFF;
+SET GLOBAL group_replication_enforce_update_everywhere_checks=ON;
+RESET MASTER;
+START GROUP_REPLICATION;
+exit
+exit
+
+----------------------------------------------------------------
+kubectl exec -it mysql-2 -- bash
+mysql -u root -p
+INSTALL PLUGIN group_replication SONAME 'group_replication.so';
+CHANGE REPLICATION SOURCE TO SOURCE_USER='repl', SOURCE_PASSWORD='replpass'
+FOR CHANNEL 'group_replication_recovery';
+SET GLOBAL group_replication_group_name="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+SET GLOBAL group_replication_local_address="mysql-2.mysql:33061";
+SET GLOBAL group_replication_group_seeds="mysql-0.mysql:33061,mysql-1.mysql:33061,mysql-2.mysql:33061,mysql-3.mysql:33061";
+SET GLOBAL group_replication_single_primary_mode=OFF;
+SET GLOBAL group_replication_enforce_update_everywhere_checks=ON;
+RESET MASTER;
+START GROUP_REPLICATION;
+exit
+exit
+----------------------------------------------------------------
+kubectl exec -it mysql-0 -- bash
+mysql -u root -p
+kubectl exec -it mysql-0 -- mysqlsh root:123@localhost
+dba.createCluster("Lab8");
+exit
+kubectl apply -f router.yaml
+kubectl get pods
+kubectl apply -f system.yaml
+kubectl get pods
+kubectl exec -it mysql-0 -- bash
+mysql -u root -p
+SHOW DATABASES;
+SELECT count(*) FROM performance_db.transaction;
+
+----------------------------------------------------------------
