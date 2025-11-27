@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: app-container
-        image: swarch-l7-app:latest
+        image: swarch-l8-app:latest
         imagePullPolicy: Never
         resources:
           requests:

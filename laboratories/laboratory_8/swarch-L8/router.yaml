@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: mysql-router
 spec:
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
       app: mysql-router
@@ -24,8 +24,6 @@ spec:
           value: "root"
         - name: MYSQL_PASSWORD
           value: "123"
-        - name: MYSQL_INNODB_CLUSTER_MEMBERS
-          value: "mysql-0.mysql,mysql-1.mysql,mysql-2.mysql,mysql-3.mysql"
         ports:
         - containerPort: 6446 # Writing Port
         - containerPort: 6447 # Reading Port
@@ -33,7 +31,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: mysql-router
+  name: database
 spec:
   selector:
     app: mysql-router
