@@ -2,11 +2,12 @@
 ## Solo pude hacer dos replicas por los limitados recursos de mi computador
 # Mysql-0
 ### Consiguió 3'000.000 de transacciones
+![alt text](image-4.png)
 
 # Mysql-1
-### Inicio con 430000 transacciones
+### Primera consulta con 430000 transacciones
 ![alt text](image.png)
-### Termino igualando las 3'000.000 de transacciones de Mysql-0 
+### Termino con el pasar del tiempo igualando las 3'000.000 de transacciones de Mysql-0 
 ![alt text](image-3.png)
 
 # Tabla de Replicas
