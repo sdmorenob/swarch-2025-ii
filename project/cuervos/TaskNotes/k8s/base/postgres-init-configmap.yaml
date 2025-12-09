@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: postgres-init-sql
-  namespace: tasknotes
-data:
-  uuid-ossp.sql: |
-    -- Enable uuid-ossp extension
-    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
