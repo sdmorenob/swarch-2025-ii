@@ -28,6 +28,15 @@ func NewActivityHandler(activityService *services.Activity, userClient *grpc.Use
 	}
 }
 
+// Health endpoint para verificar que el servicio esta funcionando
+func (h *Activity) Health(ctx *gin.Context) {
+	ctx.JSON(http.StatusOK, gin.H{
+		"status":  "healthy",
+		"service": "physical-activities-service",
+		"message": "Service is running",
+	})
+}
+
 func (h *Activity) GetAllActivitiesByUser(ctx *gin.Context) {
 	userId, errId := strconv.Atoi(ctx.Param("id"))
 

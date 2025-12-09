@@ -11,6 +11,15 @@ from app.services.achievements import check_and_award_achievements
 
 router = APIRouter()
 
+@router.get("/health")
+async def health_check():
+    """Health check endpoint para verificar que el servicio esta funcionando"""
+    return {
+        "status": "healthy",
+        "service": "gamification-service",
+        "message": "Service is running"
+    }
+
 @router.post("/process-activity")
 async def process_activity(request: ProcessActivityRequest, db: AsyncIOMotorDatabase = Depends(get_database)):
     """

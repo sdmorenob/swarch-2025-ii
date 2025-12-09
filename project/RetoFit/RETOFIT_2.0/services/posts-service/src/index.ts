@@ -19,6 +19,15 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Routes
 app.use('/posts', postsRouter);
 
+// Health check endpoint
+app.get('/posts/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    service: 'posts-service',
+    message: 'Service is running'
+  });
+});
+
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to the Posts Service' });

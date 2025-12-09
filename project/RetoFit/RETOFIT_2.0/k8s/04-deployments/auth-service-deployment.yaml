@@ -1,0 +1,157 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  labels:
+    app: auth-service
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: auth-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: auth-service
+        tier: backend
+    spec:
+      containers:
+      - name: auth-service
+        image: retofit/auth-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8001
+          name: http
+          protocol: TCP
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: database-secrets
+              key: AUTH_DB_URL
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: jwt-secret
+              key: SECRET_KEY
+        - name: ALGORITHM
+          valueFrom:
+            secretKeyRef:
+              name: jwt-secret
+              key: ALGORITHM
+        - name: MAIL_SERVER
+          valueFrom:
+            secretKeyRef:
+              name: smtp-secret
+              key: MAIL_SERVER
+        - name: MAIL_PORT
+          valueFrom:
+            secretKeyRef:
+              name: smtp-secret
+              key: MAIL_PORT
+        - name: MAIL_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: smtp-secret
+              key: MAIL_USERNAME
+        - name: MAIL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: smtp-secret
+              key: MAIL_PASSWORD
+        - name: MAIL_FROM
+          valueFrom:
+            secretKeyRef:
+              name: smtp-secret
+              key: MAIL_FROM
+        - name: MAIL_USE_TLS
+          valueFrom:
+            secretKeyRef:
+              name: smtp-secret
+              key: MAIL_USE_TLS
+        - name: MAIL_USE_SSL
+          valueFrom:
+            secretKeyRef:
+              name: smtp-secret
+              key: MAIL_USE_SSL
+        - name: BACKEND_URL
+          value: "http://auth-service:8001"
+        - name: FRONTEND_URL
+          value: "https://localhost"
+        - name: PORT
+          value: "8001"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8001
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: auth-service-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: auth-service
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+      selectPolicy: Min
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 30
+      - type: Pods
+        value: 4
+        periodSeconds: 30
+      selectPolicy: Max

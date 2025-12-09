@@ -11,10 +11,19 @@ from app.db.models import User, UserUpdateRequest, UserProfileResponse
 from app.services.token import get_current_user_email
 
 # >>> ESTA LÍNEA ES LA CLAVE <<<
-router = APIRouter() 
+router = APIRouter()
 
 BACKEND_URL = "http://127.0.0.1:8004"
 print(f"--- LA URL DEL BACKEND ESTÁ CONFIGURADA COMO: {BACKEND_URL} ---")
+
+@router.get("/health")
+async def health_check():
+    """Health check endpoint para verificar que el servicio esta funcionando"""
+    return {
+        "status": "healthy",
+        "service": "users-service",
+        "message": "Service is running"
+    }
 
 class UserCreate(BaseModel):
     id_usuario: int

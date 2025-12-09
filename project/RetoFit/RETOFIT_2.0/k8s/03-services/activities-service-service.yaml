@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: activities-service
+  labels:
+    app: activities-service
+    tier: backend
+spec:
+  type: ClusterIP
+  selector:
+    app: activities-service
+  ports:
+  - name: http
+    port: 8002
+    targetPort: 8002
+    protocol: TCP

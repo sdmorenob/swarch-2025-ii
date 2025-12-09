@@ -8,6 +8,9 @@ import (
 
 // V--- AQUÍ ESTÁ EL CAMBIO: de handlers.User a handlers.UserHandler ---V
 func RegisterPublicEndpoints(router *gin.Engine, activityHandlers *handlers.Activity) {
+	// Health check endpoint
+	router.GET("/activities/health", activityHandlers.Health)
+
 	// Rutas existentes para Actividades Físicas
 	router.GET("/activities/users/:id/activities", activityHandlers.GetAllActivitiesByUser)
 	router.GET("/activities/user/:id/activity/:id_activty", activityHandlers.GetActivity)

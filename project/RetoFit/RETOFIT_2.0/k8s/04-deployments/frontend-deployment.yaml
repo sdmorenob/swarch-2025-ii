@@ -1,0 +1,155 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+    tier: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: frontend
+        tier: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: retofit/frontend:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+          name: http
+          protocol: TCP
+        env:
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: gemini-secret
+              key: GEMINI_API_KEY
+        - name: NEXT_PUBLIC_AUTH_API_URL
+          value: "https://localhost/api/auth"
+        - name: NEXT_PUBLIC_USER_API_URL
+          value: "https://localhost/api/users"
+        - name: NEXT_PUBLIC_GAMIFICATION_API_URL
+          value: "https://localhost/api/gamification"
+        - name: NEXT_PUBLIC_ACTIVITIES_API_URL
+          value: "https://localhost/api/activities"
+        - name: NEXT_PUBLIC_POSTS_API_URL
+          value: "https://localhost/api/posts"
+        - name: NEXT_PUBLIC_ADMIN_API_URL
+          value: "https://localhost/api/admin"
+        - name: NEXT_PUBLIC_PHYSICAL_ACTIVITIES_API_URL
+          value: "https://localhost/api/physical-activities"
+        - name: NEXT_PUBLIC_FIREBASE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: firebase-secret
+              key: FIREBASE_API_KEY
+        - name: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+          valueFrom:
+            secretKeyRef:
+              name: firebase-secret
+              key: FIREBASE_AUTH_DOMAIN
+        - name: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+          valueFrom:
+            secretKeyRef:
+              name: firebase-secret
+              key: FIREBASE_PROJECT_ID
+        - name: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+          valueFrom:
+            secretKeyRef:
+              name: firebase-secret
+              key: FIREBASE_STORAGE_BUCKET
+        - name: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+          valueFrom:
+            secretKeyRef:
+              name: firebase-secret
+              key: FIREBASE_MESSAGING_SENDER_ID
+        - name: NEXT_PUBLIC_FIREBASE_APP_ID
+          valueFrom:
+            secretKeyRef:
+              name: firebase-secret
+              key: FIREBASE_APP_ID
+        - name: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: firebase-secret
+              key: FIREBASE_MEASUREMENT_ID
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 90
+          periodSeconds: 10
+          timeoutSeconds: 15
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 15
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+# ---
+# apiVersion: autoscaling/v2
+# kind: HorizontalPodAutoscaler
+# metadata:
+#   name: frontend-hpa
+# spec:
+#   scaleTargetRef:
+#     apiVersion: apps/v1
+#     kind: Deployment
+#     name: frontend
+#   minReplicas: 2
+#   maxReplicas: 6
+#   metrics:
+#   - type: Resource
+#     resource:
+#       name: cpu
+#       target:
+#         type: Utilization
+#         averageUtilization: 70
+#   - type: Resource
+#     resource:
+#       name: memory
+#       target:
+#         type: Utilization
+#         averageUtilization: 80
+#   behavior:
+#     scaleDown:
+#       stabilizationWindowSeconds: 300
+#       policies:
+#       - type: Percent
+#         value: 50
+#         periodSeconds: 60
+#       - type: Pods
+#         value: 2
+#         periodSeconds: 60
+#       selectPolicy: Min
+#     scaleUp:
+#       stabilizationWindowSeconds: 0
+#       policies:
+#       - type: Percent
+#         value: 100
+#         periodSeconds: 30
+#       - type: Pods
+#         value: 4
+#         periodSeconds: 30
+#       selectPolicy: Max

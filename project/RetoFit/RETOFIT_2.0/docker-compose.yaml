@@ -68,15 +68,15 @@ services:
       - NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=84767435359
       - NEXT_PUBLIC_FIREBASE_APP_ID=1:84767435359:web:fd2e56a651adb79d0e89ea
       - NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=G-1P33Y9WDD2
-      - GEMINI_API_KEY=AIzaSyCQvZqvJV3vxdGgWwX_rRTahb8bvQHf2p8
+      - GEMINI_API_KEY=AIzaSyDgCh1pXWHcZrMs5PUPaDtZfFVCorEcHMM
     networks:
       - public-net  # Conectado a la red pública
   
   # Auth Service (Python/FastAPI - puerto 8001)
+  # REPLICABLE: No usa container_name para permitir múltiples instancias
   auth-service:
     build:
       context: ./services/auth-service
-    container_name: auth-service
     environment:
       - DATABASE_URL=postgresql://postgres:Retofit2025@retofit.cd66iick6o60.us-east-2.rds.amazonaws.com:5432/retofit_auth
       - MAIL_USERNAME=retofitapp@gmail.com
@@ -95,10 +95,10 @@ services:
       - private-net # Conectado a la red privada
 
   # Activities Service (Go - puerto 8002)
+  # REPLICABLE: No usa container_name para permitir múltiples instancias
   activities-service:
     build:
       context: ./services/physical_activities_service
-    container_name: activities-service
     environment:
       - ENV=development
       - SERVER_ADDRESS=activities-service:8002
@@ -120,10 +120,10 @@ services:
       - private-net # Conectado a la red privada
 
   # Users Service (Python/FastAPI - puerto 8004)
+  # REPLICABLE: No usa container_name para permitir múltiples instancias
   users-service:
     build:
       context: ./services/user-service
-    container_name: users-service
     environment:
       - DATABASE_URL=postgresql://postgres:Retofit2025@retofit.cd66iick6o60.us-east-2.rds.amazonaws.com:5432/retofit_users
       - SECRET_KEY=f40cf292b97e6ec1e40e6a376e035ee9ebd9369c9dc233c474216ec0fe1b54aa

@@ -94,7 +94,7 @@ RETOFIT es una plataforma diseñada para ayudar y hacer un seguimiento a los eje
 ### Estructura de componentes y conectores
 ---
 #### C&C View
-<div align="center"><img width="80%" alt="image" src="https://raw.githubusercontent.com/RetoFit/Image_Repository/refs/heads/main/Blank%20diagram%20-%20Page%201.png" /></div>
+![Diagrama de Componentes](diagramas/componentes.png)
 
 #### **Estilos y patrones arquitectónicos usados**
 
@@ -198,7 +198,7 @@ En cuanto a los conectores, existen los siguientes:
 ---
 
 ## Layered View
-<div align="center"><img width="80%" alt="image" src="diagramas/Diagrama_capas_general.png" /></div>
+![Diagrama de Capas](diagramas/Diagrama_capas_general.png)
 
 ### Capa de Presentación (Presentation Layer)
 
@@ -220,22 +220,11 @@ Actúa como el **punto de entrada único** (Single Point of Entry) para todas la
 El núcleo de la lógica de negocio de la aplicación. Está dividida en microservicios independientes, cada uno enfocado en una única responsabilidad de negocio.
 
 * **Auth:** Maneja la autenticación (inicio de sesión, registro, gestión de tokens).
-
-<div align="center"><img width="80%" alt="image" src="diagramas/Diagrama_Capas_Auth.png" /></div>
-
 * **User:** Gestiona toda la información y operaciones relacionadas con los perfiles de usuario.
-
-<div align="center"><img width="80%" alt="image" src="diagramas/Diagrama_Capas_User.png" /></div>
-
 * **Activities:** Administra las actividades que los usuarios realizan.
-
-<div align="center"><img width="80%" alt="image" src="diagramas/Diagrama_Capas_Activities.png" /></div>
-
 * **Posts:** Se encarga de las publicaciones (crear, leer, actualizar, borrar).
 * **Admin:** Contiene la lógica para las tareas de administración del sistema.
 * **Gamification:** Implementa la lógica de ludificación (puntos, insignias, niveles, tablas de clasificación).
-
-<div align="center"><img width="80%" alt="image" src="diagramas/Diagrama_Capas_Gamification.png" /></div>
 
 *Nota: Los servicios pueden comunicarse entre sí (como se indica entre `User` y `Activities`) para operaciones que requieren datos de diferentes dominios.*
 
@@ -534,14 +523,14 @@ Estas evidencias complementan el modelo de amenazas y validan la configuración 
 2. **Detalles del certificado y su validez:**  
    ![Certificate Details](diagramas/certificados_https.png)
 
-3. **Frontend cargado correctamente bajo HTTPS: NO LO PUDE PONER**  
-   ![Frontend HTTPS](<diagramas/frontend-https.png>)
+3. **Frontend cargado correctamente bajo HTTPS:**  
+   ![Frontend HTTPS](<diagramas/image.png>)
 
 ---
 
 
 ## Decomposition View
-<div align="center"><img width="80%" alt="image" src="diagramas/Diagrama_capas_general.png" /></div>
+<div align="center"><img width="80%" alt="image" src="https://github.com/user-attachments/assets/8e98e040-9933-42a3-89da-af5e0bc062e3" /></div>
 
 
 #### 🎨 FRONT
@@ -582,48 +571,6 @@ Su función principal es redirigir, filtrar y centralizar la comunicación entre
   Contiene el archivo compilado `api-gateway-1.0.0.0.jar`, que puede ejecutarse para iniciar el Gateway.
 
 ---
-
-## Prototipo
-## 🚀 Guía de Instalación y Ejecución
-Recordar que tiene que tener docker instalado y ejecutandose.
-
-Para iniciar la aplicación en docker, se tiene que seguir los siguientes pasos:
-
-**1. Contruir todos los contenedores**
-
-```shell
-docker compose build
-```
-
-**2. Lanzar todos los contenedores**
-
-```shell
-docker compose up -d
-```
-
-Abre la siguiente url en el navegador:
-
-- http://localhost:3000
-
-
----
-**Ver el estado de todos los contenedores**
-
-```shell
-docker compose ps
-```
-
-**Ver logs de un servicio específico**
-
-```shell
-docker compose logs -f [nombre-servicio]
-```
-**Para apagar y borrar todos los contenedores**
-
-```shell
-docker compose down
-```
----
 ## 🔒 Pruebas de Patrones de Seguridad
 
 ### 🛡️ Seguridad y Segmentación de Red
@@ -641,45 +588,15 @@ El proyecto implementa una estrategia de **defensa en profundidad** mediante seg
 
 Se ha incluido un script automatizado para validar que las reglas de firewall de Docker estén funcionando correctamente.
 
-![Diagrama segmentacion de Red](diagramas/Segmentacion_Red.png)
+Esto se detallar de mejor forma en el diagrama de despliegue anteriormente mostrado.
 
 **Requisitos:**
 - Python 3 instalado.
 - Contenedores corriendo (`docker compose up -d`).
 
-**Ejecutar prueba:**
-```bash
-# Ejecutar desde la raíz del proyecto
-python scripts/verify_network.py
-```
-El script simula un "ataque" interno intentando realizar conexiones de red no autorizadas entre contenedores. Su objetivo es confirmar que:
-
-1.  **El Frontend (Público)** NO tenga acceso directo a los servicios privados (como Auth o Bases de Datos).
-2.  **El API Gateway** SÍ tenga acceso a los servicios privados (actuando como puente).
-3.  **El Proxy Inverso (Nginx)** pueda comunicarse con los frontends.
-
-**Resultados esperados:**
-```bash
-=== Iniciando Verificación de Segmentación de Red (TCP) ===
-Usando Netcat (nc) para compatibilidad con Alpine Linux
-
-Probando conexión: [frontend] -> auth-service:8001... ✔ ÉXITO (Bloqueado correctamente)
-Probando conexión: [api-gateway] -> auth-service:8001... ✔ ÉXITO (Conectado)
-Probando conexión: [nginx-proxy] -> landing-page:3001... ✔ ÉXITO (Conectado)
-
-=== Resultados ===
-Pruebas ejecutadas: 3
-Pruebas pasadas: 3
-```
-**Beneficios Demostrados:**
-- Reducción de la Superficie de Ataque: Si un atacante logra vulnerar el Frontend (que está expuesto a internet), NO tendrá acceso directo a tus microservicios críticos (Auth, Usuarios, Base de Datos). El firewall de Docker le impedirá ver esas IPs o puertos.
-
-- Gatekeeper forzado (Patrón Gateway):Se obliga a que todo el tráfico pase por el API Gateway. Esto garantiza que nadie pueda "saltarse" los mecanismos de seguridad centralizados.
-
-- Aislamiento de Datos: Las bases de datos y servicios backend viven en una "burbuja" segura. Solo el API Gateway (que tiene una "tarjeta de acceso" especial al estar en ambas redes) puede hablar con ellos.
 ### Rate Limiting Pattern
 
-El sistema implementa el patrón **Rate Limiting**  utilizando **Nginx** como Reverse Proxy. Este mecanismo protege a los microservicios situados abajo (como `auth-service` y `user-service`) de ser saturados por picos de tráfico o ataques de denegación de servicio (DoS).
+El sistema implementa el patrón **Rate Limiting**  utilizando **Nginx** como Reverse Proxy y de forma más detallada en el api gateway usando redis. Este mecanismo protege a los microservicios situados abajo (como `auth-service` y `user-service`) de ser saturados por picos de tráfico o ataques de denegación de servicio (DoS).
 
 #### Configuración del Patrón
 
@@ -687,32 +604,44 @@ El sistema implementa el patrón **Rate Limiting**  utilizando **Nginx** como Re
 - **Tasa Sostenida:** 10 peticiones/segundo (`10r/s`)
 - **Ráfaga (Burst):** 20 peticiones
 - **Comportamiento:** Las peticiones dentro de la ráfaga se procesan instantáneamente (`nodelay`), pero si se excede la capacidad total (Tasa + Ráfaga), Nginx corta la conexión inmediatamente.
+- En la clase `RateLimiterConfig.Java`, se implementan 3 modos en el cual puede analizar el trafico el api gateway con redis:
+    - ipKeyResolver
+    - userKeyResolver
+    - userIpKeyResolver (implementado por defecto)
 
-Se incluye un script en Python para validar la eficacia del bloqueo bajo alta concurrencia:
-
-**Prueba de Saturación**
-
+#### Realización de prueba
+Se tienen que ejecutar los siguientes comandos:
 ```bash
-python test_rate_limit.py
+# Primero
+cd ./testing/rate_limit/
+
+# Segundo
+kubectl apply -f prometheus.yaml
+
+# Tercero
+kubectl apply -f grafana.yaml
+
+# Cuarto
+kubectl create configmap k6-scripts --from-file=scripts/k6_rate_limit_test.js --namespace=default
+
+# Quinto
+kubectl apply -f k6-prometheus-job.yaml
+
+# Para abrir grafana
+minikube service grafana --url
 ```
 
-**Salida esperada**
-- Peticiones 1-30 (Aprox): Reciben código 200 OK o 405 Method Not Allowed (proveniente del microservicio). Esto indica tráfico legítimo aceptado.
+En la interfaz de grafana:
+- **Usuario:** admin
+- **Contraseña:** admin
 
-- Peticiones 31-50 (Aprox): Reciben código 503 Service Temporarily Unavailable. Este error es generado por Nginx, demostrando que la petición nunca tocó el microservicio ni la base de datos.
-```bash
-🚀 Iniciando prueba de Rate Limiting (Enfoque Arquitectónico)...
-📡 URL Objetivo: https://localhost/api/users/
-⚡ Lanzando 50 peticiones simultáneas...
+Luego, se escribe la constraseña que desea.
 
-📊 --- RESULTADOS DEL TEST ---
-⏱️  Tiempo total: 0.89 segundos
-✅ Peticiones Aceptadas (Pasaron al Backend): 29
-⛔ Peticiones Bloqueadas (Detenidas por Nginx): 21
-----------------------------------------
-[EXITO] El patrón Rate Limiting está ACTIVO.
-       Nginx protegió el sistema del exceso de tráfico.
-```
+Después, importa un dashboard. Para *Prometheus* el **id** es ***18030***. A continuación, se tiene que importar un data source colocando como url: *http://prometheus.default.svc.cluster.local:9090*.
+
+#### Resultado obtenido
+<div align="center"><img width="80%" alt="image" src="diagramas/resultados_test_rate_limit.png" /></div>
+
 **Beneficios Demostrados**
 1. Protección Anti-DoS: Evita que un atacante inunde el sistema con solicitudes.
 
@@ -800,7 +729,400 @@ Cuando un servicio falla y el Circuit Breaker se activa (estado OPEN), el sistem
 4. **Prevención de cascada:** Evita que fallos en un servicio tumben todo el sistema
 5. **Experiencia de usuario:** Mensajes claros en lugar de timeouts largos
 
+---
 
+## Prototipo
+## 🚀 Guía de Instalación y Ejecución
+
+## 📋 Requisitos Previos
+
+- **Kubernetes local**: minikube, kind, o Docker Desktop con Kubernetes habilitado
+- **kubectl**: CLI de Kubernetes instalado
+- **Docker**: Para construir imágenes
+- **Recursos mínimos**: 8GB RAM, 4 CPU cores, 20GB disk
+
+## 🚀 Guía de Deployment Rápido
+
+### Paso 1: Iniciar Cluster
+
+**Opción A - minikube:**
+```bash
+minikube start --memory=8192 --cpus=4
+minikube tunnel  # En terminal separada (necesario para LoadBalancer local)
+```
+
+**Opción B - Docker Desktop:**
+- Settings → Kubernetes → Enable Kubernetes
+
+### Paso 2: Construir Imágenes Docker
+
+```bash
+# Desde la raíz del proyecto
+docker build -t retofit/auth-service:latest ./services/auth-service
+docker build -t retofit/users-service:latest ./services/user-service
+docker build -t retofit/activities-service:latest ./services/physical_activities_service
+docker build -t retofit/gamification-service:latest ./services/gamification-service
+docker build -t retofit/posts-service:latest ./services/posts-service
+docker build -t retofit/admin-service:latest ./services/admin-service
+docker build -t retofit/api-gateway:latest ./api_gateway_2.1
+docker build -t retofit/landing-page:latest ./landing-page
+docker build -t retofit/frontend:latest ./front
+```
+
+**Para minikube - cargar imágenes:**
+```bash
+minikube image load retofit/auth-service:latest
+minikube image load retofit/users-service:latest
+minikube image load retofit/activities-service:latest
+minikube image load retofit/gamification-service:latest
+minikube image load retofit/posts-service:latest
+minikube image load retofit/admin-service:latest
+minikube image load retofit/api-gateway:latest
+minikube image load retofit/landing-page:latest
+minikube image load retofit/frontend:latest
+```
+
+### Paso 3: Generar Certificados TLS
+
+**IMPORTANTE**: Antes de desplegar, debes generar certificados TLS para Nginx.
+
+**Opción A - Usar script automatizado (Recomendado):**
+
+```bash
+# En PowerShell (Windows)
+cd k8s
+.\generate-certs.ps1
+
+# En Bash (Linux/Mac/Git Bash)
+cd k8s
+chmod +x generate-certs.sh
+./generate-certs.sh
+```
+
+**Opción B - Generar manualmente con OpenSSL:**
+
+```bash
+# Crear directorio
+mkdir -p nginx/tls
+
+# Generar clave privada
+openssl genrsa -out nginx/tls/nginx-key.pem 2048
+
+# Generar certificado autofirmado (válido por 365 días)
+openssl req -new -x509 -sha256 \
+  -key nginx/tls/nginx-key.pem \
+  -out nginx/tls/nginx.pem \
+  -days 365 \
+  -subj "/C=CO/ST=Cundinamarca/L=Bogota/O=RetoFit/OU=Development/CN=localhost" \
+  -addext "subjectAltName=DNS:localhost,DNS:*.localhost,IP:127.0.0.1"
+```
+
+⚠️ **Nota**: Estos son certificados autofirmados para desarrollo. Los navegadores mostrarán advertencias de seguridad - esto es normal para desarrollo local.
+
+### Paso 4: Crear Secrets
+
+```bash
+# TLS Secret (Nginx)
+kubectl create secret generic nginx-tls-secret \
+  --from-file=nginx.pem=./nginx/tls/nginx.pem \
+  --from-file=nginx-key.pem=./nginx/tls/nginx-key.pem
+
+# Aplicar secrets YAML
+kubectl apply -f k8s/02-secrets/
+
+# Verificar
+kubectl get secrets
+```
+
+### Paso 5: Crear ConfigMaps
+
+```bash
+kubectl apply -f k8s/01-configmaps/
+
+# Verificar
+kubectl get configmaps
+```
+
+### Paso 6: Crear Services
+
+```bash
+kubectl apply -f k8s/03-services/
+
+# Verificar
+kubectl get services
+```
+
+### Paso 7: Desplegar Aplicaciones
+
+```bash
+# Backend services
+kubectl apply -f k8s/04-deployments/auth-service-deployment.yaml
+kubectl apply -f k8s/04-deployments/users-service-deployment.yaml
+kubectl apply -f k8s/04-deployments/activities-service-deployment.yaml
+kubectl apply -f k8s/04-deployments/gamification-service-deployment.yaml
+kubectl apply -f k8s/04-deployments/posts-service-deployment.yaml
+kubectl apply -f k8s/04-deployments/admin-service-deployment.yaml
+
+# Esperar a que estén ready
+kubectl wait --for=condition=ready pod -l tier=backend --timeout=180s
+
+# API Gateway
+kubectl apply -f k8s/04-deployments/api-gateway-deployment.yaml
+kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=180s
+
+# Frontends
+kubectl apply -f k8s/04-deployments/landing-page-deployment.yaml
+kubectl apply -f k8s/04-deployments/frontend-deployment.yaml
+kubectl wait --for=condition=ready pod -l tier=frontend --timeout=120s
+
+# Nginx
+kubectl apply -f k8s/04-deployments/nginx-deployment.yaml
+kubectl wait --for=condition=ready pod -l app=nginx-proxy --timeout=60s
+```
+
+### Paso 8: Aplicar NetworkPolicies
+
+```bash
+kubectl apply -f k8s/05-network-policies/
+
+# Verificar
+kubectl get networkpolicies
+```
+
+### Paso 9: Verificar Deployment
+
+```bash
+# Ver todos los pods
+kubectl get pods -o wide
+
+# Ver servicios y LoadBalancer IP
+kubectl get services
+
+# Ver logs de un servicio
+kubectl logs -l app=auth-service --tail=50
+
+# Test acceso externo
+curl -k https://localhost/
+curl -k https://localhost/dashboard
+```
+
+## 🧪 Testing y Validación
+
+### Test de Conectividad Backend
+
+```bash
+# Port-forward API Gateway
+kubectl port-forward deployment/api-gateway 8081:8081
+
+# Ver circuit breakers
+curl http://localhost:8081/actuator/circuitbreakers
+
+# Ver health
+curl http://localhost:8081/actuator/health
+```
+
+### Test de Load Balancing
+
+```bash
+# Escalar auth-service
+kubectl scale deployment auth-service --replicas=3
+
+# Ver distribución de pods
+kubectl get pods -l app=auth-service -o wide
+
+# Ver logs para verificar load balancing
+kubectl logs -l app=auth-service --tail=100
+```
+
+### Test de gRPC (Activities → Users)
+
+```bash
+# Ver logs de activities service
+kubectl logs -l app=activities-service | grep -i "grpc\|users"
+
+# Ver logs de users service
+kubectl logs -l app=users-service | grep -i "grpc\|50051"
+```
+
+## 🔒 NetworkPolicies Aplicadas
+
+1. **allow-dns.yaml**: Permite a todos los pods acceder a kube-dns
+2. **allow-external-db.yaml**: Permite egress a AWS RDS (5432) y Railway MongoDB (10201)
+3. **activities-to-users-grpc.yaml**: Permite gRPC entre activities y users (50051)
+
+**Nota**: No se aplica `default-deny-all` para facilitar debugging en desarrollo.
+
+## 🛠️ Comandos Útiles
+
+### Ver Estado del Cluster
+
+```bash
+# Ver todos los recursos
+kubectl get all
+
+# Ver pods con detalles
+kubectl get pods -o wide
+
+# Ver uso de recursos
+kubectl top nodes
+kubectl top pods
+
+# Ver eventos
+kubectl get events --sort-by='.lastTimestamp'
+```
+
+### Debugging
+
+```bash
+# Logs en tiempo real
+kubectl logs -l app=auth-service -f --tail=100
+
+# Ejecutar comando en pod
+kubectl exec -it deployment/auth-service -- /bin/sh
+
+# Port-forward para acceso local
+kubectl port-forward deployment/api-gateway 8081:8081
+
+# Describir pod (ver eventos y configuración)
+kubectl describe pod <pod-name>
+```
+
+### Escalar Servicios
+
+```bash
+# Escalar manualmente
+kubectl scale deployment auth-service --replicas=3
+
+# Ver status de escalado
+kubectl get deployment auth-service
+
+# Reiniciar deployment (rolling restart)
+kubectl rollout restart deployment auth-service
+kubectl rollout status deployment auth-service
+```
+
+### Gestión
+
+```bash
+# Eliminar deployment específico
+kubectl delete deployment auth-service
+
+# Eliminar todos los deployments
+kubectl delete -f k8s/04-deployments/
+
+# Eliminar todo
+kubectl delete -f k8s/
+```
+
+## 🐛 Troubleshooting
+
+### Pod en CrashLoopBackOff
+
+```bash
+# Ver logs del pod
+kubectl logs <pod-name>
+
+# Ver eventos
+kubectl describe pod <pod-name>
+
+# Causas comunes:
+# - DATABASE_URL incorrecta
+# - Secret no existe
+# - Puerto incorrecto en containerPort
+```
+
+### ImagePullBackOff
+
+```bash
+# Verificar imagen existe
+docker images | grep retofit
+
+# Cargar imagen en minikube
+minikube image load retofit/<service-name>:latest
+
+# Verificar imagePullPolicy en deployment
+kubectl get deployment <name> -o yaml | grep imagePullPolicy
+```
+
+### Service No Alcanzable
+
+```bash
+# Verificar endpoints
+kubectl get endpoints <service-name>
+
+# Si no hay endpoints, verificar selector
+kubectl get pods --show-labels
+kubectl describe svc <service-name>
+
+# Test desde otro pod
+kubectl run test --image=curlimages/curl --rm -it --restart=Never -- \
+  curl -v http://<service-name>:<port>/
+```
+
+### LoadBalancer Pending
+
+**Para minikube:**
+```bash
+# Ejecutar en terminal separada
+minikube tunnel
+```
+
+**Para kind:**
+Requiere MetalLB o configuración de port mapping al crear cluster.
+
+**Para Docker Desktop:**
+Automático, verificar que puerto no esté en uso.
+
+## 📈 Monitoring
+
+### Metrics Server (Opcional)
+
+```bash
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+
+# Ver métricas
+kubectl top nodes
+kubectl top pods
+```
+
+### Kubernetes Dashboard (Opcional)
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
+
+# Crear token de acceso
+kubectl create serviceaccount dashboard-admin -n kubernetes-dashboard
+kubectl create clusterrolebinding dashboard-admin \
+  --clusterrole=cluster-admin \
+  --serviceaccount=kubernetes-dashboard:dashboard-admin
+
+# Get token
+kubectl create token dashboard-admin -n kubernetes-dashboard
+
+# Proxy
+kubectl proxy
+
+# Acceder: http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
+```
+También, se puede usar
+```bash
+minikube dashboard
+```
+## 🔄 Actualizar Aplicaciones
+
+```bash
+# Rebuild imagen
+docker build -t retofit/auth-service:v2 ./services/auth-service
+
+# Cargar en cluster
+minikube image load retofit/auth-service:v2
+
+# Actualizar deployment
+kubectl set image deployment/auth-service auth-service=retofit/auth-service:v2
+
+# Ver rollout
+kubectl rollout status deployment/auth-service
+```
 ---
 
 ## 📁 Estructura del Proyecto
@@ -864,6 +1186,7 @@ RETOFIT_2.0/
 |    ├── physical_activities_service/  # (Go + Gin) Puerto 8002
 |    ├── posts-service          # (Node.js + TypeScript) Puerto 8005
 |    └── user-service/          # (Python + FastAPI) Puerto 8004
+├── k8s/
 ├── docker-compose.yaml        # Orquestación de contenedores
 ├── microfrontends.ps1         # 🆕 Script de gestión de microfrontends
 ├── MICROFRONTENDS.md          # 🆕 Documentación de arquitectura

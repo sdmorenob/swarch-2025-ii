@@ -12,6 +12,9 @@ jwt:
   secret: ${SECRET_KEY:f40cf292b97e6ec1e40e6a376e035ee9ebd9369c9dc233c474216ec0fe1b54aa}
 
 spring:
+  redis:
+      host: redis.mi-namespace.svc.cluster.local            # nombre del servicio de Redis en docker-compose / hostname
+      port: 6379
   cloud:
     gateway:
       # Configuración global de Circuit Breaker usando Resilience4j
@@ -23,12 +26,22 @@ spring:
       server:
         webflux:
           routes:
-            # Ruta para el servicio de autenticación
-            # Petición: /api/auth/** -> auth-service:8000/auth/**
+            # LOAD BALANCING: Docker DNS automáticamente resuelve los nombres de servicio
+            # (ej: auth-service, users-service) a TODAS las IPs de réplicas disponibles
+            # y hace round-robin entre ellas. No se requiere configuración adicional.
+
+            # Ruta para el servicio de autenticación (SOPORTA MÚLTIPLES RÉPLICAS)
+            # Petición: /api/auth/** -> auth-service:8001/auth/**
             - id: auth-service
               uri: http://auth-service:8001
               filters:
                 - StripPrefix=1 # Transforma /api/auth/** en /auth/**
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 5
+                    redis-rate-limiter.burstCapacity: 10
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@userIpKeyResolver}"
                 - name: CircuitBreaker
                   args:
                     name: authServiceCircuitBreaker
@@ -42,6 +55,12 @@ spring:
               uri: http://auth-service:8001
               filters:
                 - StripPrefix=1 # Transforma /api/auth_admin/** en /auth_admin/**
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 5
+                    redis-rate-limiter.burstCapacity: 10
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@userIpKeyResolver}"
                 - name: CircuitBreaker
                   args:
                     name: adminAuthServiceCircuitBreaker
@@ -49,12 +68,18 @@ spring:
               predicates:
                 - Path=/api/auth_admin/admin/**
 
-            # Ruta para el servicio de usuarios
+            # Ruta para el servicio de usuarios (SOPORTA MÚLTIPLES RÉPLICAS)
             # Petición: /api/users/** -> users-service:8000/users/**
             - id: users-service
               uri: http://users-service:8004
               filters:
                 - StripPrefix=1 # Transforma /api/users/** en /users/**
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 5
+                    redis-rate-limiter.burstCapacity: 10
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@userIpKeyResolver}"
                 - name: CircuitBreaker
                   args:
                     name: usersServiceCircuitBreaker
@@ -62,12 +87,18 @@ spring:
               predicates:
                 - Path=/api/users/**
 
-            # Ruta para el servicio de actividades
+            # Ruta para el servicio de actividades (SOPORTA MÚLTIPLES RÉPLICAS)
             # Petición: /api/activities/** -> activities-service:8002/activities/**
             - id: activities-service
               uri: http://activities-service:8002
               filters:
                 - StripPrefix=1 # Transforma /api/activities/** en /activities/**
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 5
+                    redis-rate-limiter.burstCapacity: 10
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@userIpKeyResolver}"
                 - name: CircuitBreaker
                   args:
                     name: activitiesServiceCircuitBreaker
@@ -81,6 +112,12 @@ spring:
               uri: http://gamification-service:8003
               filters:
                 - StripPrefix=1 # Transforma /api/gamification/** en /gamification/**
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 5
+                    redis-rate-limiter.burstCapacity: 10
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@userIpKeyResolver}"
                 - name: CircuitBreaker
                   args:
                     name: gamificationServiceCircuitBreaker
@@ -89,11 +126,17 @@ spring:
                 - Path=/api/gamification/**
 
             # Ruta para el servicio de publicaciones
-            # Petición: /api/posts/** -> posts-service:8000/posts/**
+            # Petición: /api/posts/** -> posts-service:8005/posts/**
             - id: posts-service
-              uri: http://posts-service:8000
+              uri: http://posts-service:8005
               filters:
                 - StripPrefix=1
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 5
+                    redis-rate-limiter.burstCapacity: 10
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@userIpKeyResolver}"
                 - name: CircuitBreaker
                   args:
                     name: postsServiceCircuitBreaker
@@ -107,6 +150,12 @@ spring:
               uri: http://admin-service:8006
               filters:
                 - StripPrefix=1 # Elimina solo /api
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 5
+                    redis-rate-limiter.burstCapacity: 10
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@userIpKeyResolver}"
                 - name: CircuitBreaker
                   args:
                     name: adminServiceCircuitBreaker
@@ -173,3 +222,18 @@ resilience4j:
         baseConfig: default
       defaultCircuitBreaker:
         baseConfig: default
+# Configuración de endpoints de Actuator para health checks
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  health:
+    circuitbreakers:
+      enabled: true

@@ -28,6 +28,15 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 FRONTEND_URL = os.getenv("FRONTEND_URL")
 
+@router.get("/health")
+async def health_check():
+    """Health check endpoint para verificar que el servicio esta funcionando"""
+    return {
+        "status": "healthy",
+        "service": "auth-service",
+        "message": "Service is running"
+    }
+
 @router.post("/check-email")
 async def check_email(request: EmailCheckRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter_by(correo=request.email).first()

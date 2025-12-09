@@ -59,6 +59,17 @@ $app->get('/', function (Request $request, Response $response, $args) {
     return $response;
 });
 
+// Health check endpoint
+$app->get('/admin/health', function (Request $request, Response $response) {
+    $data = [
+        'status' => 'healthy',
+        'service' => 'admin-service',
+        'message' => 'Service is running'
+    ];
+    $response->getBody()->write(json_encode($data));
+    return $response->withHeader('Content-Type', 'application/json');
+});
+
 // MOdulos
 $app->group('/admin', function ($group) use ($userServiceClient, $authServiceClient, $pdo_challenges) {
     // Ruta para las estadísticas del dashboard

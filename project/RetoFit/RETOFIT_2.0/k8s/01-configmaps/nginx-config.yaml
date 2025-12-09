@@ -1,0 +1,159 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  labels:
+    app: retofit
+data:
+  default.conf: |
+    # /nginx/nginx.conf
+    # ============================================
+    # RETOFIT 2.0 - Nginx Reverse Proxy + Load Balancer
+    # ============================================
+
+    # Rate Limiting Zone
+    limit_req_zone $binary_remote_addr zone=apilimit:10m rate=10r/s;
+
+    # ============================================
+    # UPSTREAM BLOCKS - Load Balancer Configuration
+    # ============================================
+    # Kubernetes DNS resuelve automáticamente los nombres de servicio
+    # a TODAS las réplicas disponibles y hace round-robin DNS.
+    # Estos upstreams añaden health checks pasivos y configuración explícita.
+
+    # API Gateway Upstream (puede tener múltiples instancias)
+    upstream api_gateway_backend {
+        least_conn;  # Algoritmo: enviar a la instancia con menos conexiones activas
+
+        # Kubernetes DNS resuelve 'api-gateway' a todas las IPs de réplicas
+        server api-gateway:8080 max_fails=3 fail_timeout=30s;
+
+        # Keepalive para reutilizar conexiones
+        keepalive 32;
+    }
+
+    # ============================================
+    # HTTP Server - Redirect to HTTPS
+    # ============================================
+    server {
+        listen 80;
+        server_name localhost;
+        return 301 https://$host$request_uri;
+    }
+
+    # ============================================
+    # HTTPS Server - Main Configuration
+    # ============================================
+    server {
+        listen 443 ssl;
+        server_name localhost;
+
+        # SSL Configuration
+        ssl_certificate /etc/nginx/tls/nginx.pem;
+        ssl_certificate_key /etc/nginx/tls/nginx-key.pem;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_prefer_server_ciphers on;
+
+        # ============================================
+        # FRONTEND ROUTING (Microfrontends)
+        # ============================================
+
+        # Landing Page (Microfrontend) - Ruta raíz
+        location / {
+            proxy_pass http://landing-page:3001;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+
+            # WebSocket support (Next.js HMR)
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+        }
+
+        # Frontend Principal (Next.js) - Rutas específicas
+        location ~ ^/(login|signup|dashboard|admin|reset-password|challenges|profile)(/|$) {
+            proxy_pass http://frontend:3000;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+
+            # WebSocket support (Next.js HMR)
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+        }
+
+        # Next.js assets y chunks (para ambos frontends)
+        location ~ ^/_next/ {
+            proxy_pass http://frontend:3000;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+
+            # Fallback al landing page si falla
+            proxy_intercept_errors on;
+            error_page 404 502 503 504 = @landing_next;
+        }
+
+        location @landing_next {
+            proxy_pass http://landing-page:3001;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+        }
+
+        # ============================================
+        # API GATEWAY - Load Balanced Routing
+        # ============================================
+        location /api/ {
+            # Rate Limiting
+            limit_req zone=apilimit burst=20 nodelay;
+
+            # Load Balanced Proxy Pass
+            proxy_pass http://api_gateway_backend;
+
+            # Headers
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-Host $host;
+            proxy_set_header X-Forwarded-Port $server_port;
+
+            # WebSocket support
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+
+            # Timeouts para long-running requests
+            proxy_connect_timeout 60s;
+            proxy_send_timeout 60s;
+            proxy_read_timeout 60s;
+
+            # Buffering
+            proxy_buffering on;
+            proxy_buffer_size 4k;
+            proxy_buffers 8 4k;
+            proxy_busy_buffers_size 8k;
+        }
+
+        # ============================================
+        # HEALTH CHECK ENDPOINT (Nginx status)
+        # ============================================
+        location /nginx-health {
+            access_log off;
+            return 200 "healthy\n";
+            add_header Content-Type text/plain;
+        }
+    }
