@@ -19,6 +19,8 @@
 - **Description:**  
   TaskNotes es un sistema para gestionar tareas y notas con categorías y etiquetas. Incluye búsqueda full‑text sobre notas, vista de panel con previsualizaciones y sincronización en tiempo real por WebSockets.
 
+  http://k8s-tasknotesfront-f390333062-1655802625.us-east-1.elb.amazonaws.com/micro/login
+
 ---
 
 ## 2. Functional and Non-Functional Requirements
@@ -72,7 +74,7 @@ confirm that the autoscaling approach meets reliability and scalability objectiv
 ### Deployment Structure
 - **Deployment View:**  
   [Vista de despliegue]
-  ![Deployment View](docs/DeploymentView.png)
+  ![Deployment View](docs/Deployment_View.png)
 - **Description of architectural patterns used (if applicable):**  
   [Cluster, Replication, Service Discovery, Autoscaling, etc.]
 - **Description of architectural elements and relations:**  
