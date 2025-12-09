@@ -1123,6 +1123,10 @@ kubectl set image deployment/auth-service auth-service=retofit/auth-service:v2
 # Ver rollout
 kubectl rollout status deployment/auth-service
 ```
+
+## Despliegue
+**Link:** https://136.112.28.155
+
 ---
 
 ## 📁 Estructura del Proyecto
