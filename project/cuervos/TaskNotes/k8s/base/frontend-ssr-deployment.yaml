@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-ssr
+  namespace: tasknotes
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend-ssr
+  template:
+    metadata:
+      labels:
+        app: frontend-ssr
+    spec:
+      containers:
+        - name: frontend-ssr
+          image: 602223305716.dkr.ecr.us-east-1.amazonaws.com/frontend-ssr:dev
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: WEB_URL_PUBLIC
+              value: "http://k8s-tasknotesfront-f390333062-1655802625.us-east-1.elb.amazonaws.com"
+            - name: WEB_BASE_PATH
+              value: "/micro"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 20

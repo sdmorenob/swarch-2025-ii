@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: search-service
+  namespace: tasknotes
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: search-service
+  template:
+    metadata:
+      labels:
+        app: search-service
+    spec:
+      containers:
+        - name: search-service
+          image: 602223305716.dkr.ecr.us-east-1.amazonaws.com/search-service:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8008
+          env:
+            - name: REDIS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: tasknotes-search-cache
+                  key: REDIS_URL
+            - name: CACHE_TTL_SECONDS
+              valueFrom:
+                configMapKeyRef:
+                  name: tasknotes-search-cache
+                  key: CACHE_TTL_SECONDS
+            - name: RABBITMQ_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: tasknotes-search-cache
+                  key: RABBITMQ_URL
+            - name: NOTES_GRPC_ADDR
+              value: "notes-service:50051"
+            - name: TASKS_GRPC_ADDR
+              value: "tasks-service:50052"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8008
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8008
+            initialDelaySeconds: 10
+            periodSeconds: 20

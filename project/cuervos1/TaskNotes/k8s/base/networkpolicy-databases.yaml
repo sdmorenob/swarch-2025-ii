@@ -1,0 +1,70 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: db-ingress-policy
+  namespace: tasknotes
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values:
+          - postgres-auth
+          - postgres-tasks
+          - postgres-tags
+          - postgres-categories
+          - postgres-userprofile
+          - mongodb
+          - mongo-logs
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: auth-service
+      ports:
+        - protocol: TCP
+          port: 5432
+    - from:
+        - podSelector:
+            matchLabels:
+              app: tasks-service
+      ports:
+        - protocol: TCP
+          port: 5432
+    - from:
+        - podSelector:
+            matchLabels:
+              app: tags-service
+      ports:
+        - protocol: TCP
+          port: 5432
+    - from:
+        - podSelector:
+            matchLabels:
+              app: categories-service
+      ports:
+        - protocol: TCP
+          port: 5432
+    - from:
+        - podSelector:
+            matchLabels:
+              app: user-profile-service
+      ports:
+        - protocol: TCP
+          port: 5432
+    - from:
+        - podSelector:
+            matchLabels:
+              app: notes-service
+      ports:
+        - protocol: TCP
+          port: 27017
+    - from:
+        - podSelector:
+            matchLabels:
+              app: logs-service
+      ports:
+        - protocol: TCP
+          port: 27017

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: search-service
+  namespace: tasknotes
+spec:
+  type: ClusterIP
+  selector:
+    app: search-service
+  ports:
+    - name: http
+      port: 8008
+      targetPort: 8008

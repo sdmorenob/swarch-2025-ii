@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-micro
+  namespace: tasknotes
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend-micro
+  template:
+    metadata:
+      labels:
+        app: frontend-micro
+    spec:
+      containers:
+        - name: frontend-micro
+          image: 602223305716.dkr.ecr.us-east-1.amazonaws.com/frontend-micro:dev
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /micro/
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /micro/
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 20

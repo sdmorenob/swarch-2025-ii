@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: notes-service
+  namespace: tasknotes
+spec:
+  type: ClusterIP
+  selector:
+    app: notes-service
+  ports:
+    - name: http
+      port: 8004
+      targetPort: 8004
+    - name: grpc
+      port: 50051
+      targetPort: 50051

@@ -1,0 +1,107 @@
+{
+  "__inputs": [],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "9.0.0" },
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "2.0.0" }
+  ],
+  "annotations": { "list": [] },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": null,
+  "iteration": 164,
+  "links": [],
+  "panels": [
+    {
+      "type": "stat",
+      "title": "RPS (http_reqs)",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(k6_http_reqs_total[1m]))",
+          "legendFormat": "RPS",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "values": false } }
+    },
+    {
+      "type": "stat",
+      "title": "Error rate %",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 0 },
+      "targets": [
+        {
+          "expr": "100 * (sum(rate(k6_http_reqs_total{expected_response=\"false\"}[1m])) / clamp_min(sum(rate(k6_http_reqs_total[1m])), 1))",
+          "legendFormat": "Errors %",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "values": false } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency (avg)",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "gridPos": { "h": 8, "w": 16, "x": 0, "y": 6 },
+      "targets": [
+        {
+          "expr": "sum(rate(k6_http_req_duration_sum[1m])) / sum(rate(k6_http_req_duration_count[1m]))",
+          "legendFormat": "avg",
+          "refId": "A"
+        }
+      ],
+      "options": { "legend": { "showLegend": true } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency (p95 approx)",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "gridPos": { "h": 8, "w": 16, "x": 0, "y": 14 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(k6_http_req_duration_bucket[1m])) by (le))",
+          "legendFormat": "p95",
+          "refId": "A"
+        }
+      ],
+      "options": { "legend": { "showLegend": true } }
+    },
+    {
+      "type": "bargauge",
+      "title": "Failure vs Success (1m)",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 22 },
+      "targets": [
+        { "expr": "sum(rate(k6_http_reqs_total{expected_response=\"false\"}[1m]))", "legendFormat": "failed", "refId": "A" },
+        { "expr": "sum(rate(k6_http_reqs_total{expected_response=\"true\"}[1m]))", "legendFormat": "ok", "refId": "B" }
+      ]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 36,
+  "style": "dark",
+  "tags": ["k6", "performance"],
+  "templating": {
+    "list": [
+      {
+        "type": "query",
+        "name": "scenario",
+        "label": "Scenario",
+        "datasource": { "type": "prometheus", "uid": "Prometheus" },
+        "query": "label_values(k6_http_reqs_total, scenario)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": false,
+        "hide": 0
+      }
+    ]
+  },
+  "time": { "from": "now-15m", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "TaskNotes - k6 Performance",
+  "uid": "tasknotes-k6",
+  "version": 1
+}
