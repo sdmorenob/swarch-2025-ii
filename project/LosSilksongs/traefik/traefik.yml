@@ -27,8 +27,6 @@ providers:
     exposedByDefault: false
     # Habilitar el watch para detectar cambios en contenedores automáticamente
     watch: true
-    # Configuración de redes
-    network: backend_net
 
 accessLog: {}
 

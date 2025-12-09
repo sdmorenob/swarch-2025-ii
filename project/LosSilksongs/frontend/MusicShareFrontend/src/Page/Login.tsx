@@ -23,7 +23,7 @@ export default function Login({ theme }: Props) {
     setIsLoading(true);
 
     try {
-      const res = await fetch("https://localhost/api/users/auth/token", {
+      const res = await fetch("/api/users/auth/token", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({

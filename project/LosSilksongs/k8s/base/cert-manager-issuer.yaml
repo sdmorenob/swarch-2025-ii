@@ -1,0 +1,40 @@
+# Instalación de cert-manager (Issuer para Let's Encrypt)
+# Primero ejecutar: helm repo add jetstack https://charts.jetstack.io
+#                  helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace
+#
+# Este archivo crea los Issuers después de que cert-manager esté instalado
+
+---
+# ClusterIssuer para Let's Encrypt (Staging - para pruebas)
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: admin@musicshare.local
+    privateKeySecretRef:
+      name: letsencrypt-staging-key
+    solvers:
+      - http01:
+          ingress:
+            class: traefik
+---
+# ClusterIssuer para Let's Encrypt (Production)
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: admin@musicshare.local
+    privateKeySecretRef:
+      name: letsencrypt-prod-key
+    solvers:
+      - http01:
+          ingress:
+            class: traefik
+---
+

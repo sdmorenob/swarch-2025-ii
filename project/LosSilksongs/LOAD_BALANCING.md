@@ -4,24 +4,45 @@
 
 Se ha implementado con éxito un sistema de **balanceo de carga automático** en MusicShare utilizando Traefik como API Gateway y Load Balancer. El sistema permite escalar horizontalmente los microservicios backend para mejorar el rendimiento, disponibilidad y resiliencia.
 
+Se ha migrado la arquitectura a **Kubernetes**, reemplazando Docker Compose. El balanceo de carga se realiza automáticamente mediante:
+ - **Kubernetes Service Load Balancing**: Distribución automática a través de Service Discovery
+ - **HorizontalPodAutoscaler (HPA)**: Escalado automático basado en uso de CPU
+ - **Traefik Gateway**: Enrutamiento inteligente de tráfico via IngressRoute CRDs
 ---
 
-
+## 🏗️ Arquitectura Kubernetes
 ### 1. 🔧 Configuración de Docker Compose
+```
+Internet
+  ↓
+Load Balancer Público (Service: frontend-loadbalancer)
+  ↓
+Frontend React (Deployment 3 réplicas)
+  ↓
+Traefik Gateway (Deployment 2 réplicas, ClusterIP)
+  ↓
+Microservicios con Escalado Automático (HPA 2-6 réplicas según CPU)
+```
 
+## 🚀 Componentes Escalables en Kubernetes
 **Servicios Escalables:**
+ | Servicio | Réplicas Iniciales | Máx (HPA) | Umbral CPU |
+ |----------|-------------------|-----------|-----------|
+ | UserService | 2 | 6 | 50% |
+ | MusicService | 2 | 6 | 50% |
+ | SocialService | 2 | 5 | 55% |
+ | NotificationService | 2 | 6 | 50% |
+ | Frontend | 3 | 3 | (sin HPA) |
+ | Traefik Gateway | 2 | 2 | (sin HPA) |
 - ✅ **NotificationService**: 2 réplicas iniciales
-
 **Cambios Realizados:**
 - Políticas de reinicio automático
 
 **Ejemplo de Configuración:**
 ```yaml
 deploy:
-  replicas: 2
   resources:
       memory: 512M
-    reservations:
       cpus: '0.25'
       memory: 256M
   restart_policy:
@@ -38,16 +59,136 @@ deploy:
 ```yaml
   - "traefik.http.services.userservice.loadbalancer.healthcheck.interval=10s"
 ```
+### 1. 🔧 Configuración de Kubernetes Deployments
+
+**Servicios Escalables (HPA habilitado):**
+ - ✅ **UserService**: 2-6 réplicas
+ - ✅ **MusicService**: 2-6 réplicas  
+ - ✅ **SocialService**: 2-5 réplicas
+ - ✅ **NotificationService**: 2-6 réplicas
+
+**Ejemplo de Deployment con recursos limitados:**
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: userservice
+  namespace: musicshare
+spec:
+  replicas: 2  # Réplicas iniciales
+  selector:
+    matchLabels:
+      app: userservice
+  template:
+    metadata:
+      labels:
+        app: userservice
+    spec:
+      containers:
+        - name: userservice
+          image: musicshare/userservice:latest
+          ports:
+            - containerPort: 8002
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+```
+
+### 1.5. 🔧 Configuración de HorizontalPodAutoscaler (HPA)
+
+El escalado automático se configura mediante **HPA**, que monitorea métricas de CPU y ajusta el número de réplicas dinámicamente:
+
+**Ejemplo de HPA para UserService:**
+```yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: userservice-hpa
+  namespace: musicshare
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: userservice
+  minReplicas: 2      # Mínimo 2 réplicas siempre
+  maxReplicas: 6      # Máximo 6 réplicas
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50  # Si CPU > 50%, escala hacia arriba
+
+**Cómo funciona:**
+ 1. Metrics Server monitorea el uso de CPU en cada Pod
+ 2. Si uso promedio de CPU > 50%, el HPA crea nuevas réplicas
 - Verificación automática cada 10 segundos
 ```yaml
-  - "traefik.http.services.userservice.loadbalancer.sticky.cookie=true"
-  - "traefik.http.services.userservice.loadbalancer.sticky.cookie.name=userservice_session"
 ```
 - Mantiene sesiones de usuario en la misma réplica
-- Cookie persistente por servicio
-
-#### Algoritmo de Balanceo
 - **Round Robin** (por defecto)
+  ### 2. ⚖️ Configuración de Traefik en Kubernetes
+
+  **Características Implementadas:**
+
+  #### IngressRoute CRD para Enrutamiento
+  ```yaml
+  apiVersion: traefik.io/v1alpha1
+  kind: IngressRoute
+  metadata:
+    name: userservice-route
+    namespace: musicshare
+  spec:
+    entryPoints:
+      - web
+      - websecure
+    routes:
+      - match: PathPrefix(`/api/users`)
+        kind: Rule
+        middlewares:
+          - name: strip-users
+        services:
+          - name: userservice
+            port: 8002
+    tls:
+      certResolver: letsencrypt-prod  # TLS automático
+  ```
+
+   - **Service Discovery**: Kubernetes API automáticamente detecta cambios en Services
+   - **Load Balancing**: Traefik distribuye tráfico a todos los Pods de un Deployment
+   - **Health Checks**: Kubernetes liveness/readiness probes integrados
+
+  #### Middleware para StripPrefix
+  ```yaml
+  apiVersion: traefik.io/v1alpha1
+  kind: Middleware
+  metadata:
+    name: strip-users
+    namespace: musicshare
+  spec:
+    stripPrefix:
+      prefixes:
+        - /api/users
+  ```
+
+   - Elimina el prefijo `/api/users` antes de pasar la solicitud al servicio
+   - Permite que los servicios reciban rutas limpias (ej. `/me` en lugar de `/api/users/me`)
+
+  #### Algoritmo de Balanceo
+   - **Kubernetes Services**: Round-robin de Kubernetes a nivel DNS/iptables
+   - **Traefik**: Distribuye equitativamente entre Pods saludables
+   - **Session Affinity**: Opcional via `sessionAffinity: ClientIP` en Service
+
+  #### Logs y Métricas
+   - **Logs estructurados**: JSON enviados a `/var/log/traefik/`
+   - **Métricas Prometheus**: Traefik expone métricas en puerto 8080
+   - **Dashboard**: Accesible en `http://localhost:8080/dashboard/`
+   - **Integración**: Prometheus scrape automático via ServiceMonitor (si usas Prometheus Operator)
 - Distribución equitativa entre réplicas saludables
 
 #### Logs y Métricas
@@ -60,9 +201,6 @@ deploy:
 #### scale-service.ps1
 Script PowerShell para escalar servicios dinámicamente.
 
-- Soporte para escalar servicios individuales o todos
-- Verificación de estado post-escalado
-- Salida con colores para mejor UX
 
 **Uso:**
 ```powershell
@@ -73,22 +211,48 @@ Script PowerShell para escalar servicios dinámicamente.
 #### load-test.ps1
 Script para probar el balanceo de carga mediante peticiones HTTP.
 
-- Análisis de distribución de carga
 
 **Uso:**
 ```powershell
 .\scripts\load-test.ps1 -Service userservice -Requests 20 -Delay 500
 ```
 
+### 3. 🛠️ Comandos Kubernetes para Escalado Manual
+
+**Escalar un servicio manualmente (sin HPA):**
+```bash
+# Escalar UserService a 5 réplicas
+kubectl scale deployment userservice -n musicshare --replicas=5
+
+# Escalar todos los servicios
+kubectl scale deployment -n musicshare --all --replicas=3
+```
+
+**Monitorear escalado automático:**
+```bash
+# Ver estado del HPA
+kubectl get hpa -n musicshare -w  # -w para watch (monitoreo en tiempo real)
+
+# Detalles del HPA
+kubectl describe hpa userservice-hpa -n musicshare
+
+# Ver métricas de CPU en tiempo real
+kubectl top pods -n musicshare
+kubectl top nodes
+```
+
+**Deshabilitar HPA (para pruebas):**
+```bash
+# Pausar el HPA
+kubectl patch hpa userservice-hpa -n musicshare -p '{"spec":{"minReplicas":2,"maxReplicas":2}}'
+
+# Eliminar HPA (vuelve al número de réplicas del Deployment)
+kubectl delete hpa userservice-hpa -n musicshare
+```
 ### 4. 📚 Documentación
 
 **Archivos Actualizados:**
-- ✅ `APIGateway.md` - Sección completa sobre balanceo de carga
-- ✅ `README.md` - Información de uso y comandos rápidos
-- ✅ `scripts/README.md` - Documentación detallada de scripts
-- ✅ `.env.loadbalancing.example` - Ejemplos de configuración
 
----
 
 ## 🚀 Cómo Usar el Sistema
 
@@ -100,6 +264,86 @@ docker compose build
 docker compose up -d
 
 # Verificar que las réplicas están corriendo
+### 4. 📚 Documentación Kubernetes
+
+**Archivos Nuevos:**
+ - ✅ `k8s/TRAEFIK_SETUP.md` - Guía detallada de instalación de Traefik
+ - ✅ `k8s/traefik-crd.yaml` - Custom Resource Definitions
+ - ✅ `k8s/traefik-config.yaml` - ConfigMap con configuración
+ - ✅ `k8s/traefik-deployment-updated.yaml` - Deployment + RBAC
+ - ✅ `k8s/ingressroutes.yaml` - Rutas y middlewares
+ - ✅ `k8s/backend-deployments-services.yaml` - Microservicios
+ - ✅ `k8s/hpa.yaml` - Escalado automático
+ - ✅ `APIGateway.md` - Actualizado para Kubernetes
+ - ✅ `LOAD_BALANCING.md` - Actualizado con HPA
+
+---
+
+## 🚀 Cómo Desplegar en Kubernetes
+
+### Pruebas de Carga y Escalado en Kubernetes
+
+**Generar carga para activar escalado automático:**
+```bash
+# Port-forward al servicio
+kubectl port-forward -n musicshare svc/userservice 8002:8002 &
+
+# Usar herramienta como ab (Apache Bench) o wrk
+# Instalar: brew install httpd (macOS) o apt-get install apache2-utils (Linux)
+ab -n 10000 -c 100 http://localhost:8002/health
+
+# Monitorear escalado en otra terminal
+kubectl get hpa -n musicshare -w
+```
+
+**Ejemplo de salida esperada:**
+```
+NAME                REFERENCE                        TARGETS    MINPODS   MAXPODS   REPLICAS   AGE
+userservice-hpa     Deployment/userservice           75%/50%    2         6         4          2m
+# CPU sube a 75%, HPA escala de 2 a 4 réplicas
+```
+
+**Ver logs de escalado:**
+```bash
+kubectl get events -n musicshare --sort-by='.lastTimestamp' | tail -20
+```
+
+### Requisitos previos
+ 1. Clúster Kubernetes (minikube, kind, EKS, GKE, AKS, etc.)
+ 2. `kubectl` configurado
+ 3. `helm` (opcional, para cert-manager)
+ 4. Imágenes Docker publicadas en un registry
+
+### Despliegue paso a paso
+
+```bash
+# 1. Crear namespace y recursos de Traefik
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/traefik-crd.yaml
+kubectl apply -f k8s/traefik-config.yaml
+kubectl apply -f k8s/traefik-deployment-updated.yaml
+kubectl apply -f k8s/ingressroutes.yaml
+
+# 2. Desplegar servicios
+kubectl apply -f k8s/frontend-deployment-service.yaml
+kubectl apply -f k8s/backend-deployments-services.yaml
+kubectl apply -f k8s/databases.yaml
+kubectl apply -f k8s/hpa.yaml
+
+# 3. Verificar despliegue
+kubectl get all -n musicshare
+kubectl get hpa -n musicshare
+```
+
+### Despliegue (método antiguo con Docker Compose)
+
+Si todavía usas Docker Compose (no recomendado, solo para desarrollo local):
+
+```bash
+# Construir y levantar todos los servicios
+docker compose build
+docker compose up -d
+```
 docker compose ps
 ```
 

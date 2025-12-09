@@ -1,3 +1,69 @@
+# MusicShare - Red Social Musical
+
+## 🚀 Despliegue en Kubernetes
+
+**ACTUALIZACIÓN 2024**: Se ha migrado de **Traefik** a **NGINX Ingress Controller** para mejor estabilidad y compatibilidad con Kubernetes estándar.
+
+### Arquitectura de Despliegue
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                       INTERNET                              │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                ┌──────────▼──────────┐
+                │  AWS/GCP LoadBalancer│
+                │  (IP Pública)       │
+                └──────────┬──────────┘
+                           │
+         ┌─────────────────┴──────────────────┐
+         │                                    │
+    ┌────▼────────┐           ┌──────────────▼──────┐
+    │   Frontend   │           │   NGINX Ingress     │
+    │  (React)     │           │   (API Gateway)     │
+    │  3 replicas  │           │   2 replicas        │
+    └──────────────┘           └──────────┬──────────┘
+                                           │
+         ┌─────────────────────────────────┼─────────────────────────────┐
+         │                                 │                             │
+    ┌────▼──────┐  ┌──────────┐  ┌────────▼───────┐  ┌─────────────────▼──┐
+    │   User     │  │  Music   │  │   Social       │  │  Notification      │
+    │  Service   │  │ Service  │  │   Service      │  │  Service           │
+    │ :8002      │  │ :8081    │  │  :8083         │  │  :8082 (WebSocket) │
+    │ 2-6 replicas│  │2-6 repli │  │ 2-5 replicas  │  │ 2-6 replicas      │
+    └────────────┘  └──────────┘  └────────────────┘  └────────────────────┘
+```
+
+### 📚 Documentación de Despliegue
+
+- **[DEPLOYMENT_ARCHITECTURE.md](DEPLOYMENT_ARCHITECTURE.md)** - Arquitectura general y componentes
+- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Guía paso a paso para desplegar
+- **[MIGRATION_TRAEFIK_TO_NGINX.md](MIGRATION_TRAEFIK_TO_NGINX.md)** - Migración desde Traefik
+- **[LOAD_BALANCING.md](LOAD_BALANCING.md)** - Detalles de balanceo de carga
+- **[APIGateway.md](APIGateway.md)** - Configuración del API Gateway
+
+### ⚡ Despliegue Rápido
+
+```bash
+# 1. Crear namespace
+kubectl create namespace musicshare
+
+# 2. Instalar NGINX Ingress Controller + Cert-manager
+kubectl apply -k k8s/base/
+
+# 3. Desplegar MusicShare
+kubectl apply -k k8s/app/
+
+# 4. Obtener IPs
+FRONTEND_IP=$(kubectl get svc -n musicshare frontend-loadbalancer -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+NGINX_IP=$(kubectl get svc -n ingress-nginx nginx-ingress -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+echo "Frontend: http://$FRONTEND_IP"
+echo "API Gateway: http://$NGINX_IP"
+```
+
+---
+
 # Project: Prototype 1 - Simple Architectural Structure
 # MusicShare - Red Social Musical
 ## Equipo
@@ -10,7 +76,7 @@
   - Andrés Felipe Perdomo Uruburu
   - Andrés Felipe Poveda Bellón
 
-## Sofware System
+## Software System
  - **Name:** MusicShare
  - **Logo**
 
@@ -22,9 +88,6 @@
 # MusicShare - Red Social Musical
 ## Functional Requirements
 ### RF01 - Gestión de Usuarios
-- El sistema debe permitir el registro de usuarios con email/username y contraseña
-- El sistema debe permitir el login y logout de usuarios
-- El sistema debe permitir crear y editar perfiles básicos (foto, nombre)
 ### RF02 - Subida y Gestión de Música
 - El sistema debe permitir subir archivos de audio (MP3, WAV) al cloud storage
 - El sistema debe permitir agregar metadatos básicos a las pistas (título, artista, género)
@@ -37,7 +100,7 @@
 - El sistema debe permitir seguir y dejar de seguir otros usuarios
 - El sistema debe mostrar la lista de seguidores y seguidos
 - El sistema debe filtrar el feed basado en usuarios seguidos
-### RF05 - Salas de Música Colaborativa - Para mirar para el mvp
+### RF05 - Salas de Música Colaborativa - Para mirar para el MVP
 - El sistema debe permitir crear salas de música donde un usuario actúe como "DJ"
 - El sistema debe permitir que otros usuarios se conecten a las salas creadas
 - El sistema debe sincronizar la reproducción para todos los participantes de la sala
@@ -53,10 +116,10 @@
 ## Non-Functional Requirements
 
 MusicShare es una aplicación web que funciona como red social especializada donde los usuarios pueden compartir su música favorita, crear playlists y descubrir nueva música a través de una experiencia social interactiva.
-### RNF-5.1: Diseño Responsivo
+### RNF-5.1: Diseño responsivo
 Requisito: La interfaz de usuario web debe ser completamente responsiva y funcional en los principales tamaños de pantalla: móviles (320px-767px), tabletas (768px-1023px) y escritorio (1024px+).
-Métrica de Aceptación: Pruebas en emuladores de dispositivos y dispositivos físicos confirman que no hay elementos rotos o inutilizables en las resoluciones clave.
-### RNF-5.2: Accesibilidad Web
+Métrica de aceptación: Pruebas en emuladores de dispositivos y dispositivos físicos confirman que no hay elementos rotos o inutilizables en las resoluciones clave.
+### RNF-5.2: Accesibilidad web
 Requisito: La aplicación debe cumplir con el nivel AA de las Pautas de Accesibilidad para el Contenido Web (WCAG 2.1).
 Métrica de Aceptación: La aplicación pasa las validaciones de herramientas automatizadas de accesibilidad (ej. Lighthouse, Axe) y supera una revisión manual de criterios clave (contraste, navegación por teclado, texto alternativo para imágenes).
 Arquitectura y Distribución
@@ -83,7 +146,7 @@ La plataforma debe permitir el despliegue independiente de cada microservicio pa
 ### RNF-3.2 Tiempo de Respuesta:
 El tiempo promedio de respuesta de las API REST no debe superar 300 ms bajo una carga media, y 500 ms en picos de tráfico.
 ### RNF-3.3 Reproducción en Streaming:
-La entrega de archivos de audio desde el Cloud Storage debe mantener una latencia inicial máxima de 2 s antes de iniciar la reproducción. (Desde el momento que el usuario pone play hasta que empieza a sonar no deben pasar más de 2 segundos)
+La entrega de archivos de audio desde el Cloud Storage debe mantener una latencia inicial máxima de 2 s antes de iniciar la reproducción. (Desde el momento en que el usuario pone play hasta que empieza a sonar no deben pasar más de 2 segundos)
 Lenguajes y tecnologías
 Se implementará el sistema de software en Python, Go y Java.
 ## Disponibilidad y Confiabilidad
@@ -136,7 +199,7 @@ C&C View:
 ## Description of architectural styles used.
 
 - Microservicios: Servicios independientes con responsabilidades específicas
-- MicroFrontends: Frontends independientes
+- Microfrontends: Frontends independientes
 - Layered Architecture: Separación clara entre presentación, lógica y datos
 - Event-Driven: Para notificaciones y actualizaciones en tiempo real
 - API Gateway Pattern: Para enrutar requests y manejar autenticación
@@ -145,10 +208,10 @@ C&C View:
 ## Componentes:
 ### Presentación:
 - Web Frontend (React/TypeScript): Interfaz de usuario principal
-- Posts Frontend (JavaScript): Interfaz para la creacion de posts
+- Posts Frontend (JavaScript): Interfaz para la creación de posts
 ### Lógica de Negocio:
 - User Service (Python/FastAPI): Gestión de usuarios, autenticación, perfiles
-- Music Service (Go): Manejo de archivos musicales, metadata, cloud storage
+- Music Service (Go): Manejo de archivos musicales, metadatos, cloud storage
 - Social Service (Java/Spring Boot): Feed, seguimientos, interacciones sociales
 - Notification Service (Python): Sistema de notificaciones en tiempo real
 - Search Service (Go): Búsquedas y recomendaciones
@@ -162,7 +225,7 @@ C&C View:
 ### REST API Connector:
   - Comunicación entre Frontend y servicios
   - Operaciones CRUD estándar
-  - Autenticación via JWT
+  - Autenticación vía JWT
 ### WebSocket Connector:
   - Notificaciones en tiempo real
   - Chat en vivo durante reproducciones
@@ -171,10 +234,10 @@ C&C View:
   - Conexión MusicService con MetadataService
 
 ## Layered Structure
-##### Layered View:
+### Layered View:
 ![Diagrama de capas](Diagrama_Capas_2.png)
 
-##### Diagrama de capas de la capa de negocios:
+### Vista de capas de la capa de negocios:
 
 ![Diagrama de capas de negocios](Capas_Business.png)
 
@@ -190,7 +253,7 @@ Entre los patrones complementarios utilizados se encuentran:
 
 Patrón API Gateway: centraliza el acceso externo, el enrutamiento y la autenticación hacia los servicios del backend.
 
-Patrón Base de Datos por Servicio (Database per Service): cada microservicio gestiona su propia base de datos, garantizando independencia de datos.
+Patrón Base de Datos por Servicio (Database per Service): Cada microservicio gestiona su propia base de datos, garantizando independencia de datos.
 
 ## Descripción de los Elementos Arquitectónicos y sus Relaciones
 
@@ -198,25 +261,25 @@ La arquitectura está compuesta por cinco capas lógicas:
 
 ### Capa de Presentación: 
 
-incluye los componentes orientados al usuario como Web Frontend y Posts Frontend. Estos módulos gestionan la interacción con el usuario, la visualización de datos y las peticiones al sistema. Se comunican exclusivamente con la Capa de Integración mediante HTTP/REST.
+Incluye los componentes orientados al usuario como Web Frontend y Posts Frontend. Estos módulos gestionan la interacción con el usuario, la visualización de datos y las peticiones al sistema. Se comunican exclusivamente con la Capa de Integración mediante HTTP/REST.
 
 ### Capa de Integración: 
-implementa el API Gateway, responsable del enrutamiento, balanceo de carga, autenticación y control de tráfico. Actúa como una fachada que expone un punto de acceso unificado al frontend y delega las solicitudes hacia los microservicios correspondientes.
+Implementa el API Gateway, responsable del enrutamiento, balanceo de carga, autenticación y control de tráfico. Actúa como una fachada que expone un punto de acceso unificado al frontend y delega las solicitudes hacia los microservicios correspondientes.
 
 ### Capa de Negocio (Business): 
-compuesta por microservicios independientes (User Service, Music Service, Social Service, Notification Service y Metadata Service). Cada uno encapsula reglas de negocio específicas.
+Compuesta por microservicios independientes (User Service, Music Service, Social Service, Notification Service y Metadata Service). Cada uno encapsula reglas de negocio específicas.
 
 ### Capa de Persistencia: 
-agrupa los componentes de almacenamiento de datos, como User Database (PostgreSQL), Music/Metadata Database (MongoDB), Social Database (PostgreSQL) y Cloud Storage para archivos multimedia. Cada microservicio accede exclusivamente a su propia fuente de datos.
+Agrupa los componentes de almacenamiento de datos, como User Database (PostgreSQL), Music/Metadata Database (MongoDB), Social Database (PostgreSQL) y Cloud Storage para archivos multimedia. Cada microservicio accede exclusivamente a su propia fuente de datos.
 
 ### Capa de Infraestructura: 
-proporciona soporte de ejecución y despliegue mediante Docker, Kubernetes, pipelines de CI/CD, monitoreo (Prometheus/Grafana) y gestión de logs (ELK). Esta capa sustenta a todas las demás sin generar dependencias ascendentes.
+Proporciona soporte de ejecución y despliegue mediante Docker, Kubernetes, pipelines de CI/CD, monitoreo (Prometheus/Grafana) y gestión de logs (ELK). Esta capa sustenta a todas las demás sin generar dependencias ascendentes.
 
 Las relaciones entre capas son estrictamente descendentes (allowed-to-use), lo que asegura modularidad y evita dependencias circulares. Esta organización favorece el mantenimiento, permite reemplazar tecnologías en capas inferiores y facilita la escalabilidad independiente de los servicios.
 
 ## Deployment Structure
 Deployment View:
-![Diagrama de despliegue](Diagrama_Despliegue.png)
+![Vista de despliegue](Despliegue_segmentado.png)
 
 
 # Arquitectura de Despliegue – MusicShare
@@ -238,17 +301,18 @@ Este nodo ejecuta todos los contenedores del sistema.
 
 ---
 
-## 🌐 2. Red Interna Docker
+## 🌐 2. Redes
 
-Se utiliza una red interna tipo bridge llamada:
+Esta vista de despliegue muestra cómo los componentes de MusicShare se ejecutan dentro de un host Docker y se organizan mediante una segmentación de red basada en capas. La infraestructura se divide en tres subredes independientes:
 
-Esta red permite:
+Subred de Presentación (frontend_net): aloja los servicios de interfaz de usuario y el API Gateway (Traefik), encargados de recibir las solicitudes externas.
 
-- Comunicación entre microservicios  
-- Aislamiento de tráfico  
-- Control de seguridad interno  
+Subred de Negocio (backend_net): contiene los microservicios principales de la plataforma, responsables de la lógica de negocio.
 
-Todos los contenedores del ecosistema están dentro de esta red.
+Subred de Datos (data_net): agrupa los servicios de persistencia como PostgreSQL, MongoDB y otros recursos de datos.
+
+La comunicación entre redes está estrictamente controlada:
+Traefik conecta la capa de presentación con la de negocio, mientras que los microservicios acceden a las bases de datos a través de la red de datos siguiendo el principio de mínimo privilegio. Esta segmentación mejora la seguridad, el aislamiento y la mantenibilidad del sistema.
 
 ---
 
@@ -358,7 +422,7 @@ La arquitectura MusicShare está basada en microservicios altamente desacoplados
 - Gateway centralizado (Traefik)
 - Microservicios independientes
 - Bases de datos aisladas por servicio
-- Red Docker interna segura
+- Redes segmentadas
 - Alta modularidad
 - Preparada para escalar o migrar a Kubernetes
 
@@ -381,7 +445,7 @@ Cliente para funcionalidades principales
 
 ### 1. frontend
 
-![Frontend](frontend.png)
+![Frontend](frontendcorreccion.png)
 
 
 - **Responsabilidad principal**:
@@ -396,19 +460,19 @@ Cliente para funcionalidades principales
 
 ### 2. frontendSSR
 
-![FrontendSSR](frontendSSR.png)
+![FrontendSSR](frontendSSRcorreccion.png)
 
 
 - **Responsabilidad principal**:
   - Cliente con Server-Side Rendering que carga el formulario para enviar al cliente para crear los POST
 - **Funciones clave:**
-  - Permite arrastar canciones
-  - Insersión de Tags, 
-  - Definir si es de tipo de publica, agrega descripción y hashtags
+  - Permite arrastrar canciones
+  - Inserción de Tags, 
+  - Definir si es de tipo de pública, agrega descripción y hashtags
 
 ### 3. SocialService
 
-![socialservice](socialservice.png)
+![socialservice](socialservicecorreccion.png)
 
 - **Responsabilidad principal:**
   - Encargado del componente social de la plataforma. Administra las interacciones, conexiones y actividades entre los usuarios.
@@ -421,7 +485,7 @@ Cliente para funcionalidades principales
 
 ### 4. MusicService
 
-![musicservice](musicservice.png)
+![musicservice](musicservicecorreccion.png)
 
 - **Responsabilidad principal:**
   - Administrar los recursos musicales y su ciclo de vida dentro del sistema.
@@ -434,7 +498,7 @@ Cliente para funcionalidades principales
 
 ### 5. Traekik
 
-![traefik](traefik.png)
+![traefik](traefikcorreccion.png)
 
 
 ## Apigateway
@@ -457,7 +521,7 @@ Cliente para funcionalidades principales
 
 ### 6. MetadataService
 
-![metadataservice](metadataservice.png)
+![metadataservice](metadataservicecorreccion.png)
 
 - **Responsabilidad principal:**
   - Gestionar y proveer información descriptiva asociada al contenido musical.
@@ -470,7 +534,7 @@ Cliente para funcionalidades principales
 
 ### 7. UserService
 
-![userservice](userservice.png)
+![userservice](userservicecorreccion.png)
 
 - **Responsabilidad principal:**
   - Gestionar la información y autenticación de los usuarios del sistema.
@@ -483,7 +547,7 @@ Cliente para funcionalidades principales
 
 ### 8. NotificationService
 
-![notificationservice](notificationservice.png)
+![notificationservice](notificationservicecorreccion.png)
 
 - **Responsabilidad principal:**
   - Coordinar y enviar notificaciones a los usuarios según eventos del sistema.
@@ -497,9 +561,9 @@ Registro de eventos relevantes para los usuarios.
 
 ---
 
-## Correciones entrga anterior y cumplimiento de requisitos actuales
+## Correcciones de la entrega anterior y cumplimiento de requisitos actuales
 
-### Correciones hechas:
+### Correcciones hechas:
 - Ya se agregó el cuarto componente de la capa de base de datos.
 - Se implementó un componente SSR. Este componente corresponde al formulario para hacer un post de una canción.
 - Se corrigió la documentación inconsistente.
@@ -547,7 +611,7 @@ touch .env
 cp .env.example .env
 ```
 
-##### ✏️ Agregar las credenciales del API de Spotify dentro del archivo .env
+##### ✏️ Agregar las credenciales de lA API de Spotify dentro del archivo .env
 Reemplaza las siguientes líneas
 SPOTIFY_CLIENT_ID=ac2b79b47a0643bd824d4fece4d8d110
 SPOTIFY_CLIENT_SECRET=3a61c9187a674bf9a505e9a810700e6d
@@ -586,14 +650,14 @@ docker compose ps
 ---
 
 ## ¿Cómo usar la aplicación?
-Dirijase al enlace del Web Frontend, esta es la dirección inicial por defecto de la aplicación, cree su usuario si no lo tiene y luego inicie sesión. Será dirijido al dashboard principal, ahí dirijase a la pestaña "Subir música". Se mostrará un formulario con el que se pueden subir posts con una canción asociada.
+Diríjase al enlace del Web Frontend; esta es la dirección inicial por defecto de la aplicación. Cree su usuario si no lo tiene y luego inicie sesión. Será dirigido al dashboard principal; ahí diríjase a la pestaña "Subir música". Se mostrará un formulario con el que se pueden subir posts con una canción asociada.
 
-Primero deberá subir la canción, seleccionela o arrastrela al campo señalado, agregue tags de su preferencia y configure el tipo de visibilidad de la canción, luego haga click en el botón "Subir Canción", esto hará uso de los serevicios MusicService y MetadataService para guardar la canción en la carpeta `uploads/audio/` con sus metadatos enriquecidos. 
+Primero deberá subir la canción, selecciónela o arrástrela al campo señalado, agregue tags de su preferencia y configure el tipo de visibilidad de la canción, luego haga click en el botón "Subir Canción". Esto hará uso de los servicios MusicService y MetadataService para guardar la canción en la carpeta `uploads/audio/` con sus metadatos enriquecidos. 
 
 Una vez subida prosiga con la creación de la publicación, agregue una descripción y los hashtags que quiera que estén asociados a ella.
 Finalmente presione el botón de "Publicar Post" para subir el post mediante el servicio SocialService.
 
-Para verificar que la subida de la canción y el post ha sido satisfactoria puede hacer uso de postman a los siguientes endoints:
+Para verificar que la subida de la canción y el post ha sido satisfactoria puede hacer uso de Postman a los siguientes endpoints:
 
 - GET: http://localhost/api/music/api/v1/tracks (Lista de las canciones subidas)
 - GET: http://localhost/api/social/api/social/posts (Lista de los posts subidos)
@@ -603,7 +667,7 @@ Para verificar que la subida de la canción y el post ha sido satisfactoria pued
 ## 📖 Endpoints principales de los servicios
 
 ### UserService
-**Documentacion** [https://localhost/api/users/docs](http://localhost/api/users/docs)
+**Documentación** [https://localhost/api/users/docs](http://localhost/api/users/docs)
 - **Health**: `GET /health`
 - **Registro**: `POST /auth/register`
 - **Login**: `POST /auth/token` (devuelve JWT)
@@ -611,7 +675,7 @@ Para verificar que la subida de la canción y el post ha sido satisfactoria pued
 - **Proxy playlists**: `GET /proxy/users/{id}/playlists`
 
 ### MusicService
-**Documentacion** [https://localhost/api/music/swagger/index.html](http://localhost/api/music/swagger/index.html)
+**Documentación** [https://localhost/api/music/swagger/index.html](http://localhost/api/music/swagger/index.html)
 - `POST /api/v1/tracks/upload` - Subir audio
 - `GET /api/v1/tracks` - Listar tracks
 - `GET /api/v1/tracks/{id}/stream` - Stream de audio

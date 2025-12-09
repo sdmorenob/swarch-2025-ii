@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+  namespace: musicshare
+data:
+  USERSERVICE_URL: "userservice.musicshare.svc.cluster.local"
+  MUSICSERVICE_URL: "musicservice.musicshare.svc.cluster.local"
+  SOCIALSERVICE_URL: "social-service.musicshare.svc.cluster.local"

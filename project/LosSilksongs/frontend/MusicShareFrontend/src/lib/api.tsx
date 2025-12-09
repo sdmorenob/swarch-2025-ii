@@ -1,6 +1,6 @@
 import { getToken, removeToken } from "./auth";
 
-const API_BASE = "http://localhost:8002";
+
 
 // --- 🔒 Función para validar si el token sigue vigente ---
 function isTokenValid(token: string | null): boolean {
@@ -41,7 +41,7 @@ export async function apiFetch(
   }
 
   // 2️⃣ Construir URL (soporta path relativo o URL completa)
-  const url = pathOrUrl.startsWith("http")
+  const url = pathOrUrl.startsWith("/")
     ? pathOrUrl
     : `${API_BASE}${pathOrUrl}`;
 

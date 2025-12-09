@@ -39,7 +39,7 @@ function App() {
               <Route path="/perfil" element={<ExampleProfile />} />
               <Route path="/editar-perfil" element={<EditProfile />} />
               <Route path="/post" element={<ProfileFeed />} />
-              <Route path="/upload-music" element={<UploadMusic theme={theme}/>} />
+              <Route path="/upload-music" element={<UploadMusic />} />
             </Route>
           </Route>
         </Routes>

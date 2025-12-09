@@ -1,0 +1,263 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: userservice
+  namespace: musicshare
+  labels:
+    app: userservice
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: userservice
+  template:
+    metadata:
+      labels:
+        app: userservice
+    spec:
+      containers:
+        - name: userservice
+          image: musicshare/userservice:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8002
+          env:
+            - name: POSTGRES_HOST
+              value: postgres
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: MONGODB_URI
+              value: "mongodb://admin:password123@mongodb:27017/musicshare?authSource=admin"
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: userservice-secret
+                  key: secret_key
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: userservice
+  namespace: musicshare
+spec:
+  selector:
+    app: userservice
+  ports:
+    - port: 8002
+      targetPort: 8002
+  type: ClusterIP
+---
+# Music Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: musicservice
+  namespace: musicshare
+  labels:
+    app: musicservice
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: musicservice
+  template:
+    metadata:
+      labels:
+        app: musicservice
+    spec:
+      containers:
+        - name: musicservice
+          image: musicshare/musicservice:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8081
+          env:
+            - name: MONGODB_URI
+              value: "mongodb://admin:password123@mongodb:27017/musicshare?authSource=admin"
+            - name: METADATA_SERVICE_GRPC
+              value: metadata-service:50051
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: musicservice
+  namespace: musicshare
+spec:
+  selector:
+    app: musicservice
+  ports:
+    - port: 8081
+      targetPort: 8081
+  type: ClusterIP
+---
+# Metadata service (gRPC)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metadata-service
+  namespace: musicshare
+  labels:
+    app: metadata-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: metadata-service
+  template:
+    metadata:
+      labels:
+        app: metadata-service
+    spec:
+      containers:
+        - name: metadata-service
+          image: musicshare/metadata-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 50051
+          env:
+            - name: SPOTIFY_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: spotify-credentials
+                  key: spotify_client_id
+            - name: SPOTIFY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: spotify-credentials
+                  key: spotify_client_secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: metadata-service
+  namespace: musicshare
+spec:
+  selector:
+    app: metadata-service
+  ports:
+    - port: 50051
+      targetPort: 50051
+  type: ClusterIP
+---
+# Social service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: social-service
+  namespace: musicshare
+  labels:
+    app: social-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: social-service
+  template:
+    metadata:
+      labels:
+        app: social-service
+    spec:
+      containers:
+        - name: social-service
+          image: musicshare/social-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8083
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: social-service
+  namespace: musicshare
+spec:
+  selector:
+    app: social-service
+  ports:
+    - port: 8083
+      targetPort: 8083
+  type: ClusterIP
+---
+# Notification service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notificationservice
+  namespace: musicshare
+  labels:
+    app: notificationservice
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: notificationservice
+  template:
+    metadata:
+      labels:
+        app: notificationservice
+    spec:
+      containers:
+        - name: notificationservice
+          image: musicshare/notificationservice:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8082
+          env:
+            - name: AMQP_URL
+              value: "amqp://guest:guest@rabbitmq:5672/"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notificationservice
+  namespace: musicshare
+spec:
+  selector:
+    app: notificationservice
+  ports:
+    - port: 8082
+      targetPort: 8082
+  type: ClusterIP
+
+---
+# Minimal placeholder API Gateway (workaround temporal)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apigateway
+  namespace: musicshare
+  labels:
+    app: apigateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apigateway
+  template:
+    metadata:
+      labels:
+        app: apigateway
+    spec:
+      containers:
+        - name: apigateway
+          # Imagen pequeña que responde con texto. Sustituir por gateway real.
+          image: hashicorp/http-echo:0.2.3
+          imagePullPolicy: IfNotPresent
+          args:
+            - "-listen=:4000"
+            - "-text={}"
+          ports:
+            - containerPort: 4000
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apigateway
+  namespace: musicshare
+spec:
+  selector:
+    app: apigateway
+  ports:
+    - port: 4000
+      targetPort: 4000
+  type: ClusterIP

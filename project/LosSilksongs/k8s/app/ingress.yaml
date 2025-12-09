@@ -1,0 +1,172 @@
+---
+# Ingress para API Gateway - MusicShare
+# Este manifesto configura todas las rutas de los microservicios usando
+# el estándar de Kubernetes Ingress (soportado por NGINX Ingress Controller)
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api-gateway
+  namespace: musicshare
+  annotations:
+    # Configuración NGINX
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "75"
+    
+    # CORS
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "Content-Type, Authorization, Accept, Origin"
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+    
+    # Rate limiting
+    nginx.ingress.kubernetes.io/limit-rps: "1000"
+    nginx.ingress.kubernetes.io/limit-connections: "100"
+    
+    # WebSocket
+    nginx.ingress.kubernetes.io/websocket-services: "notificationservice"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    
+    # SSL redirect
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    
+    # Health check
+    nginx.ingress.kubernetes.io/proxy-upstream-timeout: "600"
+
+    # Anotación para cert-manager
+    cert-manager.io/cluster-issuer: "letsencrypt-staging"
+
+    # Redirección a /login si no está autenticado
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      if ($request_uri = '/' and $cookie_auth_token = '') {
+        return 302 /login;
+      }
+    
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - localhost
+    secretName: musicshare-tls
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+          - path: /api/users
+            pathType: Prefix
+            backend:
+              service:
+                name: userservice
+                port:
+                  number: 8002
+          - path: /api/music
+            pathType: Prefix
+            backend:
+              service:
+                name: musicservice
+                port:
+                  number: 8081
+          - path: /api/social
+            pathType: Prefix
+            backend:
+              service:
+                name: social-service
+                port:
+                  number: 8083
+          - path: /swagger-ui
+            pathType: Prefix
+            backend:
+              service:
+                name: social-service
+                port:
+                  number: 8083
+          - path: /v3/api-docs
+            pathType: Prefix
+            backend:
+              service:
+                name: social-service
+                port:
+                  number: 8083
+          - path: /api/notifications
+            pathType: Prefix
+            backend:
+              service:
+                name: notificationservice
+                port:
+                  number: 8082
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: notificationservice
+                port:
+                  number: 8082
+
+
+---
+# ConfigMap para rewrites personalizados (en NGINX)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ingress-config
+  namespace: musicshare
+data:
+  # Configuración adicional si es necesaria
+  enable-modsecurity: "false"
+  enable-opentracing: "false"
+
+---
+# Network Policy para asegurar tráfico
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: api-gateway-policy
+  namespace: musicshare
+spec:
+  podSelector:
+    matchLabels:
+      app: api-gateway
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8080
+  egress:
+    - to:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 8002  # UserService
+        - protocol: TCP
+          port: 8081  # MusicService
+        - protocol: TCP
+          port: 8082  # NotificationService
+        - protocol: TCP
+          port: 8083  # SocialService
+        - protocol: TCP
+          port: 3000  # Next.js SSR
+        - protocol: TCP
+          port: 80    # Frontend, Formulario Post
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 53    # DNS
+        - protocol: UDP
+          port: 53    # DNS

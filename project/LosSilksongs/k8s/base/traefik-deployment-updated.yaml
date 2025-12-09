@@ -1,0 +1,167 @@
+# Deployment mejorado de Traefik con soporte a CRDs e IngressRoute
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traefik-gateway
+  namespace: musicshare
+  labels:
+    app: traefik-gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: traefik-gateway
+  template:
+    metadata:
+      labels:
+        app: traefik-gateway
+    spec:
+      serviceAccountName: traefik
+      containers:
+        - name: traefik
+          image: traefik:v3.0
+          args:
+            - --configfile=/etc/traefik/traefik.yaml
+          ports:
+            - containerPort: 80
+              name: web
+            - containerPort: 443
+              name: websecure
+            - containerPort: 8080
+              name: dashboard
+          volumeMounts:
+            - name: traefik-config
+              mountPath: /etc/traefik
+            - name: traefik-logs
+              mountPath: /var/log/traefik
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: traefik-config
+          configMap:
+            name: traefik-config
+        - name: traefik-logs
+          emptyDir: {}
+---
+# ServiceAccount para Traefik (necesario para acceder a los CRDs del cluster)
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: traefik
+  namespace: musicshare
+---
+# ClusterRole para permisos de Traefik
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: traefik-musicshare
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - services
+      - endpoints
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - extensions
+      - networking.k8s.io
+    resources:
+      - ingresses
+      - ingressclasses
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - traefik.io
+    resources:
+      - ingressroutes
+      - ingressroutetcps
+      - ingressrouteudps
+      - middlewares
+      - middlewaretcps
+      - tlsoptions
+      - tlsstores
+      - traefikservices
+    verbs:
+      - get
+      - list
+      - watch
+---
+# ClusterRoleBinding para asignar permisos a Traefik
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: traefik-musicshare
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: traefik-musicshare
+subjects:
+  - kind: ServiceAccount
+    name: traefik
+    namespace: musicshare
+---
+# Service ClusterIP para Traefik (acceso interno)
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik-gateway
+  namespace: musicshare
+  labels:
+    app: traefik-gateway
+spec:
+  type: ClusterIP
+  selector:
+    app: traefik-gateway
+  ports:
+    - port: 80
+      targetPort: 80
+      name: web
+    - port: 443
+      targetPort: 443
+      name: websecure
+    - port: 8080
+      targetPort: 8080
+      name: dashboard
+---
+# Service LoadBalancer para exponer Traefik al exterior (aunque el frontend tiene su propio LB)
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik-loadbalancer
+  namespace: musicshare
+  labels:
+    app: traefik-gateway
+spec:
+  type: LoadBalancer
+  selector:
+    app: traefik-gateway
+  ports:
+    - port: 80
+      targetPort: 80
+      name: web
+    - port: 443
+      targetPort: 443
+      name: websecure

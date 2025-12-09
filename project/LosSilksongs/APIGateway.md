@@ -2,19 +2,21 @@
 
 Este documento describe la configuración y funcionamiento del API Gateway en el proyecto MusicShare, que utiliza **Traefik** como proxy inverso y punto de entrada único para todos los servicios.
 
-## 📖 Concepto Clave: API Gateway con Traefik
-
-Nuestra arquitectura utiliza **Traefik** como API Gateway, un proxy inverso moderno que:
-- **Enruta automáticamente** las peticiones a los servicios correctos
-- **Descubre servicios** automáticamente mediante Docker labels
-- **Maneja SSL/TLS** para conexiones seguras
-- **Balancea carga** entre instancias de servicios
-- **Proporciona un dashboard** para monitoreo en tiempo real
-
-**A Traefik no le importa la lógica interna de los servicios, solo le importa la ruta y el puerto al que debe dirigir las solicitudes.**
-
 ## 🏗️ Arquitectura del API Gateway
 
+## 📖 Concepto Clave: API Gateway con Traefik en Kubernetes
+
+Nuestra arquitectura **ha sido migrada a Kubernetes** y utiliza **Traefik** como API Gateway, un proxy inverso moderno que:
+ - **Enruta automáticamente** las peticiones a los servicios correctos mediante **IngressRoute CRDs**
+ - **Descubre servicios** automáticamente desde la API de Kubernetes
+ - **Maneja SSL/TLS** para conexiones seguras (con cert-manager para certificados automáticos)
+ - **Balancea carga** entre réplicas de servicios mediante Service discovery
+ - **Proporciona un dashboard** para monitoreo en tiempo real
+ - **Soporta escalado automático (HPA)** basado en métricas de CPU
+
+**A Traefik no le importa la lógica interna de los servicios, solo le importa la ruta y el nombre del Service de Kubernetes al que debe dirigir las solicitudes.**
+
+## 🏗️ Arquitectura del API Gateway en Kubernetes
 ```
 Internet/Cliente
        ↓
@@ -68,50 +70,151 @@ Internet/Cliente
 - **Middleware**: Strip prefix `/api/notifications` (solo para REST)
 - **Ejemplos**:
   - `https://musicshare.com/api/notifications/send` → `http://notificationservice:8082/send`
-  - `wss://musicshare.com/ws` → `ws://notificationservice:8082/ws`
-
-### 5. **Frontend React** (Puerto 80)
-- **Ruta**: `/` (catch-all)
-- **Prioridad**: 1 (más baja, se evalúa al final)
 - **Sin strip prefix**: Sirve la aplicación React tal cual
-
-### 6. **Next.js SSR - Upload** (Puerto 3000)
-- **Ruta**: `/upload`
-- **Prioridad**: 2 (más alta que el frontend general)
-- **Sin strip prefix**: Next.js maneja internamente la ruta `/upload`
 
 ### 7. **Formulario Post Frontend** (Puerto 80)
 - **Ruta**: `/formulario-post`
-- **Middleware**: Strip prefix `/formulario-post`
-- **Microfrontend** para creación de posts
-
-## ⚠️ Servicios NO Configurados en el API Gateway
-
-### **SearchService** ❌
 - **Estado**: Carpeta vacía (solo `.gitkeep`)
 - **Acción requerida**: Implementar el servicio antes de configurar en Traefik
-- **Ruta sugerida**: `/api/search`
-
-### **MetadataService** ❌
-- **Estado**: Implementado pero NO expuesto a través del API Gateway
-- **Razón**: Es un servicio gRPC interno (puerto 50051)
-- **Uso**: Solo es consumido por MusicService internamente
 - **No requiere exposición pública**: Correcto según arquitectura de microservicios
 
-## � Configuración de Traefik
-
-### Archivo `traefik/traefik.yml`
 ```yaml
 api:
-  dashboard: true
-  insecure: true # Solo desarrollo
-
 entryPoints:
-  web:
-    address: ":80"
-    http:
-      redirections:
-        entryPoint:
+
+### 1. **UserService**
+ - **Réplicas**: 2 iniciales, escalables hasta 6 (via HPA)
+## 📋 Despliegue en Kubernetes
+
+### Requisitos previos
+ - Clúster Kubernetes activo (minikube, kind, EKS, GKE, AKS, etc.)
+ - `kubectl` configurado para acceder al clúster
+ - Docker/Podman para construir imágenes
+ - Helm (opcional, para cert-manager)
+
+### Pasos para desplegar Traefik y servicios
+
+**1. Aplicar manifiestos en orden:**
+```bash
+# Crear namespace y aplicar recursos de Traefik
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/traefik-crd.yaml
+kubectl apply -f k8s/traefik-config.yaml
+kubectl apply -f k8s/traefik-deployment-updated.yaml
+kubectl apply -f k8s/ingressroutes.yaml
+
+# Opcional: cert-manager para TLS automático
+kubectl apply -f k8s/cert-manager.yaml
+
+# Desplegar servicios
+kubectl apply -f k8s/frontend-deployment-service.yaml
+kubectl apply -f k8s/backend-deployments-services.yaml
+kubectl apply -f k8s/databases.yaml
+kubectl apply -f k8s/hpa.yaml
+```
+
+**2. Verificar instalación:**
+```bash
+# Ver todos los recursos en el namespace
+kubectl get all -n musicshare
+
+# Ver IngressRoutes
+kubectl get ingressroutes -n musicshare
+
+# Ver HorizontalPodAutoscalers
+kubectl get hpa -n musicshare
+
+# Ver logs de Traefik
+kubectl logs -n musicshare deployment/traefik-gateway -f
+```
+
+**3. Acceder a servicios:**
+ - **Frontend**: `http://<LOAD_BALANCER_IP>/`
+ - **API Users**: `http://<LOAD_BALANCER_IP>/api/users/`
+ - **API Music**: `http://<LOAD_BALANCER_IP>/api/music/`
+ - **Dashboard Traefik**: `http://localhost:8080/dashboard/` (port-forward)
+
+### Port-forward para acceso local
+```bash
+# Acceder al dashboard de Traefik
+kubectl port-forward -n musicshare svc/traefik-gateway 8080:8080
+
+# Acceder a la BD MongoDB
+kubectl port-forward -n musicshare svc/mongodb 27017:27017
+
+# Acceder a PostgreSQL
+kubectl port-forward -n musicshare svc/postgres 5432:5432
+```
+
+## 📂 Archivos de configuración
+
+ - `docker-compose.yml`: Guía informativa sobre la migración a Kubernetes
+ - `k8s/namespace.yaml`: Namespace para MusicShare
+ - `k8s/traefik-crd.yaml`: Custom Resource Definitions de Traefik
+ - `k8s/traefik-config.yaml`: ConfigMap con configuración de Traefik
+ - `k8s/traefik-deployment-updated.yaml`: Deployment y RBAC para Traefik
+ - `k8s/ingressroutes.yaml`: Rutas y middleware para servicios
+ - `k8s/frontend-deployment-service.yaml`: Frontend + Load Balancer
+ - `k8s/backend-deployments-services.yaml`: Microservicios backend
+ - `k8s/databases.yaml`: PostgreSQL, MongoDB, RabbitMQ
+ - `k8s/hpa.yaml`: Escalado automático (HorizontalPodAutoscaler)
+ - `k8s/cert-manager.yaml`: Certificados automáticos (Let's Encrypt)
+ - `k8s/TRAEFIK_SETUP.md`: Guía detallada de instalación de Traefik
+ - **Configuración en Kubernetes**:
+   ```yaml
+   apiVersion: traefik.io/v1alpha1
+   kind: IngressRoute
+   metadata:
+     name: userservice-route
+     namespace: musicshare
+   spec:
+     entryPoints:
+       - web
+       - websecure
+     routes:
+       - match: PathPrefix(`/api/users`)
+         kind: Rule
+         middlewares:
+           - name: strip-users
+         services:
+           - name: userservice
+             port: 8002
+   ```
+
+### 2. **MusicService**
+ - **Namespace**: `musicshare`
+ - **Service Name**: `musicservice`
+ - **Ruta**: `/api/music`
+ - **Middleware**: `strip-music`
+ - **Réplicas**: 2 iniciales, escalables hasta 6 (via HPA)
+ - **Dependencias**: MongoDB, Metadata Service (gRPC)
+
+### 3. **SocialService**
+ - **Namespace**: `musicshare`
+ - **Service Name**: `social-service`
+ - **Ruta**: `/api/social`
+ - **Middleware**: `strip-social`
+ - **Réplicas**: 2 iniciales, escalables hasta 5 (via HPA)
+ - **Dependencias**: PostgreSQL (social_db)
+
+### 4. **NotificationService**
+ - **Namespace**: `musicshare`
+ - **Service Name**: `notificationservice`
+ - **Ruta REST**: `/api/notifications`
+ - **Ruta WebSocket**: `/ws`
+ - **Réplicas**: 2 iniciales, escalables hasta 6 (via HPA)
+ - **Dependencias**: RabbitMQ
+
+### 5. **Frontend React**
+ - **Deployment**: 3 réplicas (static, sin HPA)
+ - **Service Type**: `LoadBalancer` (expuesto públicamente)
+ - **Ruta**: `/` (match catch-all en IngressRoute)
+
+### 6. **Metadata Service (gRPC)**
+ - **Service Name**: `metadata-service`
+ - **Puerto**: 50051 (gRPC)
+ - **Tipo**: Service interno (ClusterIP)
+ - **Nota**: NO expuesto a través de Traefik, solo consumido por MusicService internamente
           to: websecure
           scheme: https
   websecure:
@@ -132,26 +235,31 @@ log:
 metrics:
   prometheus:
     addEntryPointsLabels: true
-    addServicesLabels: true
+Load Balancer Público (Service type: LoadBalancer)
+     ↓
+Frontend React (3 réplicas)
+     ↓
+Traefik Gateway (Deployment 2 réplicas, interno via ClusterIP)
     buckets: [0.1,0.3,1.2,5.0]
-
-ping:
-  entryPoint: web
+   ┌────────────────────────────────────────────┐
+   │  Enrutamiento por IngressRoute + PathPrefix │
+   └────────────────────────────────────────────┘
 ```
-
+   ┌──────────────────────────────────────────────────────────┐
 ### Puertos Expuestos
-- **80**: HTTP (redirige a HTTPS)
-- **443**: HTTPS (tráfico principal)
-- **8080**: Dashboard de Traefik
-
+   ├─→ /api/users      → UserService (2-6 réplicas via HPA)   │
+   ├─→ /api/music      → MusicService (2-6 réplicas via HPA)  │
+   ├─→ /api/social     → SocialService (2-5 réplicas via HPA) │
+   ├─→ /api/notifications → NotificationService (2-6 réplicas)│
 ## �📖 Concepto Clave: Independencia de Servicios
-
-Cada microservicio es independiente. Puedes cambiar, arreglar o mejorar el código de un servicio sin necesidad de tocar, detener o reconstruir ningún otro servicio, incluido el gateway.
-
------
-
+   └──────────────────────────────────────────────────────────┘
 ## 🛠️ Flujo de Trabajo para Modificar un Servicio
 
+## 🔑 Diferencia Clave: Load Balancer vs API Gateway
+
+ - **Load Balancer Público** (`frontend-loadbalancer`): Expuesto al internet, distribuye tráfico al frontend React
+ - **API Gateway** (Traefik): Desplegado internamente en el cluster, enruta a microservicios backend
+ - **Separación**: El tráfico hacia los servicios API pasa **primero por el frontend, luego por Traefik**
 Sigue estos pasos para aplicar cambios en el código de cualquier servicio (por ejemplo, `userservice`).
 
 ### Paso 1: Realiza tus Cambios en el Código
