@@ -50,7 +50,7 @@
 
 ### Estructura de Componentes y Conectores (C&C)
 - **Vista C&C:**  
-<img width="3341" height="1001" alt="C C_post-feedback" src="https://github.com/user-attachments/assets/5c6682c0-0c85-4601-8c37-2e96560d8b31" />
+![CC View](docs/C&C_post-feedback.png)
 
 - **Descripción de estilos y patrones arquitectónicos utilizados:**  
 * *Microservicios*
