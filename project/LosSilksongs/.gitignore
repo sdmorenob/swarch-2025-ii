@@ -66,3 +66,6 @@ tmp/
 traefik/certs/
 *.crt
 *.key
+
+#secrets
+key.json

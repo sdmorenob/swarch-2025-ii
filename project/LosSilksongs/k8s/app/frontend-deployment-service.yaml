@@ -30,8 +30,8 @@ spec:
                 topologyKey: kubernetes.io/hostname
       containers:
         - name: frontend
-          image: musicshare/frontend:latest
-          imagePullPolicy: Never
+          image: us-central1-docker.pkg.dev/musicshare-480712/musicshare-docker/frontend
+          imagePullPolicy: Always
           ports:
             - containerPort: 80
               name: http

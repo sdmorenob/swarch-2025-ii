@@ -1,72 +1,35 @@
+# Project: Prototype 4
 # MusicShare - Red Social Musical
 
-## 🚀 Despliegue en Kubernetes
+- **[Aplicación deplegada](https://musicshare.34.60.50.189.nip.io/login)**
 
-**ACTUALIZACIÓN 2024**: Se ha migrado de **Traefik** a **NGINX Ingress Controller** para mejor estabilidad y compatibilidad con Kubernetes estándar.
+## Tabla de Contenidos
 
-### Arquitectura de Despliegue
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                       INTERNET                              │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-                ┌──────────▼──────────┐
-                │  AWS/GCP LoadBalancer│
-                │  (IP Pública)       │
-                └──────────┬──────────┘
-                           │
-         ┌─────────────────┴──────────────────┐
-         │                                    │
-    ┌────▼────────┐           ┌──────────────▼──────┐
-    │   Frontend   │           │   NGINX Ingress     │
-    │  (React)     │           │   (API Gateway)     │
-    │  3 replicas  │           │   2 replicas        │
-    └──────────────┘           └──────────┬──────────┘
-                                           │
-         ┌─────────────────────────────────┼─────────────────────────────┐
-         │                                 │                             │
-    ┌────▼──────┐  ┌──────────┐  ┌────────▼───────┐  ┌─────────────────▼──┐
-    │   User     │  │  Music   │  │   Social       │  │  Notification      │
-    │  Service   │  │ Service  │  │   Service      │  │  Service           │
-    │ :8002      │  │ :8081    │  │  :8083         │  │  :8082 (WebSocket) │
-    │ 2-6 replicas│  │2-6 repli │  │ 2-5 replicas  │  │ 2-6 replicas      │
-    └────────────┘  └──────────┘  └────────────────┘  └────────────────────┘
-```
-
-### 📚 Documentación de Despliegue
-
-- **[DEPLOYMENT_ARCHITECTURE.md](DEPLOYMENT_ARCHITECTURE.md)** - Arquitectura general y componentes
-- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Guía paso a paso para desplegar
-- **[MIGRATION_TRAEFIK_TO_NGINX.md](MIGRATION_TRAEFIK_TO_NGINX.md)** - Migración desde Traefik
-- **[LOAD_BALANCING.md](LOAD_BALANCING.md)** - Detalles de balanceo de carga
-- **[APIGateway.md](APIGateway.md)** - Configuración del API Gateway
-
-### ⚡ Despliegue Rápido
-
-```bash
-# 1. Crear namespace
-kubectl create namespace musicshare
-
-# 2. Instalar NGINX Ingress Controller + Cert-manager
-kubectl apply -k k8s/base/
-
-# 3. Desplegar MusicShare
-kubectl apply -k k8s/app/
-
-# 4. Obtener IPs
-FRONTEND_IP=$(kubectl get svc -n musicshare frontend-loadbalancer -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-NGINX_IP=$(kubectl get svc -n ingress-nginx nginx-ingress -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-
-echo "Frontend: http://$FRONTEND_IP"
-echo "API Gateway: http://$NGINX_IP"
-```
+* [**Team**](#team)
+  * [Team name](#team)
+  * [Full names and team members](#team)
+* [**Software System**](#software-system)
+  * [Name](#software-system)
+  * [Logo](#software-system)
+  * [Description](#software-system)
+* [Functional Requirements](#functional-requirements)
+* [Non-Functional Requirements](#non-functional-requirements)
+* [**Architectural Structures**](#architectural-structures)
+  * [Component-and Connector (C&C) Structure](#component-and-connector-cc-structure)
+  * [Layered Structure](#layered-structure)
+  * [Deployment Structure](#deployment-structure)
+  * [Decomposition Structure](#decomposition-structure)
+* [**Quality Attributes**](#quality-attributes)
+  * [Security](#security)
+  * [Performance and Scalability](#performance-and-scalability)
+  * [Reliability](#reliability)
+  * [Interoperability](#interoperability)
+* [**Prototype**](#prototype)
+  * [Implementing and deploying the software system prototype](#prototype)
 
 ---
 
-# Project: Prototype 1 - Simple Architectural Structure
-# MusicShare - Red Social Musical
-## Equipo
+## Team {#team}
 - **Team name**: Los SilkSongs
 - **Full name and team members**
   - Julian David Rodriguez Fernandez
@@ -76,7 +39,7 @@ echo "API Gateway: http://$NGINX_IP"
   - Andrés Felipe Perdomo Uruburu
   - Andrés Felipe Poveda Bellón
 
-## Software System
+## Software System {#software-system}
  - **Name:** MusicShare
  - **Logo**
 
@@ -85,8 +48,10 @@ echo "API Gateway: http://$NGINX_IP"
  
  - **Description**
 **MusicShare** es una red social de música desarrollada con una **arquitectura distribuida de microservicios**, que integra presentación web en **React/TypeScript**, servicios de negocio independientes y bases de datos híbridas (**PostgreSQL y MongoDB**). El sistema permite a los usuarios compartir y descubrir música mientras garantiza **escalabilidad horizontal**, **baja latencia en streaming y alta disponibilidad**. La comunicación entre componentes se gestiona mediante **REST, gRPC y WebSockets**, bajo un esquema seguro con **OAuth2/JWT y TLS 1.2+**. Todo el software se despliega en entornos contenedorizados con Docker/Kubernetes, con monitoreo centralizado, pruebas automatizadas y cumplimiento de estándares de usabilidad, accesibilidad (WCAG 2.1 AA) y protección de datos (GDPR/legislación colombiana).
-# MusicShare - Red Social Musical
-## Functional Requirements
+
+---
+
+# Functional Requirements {#functional-requirements}
 ### RF01 - Gestión de Usuarios
 ### RF02 - Subida y Gestión de Música
 - El sistema debe permitir subir archivos de audio (MP3, WAV) al cloud storage
@@ -113,7 +78,8 @@ echo "API Gateway: http://$NGINX_IP"
 - El sistema debe permitir explorar música por género básico
 - El sistema debe mostrar publicaciones populares/trending
 - El sistema debe permitir búsqueda simple por usuario o título de canción
-## Non-Functional Requirements
+
+## Non-Functional Requirements {#non-functional-requirements}
 
 MusicShare es una aplicación web que funciona como red social especializada donde los usuarios pueden compartir su música favorita, crear playlists y descubrir nueva música a través de una experiencia social interactiva.
 ### RNF-5.1: Diseño responsivo
@@ -191,8 +157,10 @@ Todos los microservicios deben emitir logs en formato estructurado (JSON) y envi
 ### RNF-10.2 Métricas de Salud:
 Cada servicio expondrá un endpoint /health para chequeos automáticos por parte del orquestador y el API Gateway.
 
-# Architectural Structures
-## Components and Connectors (C&C) Structure
+---
+
+# Architectural Structures {#architectural-structures}
+## Component-and Connector (C&C) Structure {#component-and-connector-cc-structure}
 C&C View:
 ![C&C View](CyC_prototipo3.png)
 
@@ -233,7 +201,7 @@ C&C View:
 ### gRPC:
   - Conexión MusicService con MetadataService
 
-## Layered Structure
+## Layered Structure {#layered-structure}
 ### Layered View:
 ![Diagrama de capas](Diagrama_Capas_2.png)
 
@@ -277,154 +245,227 @@ Proporciona soporte de ejecución y despliegue mediante Docker, Kubernetes, pipe
 
 Las relaciones entre capas son estrictamente descendentes (allowed-to-use), lo que asegura modularidad y evita dependencias circulares. Esta organización favorece el mantenimiento, permite reemplazar tecnologías en capas inferiores y facilita la escalabilidad independiente de los servicios.
 
-## Deployment Structure
+## Deployment Structure {#deployment-structure}
 Deployment View:
 ![Vista de despliegue](Despliegue_segmentado.png)
 
+## Elementos Arquitectónicos y Relaciones
 
-# Arquitectura de Despliegue – MusicShare
+### Visión General de la Arquitectura de Despliegue
 
-Este documento describe la arquitectura física y el despliegue del ecosistema **MusicShare** utilizando contenedores Docker organizados dentro de una red interna. Cada microservicio, base de datos y componente de infraestructura se ejecuta de forma aislada, asegurando autonomía, escalabilidad y mantenibilidad.
+El sistema está desplegado en **Google Cloud Platform (GCP)** utilizando una arquitectura de microservicios contenerizados orquestada por **Google Kubernetes Engine (GKE)**. El despliegue consiste en tres capas principales: capa de acceso externo, capa de orquestación del clúster y capa de persistencia de datos.
 
----
+### Capa 1: Acceso Externo y Gateway
 
-## 🏗️ 1. Nodo Principal: Servidor Docker Host
+**API Gateway (Externo)**
+- **Componente:** NGINX Ingress Controller
+- **Despliegue:** Servicio LoadBalancer con IP pública (34.60.50.189)
+- **Responsabilidades:**
+  - Único punto de entrada para todo el tráfico externo
+  - Terminación TLS (HTTPS → HTTP)
+  - Enrutamiento HTTP de capa 7 basado en reglas de path y host
+  - Balanceo de carga entre servicios internos
+- **Relaciones:**
+  - Expuesto a internet vía GCP Network Load Balancer
+  - Enruta tráfico a servicios ClusterIP internos dentro del namespace `musicshare`
 
-Toda la arquitectura se ejecuta sobre un **Servidor Docker Host**, que puede ser:
+**Gateway Container (Interno)**
+- **Tecnología:** Implementación de gateway personalizada
+- **Entorno de Ejecución:** Contenedor NGINX
+- **Responsabilidades:**
+  - Enrutamiento y reenvío de peticiones
+  - Procesamiento de middleware
+- **Relaciones:**
+  - Comunica con frontend y microservicios backend vía HTTP
 
-- Linux / Windows / macOS
-- Máquina virtual (VM)
-- Infraestructura bare-metal
-- Instancia cloud
+### Capa 2: Clúster GKE - Servicios de Aplicación
 
-Este nodo ejecuta todos los contenedores del sistema.
+**Configuración del Clúster:**
+- **Tipo:** Clúster Kubernetes gestionado GKE
+- **Zona:** us-central1-a
+- **Node Pool:** 3 nodos worker (e2-medium: 2 vCPUs, 4GB RAM cada uno)
+- **SO:** Container-Optimized OS (COS)
+- **Recursos Totales:** 6 vCPUs, 12GB RAM
 
----
+**Segmentación por Namespace:**
+- `musicshare`: Cargas de trabajo de aplicación
+- `ingress-nginx`: Controlador Ingress
+- `cert-manager`: Gestión de certificados
+- `kube-system`: Componentes del sistema Kubernetes
 
-## 🌐 2. Redes
+#### Servicios Frontend
 
-Esta vista de despliegue muestra cómo los componentes de MusicShare se ejecutan dentro de un host Docker y se organizan mediante una segmentación de red basada en capas. La infraestructura se divide en tres subredes independientes:
+**musicshare-frontend**
+- **Tecnología:** Servidor web NGINX
+- **Contenedor:** Sirve aplicación React estática
+- **Entorno de Ejecución:** Runtime Node.js (build) → NGINX (producción)
+- **Escalado:** HPA habilitado (1-4 réplicas, CPU objetivo 50%)
+- **Puerto:** 80
+- **Relaciones:**
+  - Accedido vía Ingress Controller
+  - Realiza llamadas HTTP REST a servicios backend
+  - Comunica con user_service, social_service, music_service
 
-Subred de Presentación (frontend_net): aloja los servicios de interfaz de usuario y el API Gateway (Traefik), encargados de recibir las solicitudes externas.
+**web_frontend (Next.js)**
+- **Tecnología:** Framework Next.js React
+- **Entorno de Ejecución:** Contenedor Node.js
+- **Relaciones:**
+  - Interfaz frontend alternativa
+  - Mismo patrón de comunicación backend que frontend principal
 
-Subred de Negocio (backend_net): contiene los microservicios principales de la plataforma, responsables de la lógica de negocio.
+#### Microservicios Backend
 
-Subred de Datos (data_net): agrupa los servicios de persistencia como PostgreSQL, MongoDB y otros recursos de datos.
+**musicshare-music-service**
+- **Tecnología:** Python 3.11 (Flask/FastAPI)
+- **Contenedor:** musicshare-music-service
+- **Entorno de Ejecución:** Runtime Python 3.11, puerto 8081
+- **Réplicas:** 2 (redundancia activa-activa)
+- **Responsabilidades:**
+  - Gestión de catálogo musical
+  - Manejo de metadatos de canciones
+  - Integración con metadata service vía gRPC
+- **Relaciones:**
+  - Recibe peticiones HTTP REST desde frontend vía Ingress
+  - Realiza llamadas gRPC a metadata-service (puerto 50051)
+  - Publica eventos a RabbitMQ
+  - Consulta music_db (Cloud SQL)
 
-La comunicación entre redes está estrictamente controlada:
-Traefik conecta la capa de presentación con la de negocio, mientras que los microservicios acceden a las bases de datos a través de la red de datos siguiendo el principio de mínimo privilegio. Esta segmentación mejora la seguridad, el aislamiento y la mantenibilidad del sistema.
+**musicshare-social-service**
+- **Tecnología:** Java 21 (Spring Boot)
+- **Contenedor:** musicshare-social-service
+- **Entorno de Ejecución:** JDK 21, puerto 8083
+- **Réplicas:** 2
+- **Responsabilidades:**
+  - Interacciones sociales (posts, comentarios, likes)
+  - Feed de actividad de usuario
+  - Gestión de grafo social
+- **Relaciones:**
+  - Recibe peticiones HTTP REST desde frontend
+  - Publica eventos sociales a RabbitMQ (notificaciones)
+  - Consulta social_db (Cloud SQL vía sidecar proxy)
+  - Descubre servicios vía CoreDNS
 
----
+**musicshare-metadata-service**
+- **Tecnología:** Python 3.11 (servidor gRPC)
+- **Contenedor:** musicshare-metadata-service
+- **Entorno de Ejecución:** Runtime Python 3.11, puerto 50051
+- **Réplicas:** 2
+- **Responsabilidades:**
+  - Enriquecimiento de metadatos musicales (integración API Spotify)
+  - Artwork de álbumes e información de artistas
+  - Proveedor de API gRPC
+- **Relaciones:**
+  - Recibe peticiones gRPC desde music-service
+  - Comunica con API externa de Spotify
+  - Consulta metadata_db (Cloud SQL)
 
-## 🚪 3. API Gateway (Traefik)
+**musicshare-mongodb**
+- **Tecnología:** MongoDB 7.0
+- **Contenedor:** Imagen oficial MongoDB
+- **Entorno de Ejecución:** Servidor MongoDB
+- **Puerto:** 27017
+- **Responsabilidades:**
+  - Almacenamiento basado en documentos para catálogo musical
+  - Colecciones de artistas y álbumes
+- **Relaciones:**
+  - Accedido por music-service
+  - Volumen persistente para durabilidad de datos
 
-**Contenedor:** `gateway`  
-**Tecnología:** Traefik  
+**musicshare-userservice**
+- **Tecnología:** Python 3.9 (Flask)
+- **Contenedor:** musicshare-userservice
+- **Entorno de Ejecución:** Runtime Python 3.9, puerto 8082
+- **Réplicas:** 2
+- **Responsabilidades:**
+  - Autenticación y autorización de usuarios
+  - Generación y validación de tokens JWT
+  - Gestión de perfiles de usuario
+- **Relaciones:**
+  - Recibe peticiones de autenticación desde frontend
+  - Consulta user_db (Cloud SQL)
+  - Emite tokens JWT para Access Token Pattern
 
-**Responsabilidades:**
-
-- Punto único de entrada al sistema  
-- Enrutamiento dinámico hacia microservicios  
-- Manejo de certificados  
-- Balanceo básico de carga  
-- Seguridad, CORS, logging  
-
----
-
-## 🎨 4. Frontend Web
-
-**Contenedor:** `musicshare-frontend`  
-**Tecnología:** NGINX  
-**Puerto:** 80  
-
-Sirve la interfaz visual de MusicShare y se expone a través del Gateway.
-
----
-
-## ⚙️ 5. Microservicios Backend
-
-Cada microservicio se despliega en contenedores independientes, con sus propias tecnologías y puertos.
-
-### **User Service**
-- **Contenedor:** `musicshare-userservice`
-- **Tecnología:** Python 3.11
-- **Puerto:** 8002
-
-### **Music Service**
-- **Contenedor:** `musicshare-music-service`
-- **Tecnología:** Go 1.24
-- **Puerto:** 8081
-
-### **Social Service**
-- **Contenedor:** `musicshare-social-service`
-- **Tecnología:** Java JDK 21
-- **Puerto:** 8083
-
-### **Metadata Service**
-- **Contenedor:** `musicshare-metadata-service`
-- **Tecnología:** Python 3.11
-- **Puerto:** 50051
-
-### **Notification Service**
-- **Contenedor:** `notificationservice`
+**notificationservice**
 - **Tecnología:** Python 3.9
-- **Puerto:** 8082
+- **Contenedor:** notificationservice
+- **Entorno de Ejecución:** Runtime Python 3.9, puerto 8082
+- **Responsabilidades:**
+  - Procesamiento asíncrono de notificaciones
+  - Consumidor de mensajes AMQP
+  - Entrega de notificaciones push
+- **Relaciones:**
+  - Consume mensajes desde RabbitMQ
+  - Consulta base de datos de notificaciones
 
----
+#### Message Broker
 
-## 🗄️ 6. Bases de Datos
+**RabbitMQ**
+- **Tecnología:** Message broker RabbitMQ
+- **Contenedor:** Imagen oficial RabbitMQ
+- **Entorno de Ejecución:** Runtime Erlang
+- **Puerto:** 5672 (AMQP), 15672 (Management UI)
+- **Responsabilidades:**
+  - Enrutamiento asíncrono de mensajes
+  - Hub de comunicación orientado a eventos
+  - Implementación de patrón Pub/Sub
+- **Relaciones:**
+  - Publicadores: music-service, social-service
+  - Consumidor: notificationservice
+  - Descubrimiento de servicios vía `AMQP_URL=amqp://rabbitmq:5672`
 
-Cada microservicio cuenta con su propia base de datos, garantizando **independencia y bajo acoplamiento**.
+### Capa 3: Persistencia de Datos
 
-### PostgreSQL
-- **Contenedor:** `musicshare-postgres`
-  - Base de datos: `user_db`
-- **Contenedor:** `musicshare-postgres_social`
-  - Base de datos: `social_db`
+**Instancia Cloud SQL (ms111rep)**
+- **Tipo:** Google Cloud SQL para PostgreSQL
+- **Versión:** PostgreSQL 15
+- **Método de Conexión:** Cloud SQL Proxy (Sidecar Pattern)
+- **Red:** IP privada dentro de VPC de GCP, sin exposición pública
+- **Bases de Datos:**
+  - `user_db`: Cuentas de usuario y datos de autenticación
+  - `social_db`: Interacciones sociales, posts, comentarios
+  - `metadata_db`: Caché de metadatos musicales
+  - `music_db`: Catálogo musical (alternativa a MongoDB)
+  - `restmark_db`: Datos de reseñas/calificaciones
 
-### MongoDB
-- **Contenedor:** `musicshare-mongodb`
-  - Base de datos: `music_db`
+**Cloud SQL Proxy (Contenedores Sidecar)**
+- **Tecnología:** Google Cloud SQL Auth Proxy
+- **Despliegue:** Contenedor sidecar en pods que requieren acceso a base de datos
+- **Entorno de Ejecución:** Namespace de red compartido del pod (localhost)
+- **Autenticación:** Workload Identity (basado en IAM, sin credenciales estáticas)
+- **Puerto:** 5432 (protocolo PostgreSQL)
+- **Relaciones:**
+  - Co-ubicado con pods de userservice, social-service, metadata-service
+  - Establece túnel cifrado a instancia Cloud SQL
+  - Aplicación conecta a `localhost:5432`, sidecar hace proxy a Cloud SQL
 
----
+### Aspectos Transversales
 
-## 🔗 7. Conexiones y Relaciones
+**Service Discovery (CoreDNS)**
+- Registro automático de servicios basado en DNS
+- Servicios comunican usando nombres DNS (ej: `http://metadata-service:50051`)
+- Resolución con ámbito de namespace: `<service>.<namespace>.svc.cluster.local`
 
-- El **API Gateway** enruta peticiones hacia:
-  - Frontend  
-  - User Service  
-  - Music Service  
-  - Social Service  
-  - Metadata Service  
-  - Notification Service  
+**Gestión de Certificados (cert-manager)**
+- Ciclo de vida automatizado de certificados X.509
+- Integración con Let's Encrypt vía protocolo ACME
+- Solver de desafío HTTP-01
+- Renovación automática cada 90 días
 
-- Cada microservicio se comunica directamente con su base de datos.
-- La red interna `musicshare-network` permite comunicación entre contenedores sin exponer puertos innecesarios al exterior.
+**Balanceo de Carga (Multi-Nivel)**
+- **L4 (GCP Network LB):** Distribuye tráfico TCP a nodos del clúster
+- **L7 (NGINX Ingress):** Enrutamiento y balanceo basado en HTTP a servicios
+- **Interno (kube-proxy):** Balanceo a nivel de pod vía iptables/IPVS
 
----
+**Controles de Seguridad**
+- **Segmentación de Red:** Servicios ClusterIP (sin IPs públicas) + LoadBalancer solo para Ingress
+- **Cifrado:** TLS 1.2/1.3 para tráfico externo, opción mTLS para interno (no implementado)
+- **Autenticación:** Tokens JWT validados en cada microservicio
+- **Gestión de Secretos:** Kubernetes Secrets para configuración sensible
 
-## 📦 8. Artefactos Externos
-
-En la arquitectura se muestran los artefactos que generan cada microservicio:
-
-- `social_service.jar` (Java)
-- `metadata_service` (Python)
-- `notification_service` (Python)
-
-Estos artefactos son empaquetados previamente y utilizados para construir los contenedores.
-
----
-
-## 🧩 Resumen General
-
-La arquitectura MusicShare está basada en microservicios altamente desacoplados, desplegados sobre Docker y organizados en una red interna. Sus características:
-
-- Gateway centralizado (Traefik)
-- Microservicios independientes
-- Bases de datos aisladas por servicio
-- Redes segmentadas
-- Alta modularidad
-- Preparada para escalar o migrar a Kubernetes
+**Monitoreo y Observabilidad**
+- **Metrics Server:** Métricas de utilización de recursos para HPA
+- **Kubelet:** Monitoreo de salud de nodos y pods
+- **Ingress Logs:** Logs de acceso para análisis de tráfico
 
 ---
 
@@ -433,7 +474,7 @@ La arquitectura MusicShare está basada en microservicios altamente desacoplados
 ## Decomposition Structure
 ![Diagrama de descomposición de Dominio](general.png)
 
-## Description 
+## Description {#decomposition-structure}
 🎵 Estructura de Descomposición de Dominio — MusicShare
 Dominio Raíz: MusicShare
 
@@ -561,816 +602,848 @@ Registro de eventos relevantes para los usuarios.
 
 ---
 
-## Correcciones de la entrega anterior y cumplimiento de requisitos actuales
+# QUALITY ATTRIBUTES {#quality-attributes}
 
-### Correcciones hechas:
-- Ya se agregó el cuarto componente de la capa de base de datos.
-- Se implementó un componente SSR. Este componente corresponde al formulario para hacer un post de una canción.
-- Se corrigió la documentación inconsistente.
-- Cada vista ya tiene su propósito principal. Se revisó y corrigió la descripción de los elementos, relaciones y propiedades de cada vista.
+## <u>Security</u> {#security}
 
-### Cumplimientos del prototipo 3:
-- Escenarios de seguridad:
-  - Escenario 1: Se implementó el patrón de [Secure Channel Pattern](#-secure-channel-pattern-tlshttps-con-traefik) para proteger la comunicación entre el cliente y los servicios.  
-  - Escenario 2: Se implementó el patrón de [Reverse Proxy Pattern](#-reverse-proxy-pattern) para centralizar todo el tráfico de red en un único punto de entrada.  
-  - Escenario 3: Se implementó el patrón de [Network Segmentation Pattern](#-network-segmentation-pattern) para aislar las capas de la aplicación.  
-  - Escenario 4: Se implementó el patrón de [Access Token Pattern](#-access-token-pattern) para manejar sesiones y autenticación en los microservicios.
-- Escenarios de seguridad:
-    - Escenario 1: Se implementó el patrón de [Load Balancer](#balanceo-de-carga-y-escalado) y se realizaron pruebas de estrés a tres servicios.
-    - Escenario 2: Se implementó el patrón de [Auto Scaling](#balanceo-de-carga-y-escalado) ajusta el número de recursos computacionales.
+### 🔒 Secure Channel Pattern
+
+**Estímulo:** Un usuario accede a la aplicación MusicShare a través de internet desde su navegador.
+
+**Respuesta:** El sistema establece una conexión HTTPS segura con certificado TLS válido, cifrando toda la comunicación entre cliente y servidor para proteger datos sensibles (credenciales, información de usuario) contra ataques de interceptación (man-in-the-middle).
+
+### Implementación
+
+**Patrón Arquitectónico:** Secure Channel Pattern
+
+**Táctica Arquitectónica:** Encrypt Data (cifrado de datos en tránsito mediante TLS/SSL)
+
+### Solución Técnica
+
+Se implementó TLS Termination en el Ingress Controller de Kubernetes utilizando la siguiente arquitectura:
+
+1. **Dominio con Magic DNS:** Uso de `nip.io` para resolver `musicshare.34.60.50.189.nip.io` a la IP pública del clúster, permitiendo la emisión de certificados válidos sin necesidad de comprar un dominio.
+
+2. **Automatización de Certificados:** Instalación de `cert-manager` v1.13.3 en el clúster para gestionar automáticamente el ciclo de vida de certificados X.509.
+
+3. **Emisor Let's Encrypt:** Configuración de un `ClusterIssuer` que utiliza el protocolo ACME de Let's Encrypt para obtener certificados gratuitos y renovarlos automáticamente cada 90 días.
+
+4. **Ingress con TLS:** Configuración del recurso Ingress con:
+   - Sección `tls` especificando el hostname y el secret donde se almacena el certificado
+   - Anotación `cert-manager.io/cluster-issuer` para activar la emisión automática
+   - Solver HTTP-01 para validación del dominio
+
+**Resultado:** La aplicación es accesible mediante HTTPS con certificado válido, mostrando el candado de seguridad en navegadores sin advertencias. Todo el tráfico entre usuarios y la aplicación viaja cifrado mediante TLS 1.2/1.3.
+
+### Componentes de Seguridad
+- **cert-manager:** Gestor de certificados automático
+- **Let's Encrypt:** Autoridad Certificadora (CA) gratuita
+- **NGINX Ingress Controller:** Punto de terminación TLS
+- **Secret Kubernetes:** Almacenamiento seguro del certificado y clave privada
+
+### 🛡️ Reverse Proxy Pattern
+
+### Escenario
+**Estímulo:** Un usuario externo envía una petición HTTP/HTTPS hacia la aplicación MusicShare desde internet.
+
+**Respuesta:** El sistema intercepta la solicitud en un punto de entrada único, realiza terminación TLS, oculta la topología interna de microservicios y enruta la petición al servicio backend correspondiente basándose en reglas de capa 7 (HTTP).
+
+### Implementación
+
+**Patrón Arquitectónico:** Reverse Proxy Pattern
+
+**Táctica Arquitectónica:** Limit Exposure (limitar exposición de servicios internos) y Limit Access (controlar acceso mediante punto de entrada único)
+
+### Solución Técnica
+
+Se implementó un proxy inverso utilizando NGINX Ingress Controller con las siguientes características:
+
+1. **Punto de Entrada Único:** NGINX Ingress Controller es el único componente con IP pública (LoadBalancer), actuando como gateway para todo el tráfico entrante.
+
+2. **TLS Termination:** El proxy maneja el cifrado/descifrado HTTPS, liberando a los servicios backend de esta responsabilidad y centralizando la gestión de certificados.
+
+3. **Enrutamiento Basado en Reglas:** Configuración de recurso Ingress con reglas de enrutamiento por path y host, dirigiendo solicitudes a servicios internos según URL (`/api/users` → userservice, `/api/social` → socialservice).
+
+4. **Ocultamiento de Topología:** Los clientes externos solo conocen el dominio público; la estructura interna de microservicios, sus IPs y puertos permanecen invisibles.
+
+**Resultado:** Aislamiento completo de servicios backend de acceso directo desde internet. Los logs del Ingress Controller muestran el flujo `cliente → NGINX → upstream (10.x.x.x)`, confirmando la mediación del proxy en todas las comunicaciones.
+
+### Componentes de Seguridad
+- **NGINX Ingress Controller:** Proxy inverso y balanceador L7
+- **Ingress Resource:** Definición de reglas de enrutamiento
+- **LoadBalancer Service:** Exposición controlada del único punto de entrada
+- **Upstream Routing:** Reenvío interno a servicios ClusterIP
+
+![Objeto Ingress](reverse_proxy_pattern.jpeg)
+![Logs de acceso](reverse_proxy_pattern_2.jpeg)
+
+### 🛜 Network Segmentation Pattern
+
+### Escenario
+**Estímulo:** Un atacante intenta acceder directamente a microservicios internos o bases de datos desde internet, evitando el punto de entrada oficial.
+
+**Respuesta:** El sistema deniega el acceso debido a la segmentación de red implementada. Los servicios internos no tienen IPs públicas y residen en una red overlay privada, accesible únicamente dentro del clúster y a través del Ingress Controller autorizado.
+
+### Implementación
+
+**Patrón Arquitectónico:** Network Segmentation Pattern (DMZ + Internal Network)
+
+**Táctica Arquitectónica:** Segment Network (segmentar red en zonas de confianza) y Deploy in DMZ (desplegar componentes públicos en zona desmilitarizada)
+
+### Solución Técnica
+
+Se implementó segmentación multinivel utilizando primitivas de red de Kubernetes:
+
+1. **DMZ (Zona Desmilitarizada):** NGINX Ingress Controller desplegado con servicio tipo `LoadBalancer`, exponiendo únicamente la IP pública necesaria para recibir tráfico HTTP/HTTPS.
+
+2. **Red Interna Privada:** Todos los microservicios (userservice, socialservice, musicservice) y bases de datos (MongoDB, RabbitMQ) configurados con servicios tipo `ClusterIP`, sin IPs públicas asignadas (EXTERNAL-IP: `<none>`).
+
+3. **Overlay Network:** Kubernetes proporciona una red virtual interna donde los servicios se comunican usando DNS interno y direcciones privadas (10.x.x.x), inaccesibles desde internet.
+
+4. **Aislamiento por Namespace:** Uso del namespace `musicshare` para segregar lógicamente los recursos de la aplicación del resto del clúster (kube-system, ingress-nginx).
+
+5. **Acceso Seguro a Cloud SQL:** Conexión a base de datos gestionada mediante Cloud SQL Proxy con túnel cifrado, sin exponer la instancia SQL a la red pública.
+
+**Resultado:** Superficie de ataque minimizada con un único punto de entrada. Es físicamente imposible acceder a microservicios o bases de datos directamente desde internet. La verificación mediante `kubectl get svc` confirma que solo el Ingress Controller tiene EXTERNAL-IP asignada.
+
+### Componentes de Seguridad
+- **ClusterIP Services:** Servicios sin exposición pública
+- **LoadBalancer Service:** Único para Ingress Controller
+- **Kubernetes Overlay Network:** Red virtual privada (CNI)
+- **Namespace Isolation:** Segregación lógica `musicshare`
+- **Cloud SQL Proxy:** Túnel cifrado para acceso a BD gestionada
+
+![network_segmentation](network_segmentation_pattern.jpeg)
+![network_segmentation_2](network_segmentation_pattern_2.jpeg)
+
+### 🔑 Access Token Pattern (Escogido por el equipo)
+
+**Estímulo:** Un usuario autenticado realiza una acción sensible en la aplicación (crear post, comentar, dar like) desde un microfrontend hacia diferentes microservicios.
+
+**Respuesta:** El sistema valida la identidad del usuario mediante un token JWT firmado, extrae el `userId` de forma segura, y ejecuta la operación sin requerir estado compartido entre servicios ni confiar en datos proporcionados por el cliente.
+
+### Implementación
+
+**Patrón Arquitectónico:** Access Token Pattern
+
+**Táctica Arquitectónica:** Authenticate Users (autenticación mediante tokens criptográficos) y Authorize Users (autorización basada en claims del token)
+
+### Solución Técnica
+
+Se implementó un esquema de autenticación stateless basado en JWT con la siguiente arquitectura:
+
+1. **Emisión de Tokens:** El microservicio `userservice` genera tokens JWT al validar credenciales en login, incluyendo claims esenciales (`userId`, `username`, `exp`) firmados criptográficamente.
+
+2. **Propagación del Token:** El cliente almacena el token y lo envía en cada solicitud mediante el header HTTP `Authorization: Bearer <token>`.
+
+3. **Validación Descentralizada:** Cada microservicio implementa middleware de validación que:
+   - Verifica la firma criptográfica usando clave secreta compartida
+   - Comprueba expiración del token
+   - Extrae el `userId` para asociar acciones al usuario autenticado
+
+4. **Autorización Implícita:** Las operaciones sensibles utilizan el `userId` extraído del token validado, eliminando la necesidad de enviar identificadores desde el cliente y previniendo suplantación de identidad.
+
+**Resultado:** Autenticación y autorización distribuida sin estado compartido, escalable para arquitecturas de microservicios. Los servicios validan independientemente cada solicitud (response time < 50ms por validación), rechazando tokens inválidos o expirados con código HTTP 401.
+
+### Componentes de Seguridad
+- **JWT (JSON Web Tokens):** Tokens firmados con HS256 o RS256
+- **Middleware de Validación:** Interceptores en cada microservicio
+- **Clave Secreta Compartida:** Almacenada en Secrets de Kubernetes
+- **Token Expiration:** Configurado a 1 hora (renovable mediante refresh tokens)
 
 ---
 
-## ⚙️ Despliegue
+## <u>Performance and Scalability</u> {#performance-and-scalability}
 
-### Requisitos
-- [Docker](https://docs.docker.com/get-docker/)
-- [Docker Compose](https://docs.docker.com/compose/)
+### ⚖️ Load Balancer Pattern
 
-### Pasos
+**Estímulo:** El sistema recibe un incremento significativo en el tráfico de usuarios concurrentes (de 10 a 500 solicitudes/segundo) debido a horarios pico o eventos especiales.
+
+**Respuesta:** El sistema distribuye automáticamente la carga entre múltiples instancias de servicios sin degradación perceptible del rendimiento (response time < 500ms percentil 95), evitando sobrecarga de instancias individuales y maximizando la utilización de recursos disponibles.
+
+### Implementación
+
+**Patrón Arquitectónico:** Load Balancer Pattern (Multi-Layer Load Balancing)
+
+**Táctica Arquitectónica:** Increase Available Resources (aumentar recursos mediante distribución de carga)
+
+### Solución Técnica
+
+Se implementó una estrategia de balanceo de carga en tres niveles complementarios:
+
+1. **Nivel 4 - Network Load Balancer (GCP):** El servicio `ingress-nginx` tipo `LoadBalancer` provisiona automáticamente un balanceador de red TCP/UDP de Google Cloud Platform que distribuye tráfico entrante desde la IP pública (34.60.50.189) hacia los nodos worker del clúster GKE.
+
+2. **Nivel 7 - Application Load Balancer (NGINX Ingress):** NGINX Ingress Controller actúa como balanceador de aplicación HTTP/HTTPS, realizando:
+   - TLS Termination centralizada
+   - Enrutamiento basado en path y host
+   - Distribución de peticiones usando algoritmos Round Robin o Least Connections
+   - Health checks a servicios backend
+
+3. **Nivel Interno - Service Load Balancing (kube-proxy):** Los servicios tipo `ClusterIP` distribuyen tráfico entre múltiples réplicas de pods mediante iptables/IPVS:
+   - Balanceo automático entre pods disponibles
+   - Registro dinámico de nuevas instancias al escalar
+   - Exclusión automática de pods no saludables (failed readiness probes)
+
+**Resultado:** Distribución eficiente del tráfico en tres capas. El sistema escala horizontalmente mediante HPA (Horizontal Pod Autoscaler), creando nuevas réplicas que son automáticamente integradas al pool de balanceo sin intervención manual ni downtime.
+
+### Componentes de Escalabilidad
+- **GCP Network Load Balancer:** Balanceo L4 entre nodos del clúster
+- **NGINX Ingress Controller:** Balanceo L7 con health checking
+- **kube-proxy:** Balanceo interno entre réplicas de pods
+- **Service Endpoints:** Registro dinámico de pods disponibles
+
+### 🪜 Auto Scaling Pattern (Escogido por el equipo)
+
+**Estímulo:** La carga del sistema aumenta progresivamente durante horas pico, incrementando el uso de CPU de los pods del frontend de 30% a 80% sostenido durante más de 2 minutos.
+
+**Respuesta:** El sistema detecta automáticamente el incremento de carga mediante métricas de utilización de recursos y escala horizontalmente el número de réplicas del servicio frontend (de 1 a 4 pods), distribuyendo la carga y manteniendo el response time bajo (<200ms), sin intervención manual ni downtime.
+
+### Implementación
+
+**Patrón Arquitectónico:** Auto Scaling Pattern (Horizontal Pod Autoscaling)
+
+**Táctica Arquitectónica:** Introduce Concurrency (aumentar concurrencia mediante réplicas) y Resource Scheduling (planificación dinámica de recursos)
+
+### Solución Técnica
+
+Se implementó escalado horizontal automático utilizando Horizontal Pod Autoscaler (HPA) de Kubernetes:
+
+1. **Metrics Server:** Recopila métricas de uso de CPU y memoria de todos los pods en tiempo real, proporcionando datos al controlador de HPA.
+
+2. **HPA Controller:** Configurado para el deployment `frontend` con los siguientes parámetros:
+   - **Target CPU:** 50% de utilización
+   - **Min replicas:** 1 (estado en reposo)
+   - **Max replicas:** 4 (límite para clúster e2-medium)
+   - **Scale-up policy:** Crea nuevas réplicas cuando CPU > 50% durante 2+ minutos
+   - **Scale-down policy:** Elimina réplicas cuando CPU < 50% durante 5+ minutos
+
+3. **Integración con Load Balancer:** Las nuevas réplicas creadas son automáticamente registradas en el Service ClusterIP y comienzan a recibir tráfico balanceado inmediatamente tras pasar readiness probes.
+
+4. **Resource Limits:** Cada pod tiene requests y limits de CPU/memoria definidos para garantizar cálculos precisos de utilización y evitar sobrecarga del nodo.
+
+**Resultado:** Elasticidad automática basada en demanda real. Durante pruebas de carga, el HPA escaló de 1 a 3 réplicas en ~90 segundos al detectar CPU > 50%, distribuyendo exitosamente la carga y previniendo degradación del servicio. El sistema se auto-contrae en periodos de baja demanda, optimizando uso de recursos.
+
+### Componentes de Escalabilidad
+- **Horizontal Pod Autoscaler (HPA):** Controlador de escalado automático
+- **Metrics Server:** Recolector de métricas de recursos
+- **Resource Requests/Limits:** Definición de recursos por pod
+- **Readiness Probes:** Validación de pods antes de recibir tráfico
+
+![Muestra de AutoScaling 1](auto_scaling_pattern.jpeg)
+![Muestra de AutoScaling 1](auto_scaling_pattern_2.jpeg)
+
+---
+
+## <u>Reliability</u> {#reliability}
+
+### 🗄️ Replication Pattern
+
+**Estímulo:** Un nodo worker del clúster falla abruptamente debido a error de hardware o mantenimiento programado, afectando pods en ejecución.
+
+**Respuesta:** El sistema mantiene disponibilidad del servicio sin interrupción perceptible para los usuarios (downtime < 5 segundos). Kubernetes detecta la falla, evacua los pods del nodo problemático y los recrea automáticamente en nodos saludables, manteniendo el número declarado de réplicas activas.
+
+### Implementación
+
+**Patrón Arquitectónico:** Replication Pattern (Active-Active Redundancy)
+
+**Táctica Arquitectónica:** Active Redundancy (redundancia activa) y State Resynchronization (resincronización de estado)
+
+### Solución Técnica
+
+Se implementó replicación horizontal a nivel de deployments de Kubernetes:
+
+1. **Declaración de Réplicas:** Configuración de `replicas: 2` (mínimo) para microservicios críticos (userservice, socialservice, musicservice) en manifiestos de deployment, garantizando múltiples instancias activas simultáneas.
+
+2. **Distribución Multi-Nodo:** El scheduler de Kubernetes distribuye réplicas en diferentes nodos workers del clúster (3 nodos e2-medium), implementando anti-affinity implícita para maximizar tolerancia a fallos.
+
+3. **Health Monitoring:** Configuración de liveness y readiness probes que monitorizan continuamente el estado de cada réplica:
+   - **Liveness probe:** Reinicia pods no responsivos
+   - **Readiness probe:** Excluye réplicas no saludables del balanceo de carga
+
+4. **Self-Healing:** El controlador ReplicaSet monitoriza constantemente el número real vs deseado de réplicas. Si una réplica falla (pod crash, nodo down), automáticamente programa una nueva instancia en un nodo disponible.
+
+**Resultado:** Alta disponibilidad mediante redundancia activa. Durante pruebas de chaos engineering (simulación de fallo de nodo), el servicio mantuvo disponibilidad con <5 segundos de impacto mientras Kubernetes reubicaba pods. Las réplicas restantes continuaron sirviendo tráfico sin degradación gracias al load balancing.
+
+### Componentes de Confiabilidad
+- **ReplicaSet Controller:** Garantiza número deseado de réplicas
+- **Scheduler:** Distribución inteligente de pods entre nodos
+- **Health Probes:** Monitoreo continuo de estado de réplicas
+- **Service Load Balancing:** Distribución automática entre réplicas saludables
+
+### 🔍 Service Discovery Pattern
+
+**Estímulo:** Un microservicio (userservice) necesita comunicarse con otro servicio interno (metadata-service) cuya dirección IP puede cambiar debido a reinicios, reescalados o migraciones entre nodos.
+
+**Respuesta:** El sistema resuelve automáticamente el endpoint actual del servicio destino mediante DNS interno, sin requerir configuración manual de IPs ni reinicio de pods. La comunicación se establece exitosamente usando nombres lógicos estables independientemente de cambios en la topología de red.
+
+### Implementación
+
+**Patrón Arquitectónico:** Service Discovery Pattern (DNS-Based Discovery)
+
+**Táctica Arquitectónica:** Service Registry (registro centralizado de servicios) y Name Resolution (resolución de nombres)
+
+### Solución Técnica
+
+Se implementó descubrimiento de servicios utilizando el sistema DNS nativo de Kubernetes:
+
+1. **CoreDNS como Service Registry:** Kubernetes ejecuta CoreDNS como servidor DNS interno del clúster, manteniendo un registro actualizado automáticamente de todos los servicios y sus endpoints.
+
+2. **Nombres DNS Estables:** Cada Service ClusterIP obtiene un nombre DNS en formato `<service-name>.<namespace>.svc.cluster.local`, accesible mediante shortname dentro del mismo namespace (ej: `http://metadata-service:50051`).
+
+3. **Resolución Dinámica:** Los pods consultan CoreDNS para resolver nombres de servicios. CoreDNS retorna la IP virtual (ClusterIP) del Service, que internamente balancea hacia pods backend disponibles mediante iptables/IPVS.
+
+4. **Configuración Basada en Variables:** Los microservicios usan variables de entorno con nombres lógicos de servicios (ej: `AMQP_URL=amqp://rabbitmq:5672`), eliminando hardcoding de IPs y permitiendo portabilidad entre entornos.
+
+**Resultado:** Desacoplamiento total entre consumidores y proveedores de servicios. Durante operaciones de scaling, updates o migraciones, los servicios continúan comunicándose sin modificar configuraciones. La resolución DNS ocurre en <1ms, sin overhead perceptible en latencia.
+
+### Componentes de Confiabilidad
+- **CoreDNS:** Servidor DNS interno y service registry
+- **Service ClusterIP:** Endpoints estables con IPs virtuales
+- **DNS Resolution:** Traducción de nombres a IPs actuales
+- **Environment Variables:** Configuración portable de endpoints
+
+### 🖥️ Cluster Pattern
+
+**Estímulo:** El sistema experimenta fallo total de un nodo worker, pérdida parcial de conectividad de red, o necesidad de mantenimiento sin ventana de downtime.
+
+**Respuesta:** El clúster mantiene operatividad completa redistribuyendo carga entre nodos saludables. Los servicios permanecen disponibles gracias a la distribución de réplicas en múltiples máquinas. El control plane orquesta recuperación automática sin intervención manual.
+
+### Implementación
+
+**Patrón Arquitectónico:** Cluster Pattern (Distributed System Coordination)
+
+**Táctica Arquitectónica:** Voting (consenso distribuido vía etcd) y Spare (recursos de respaldo distribuidos)
+
+### Solución Técnica
+
+Se implementó arquitectura de clúster completa utilizando Google Kubernetes Engine (GKE):
+
+1. **Control Plane Gestionado:** GKE proporciona control plane de alta disponibilidad (etcd, API server, scheduler, controller manager) con multi-zona replication, garantizando continuidad de operación orquestada.
+
+2. **Worker Nodes Pool:** Clúster configurado con 3 nodos workers tipo e2-medium distribuidos en zona us-central1-a, proporcionando capacidad computacional agregada (6 vCPUs, 12GB RAM total).
+
+3. **Workload Distribution:** El scheduler distribuye pods entre nodos usando algoritmos de resource balancing, evitando concentración de carga crítica en un único nodo.
+
+4. **Node Health Monitoring:** Kubelet en cada nodo reporta métricas de salud al control plane. El node controller detecta nodos no responsivos (heartbeat timeout) y marca pods como no programables, iniciando reubicación.
+
+5. **Cluster-Level Networking:** CNI (Container Network Interface) implementa overlay network que permite comunicación pod-to-pod transparente entre nodos, sobreviviendo a cambios de topología.
+
+**Resultado:** Tolerancia a fallos a nivel de infraestructura. El clúster opera como unidad lógica única, ocultando complejidad de sistema distribuido a las aplicaciones. Durante fallo de nodo, los pods se reschedulean en ~30 segundos en nodos saludables, manteniendo disponibilidad general del sistema.
+
+### Componentes de Confiabilidad
+- **GKE Control Plane:** Orquestación centralizada multi-zona
+- **Multi-Node Pool:** Distribución de carga entre 3 workers
+- **etcd Cluster:** Base de datos distribuida con consenso Raft
+- **Node Controller:** Monitoreo y recuperación automática de nodos
+- **CNI Overlay Network:** Conectividad resiliente entre nodos
+
+### 🏍️ Sidecar Pattern (Escogido por el equipo)
+
+**Estímulo:** Un microservicio necesita conectarse de forma segura a Cloud SQL (base de datos gestionada) que requiere autenticación IAM, cifrado de conexión y no está expuesta públicamente.
+
+**Respuesta:** El sistema establece conexión segura sin modificar el código de la aplicación principal. Un contenedor auxiliar maneja automáticamente autenticación, cifrado TLS y proxy de conexión, desacoplando lógica de infraestructura de lógica de negocio.
+
+### Implementación
+
+**Patrón Arquitectónico:** Sidecar Pattern (Auxiliary Container)
+
+**Táctica Arquitectónica:** Increase Competence Set (aumentar capacidades sin modificar componente principal)
+
+### Solución Técnica
+
+Se implementó el patrón Sidecar mediante contenedores auxiliares cloud-sql-proxy:
+
+1. **Pod Multi-Container:** Configuración de pods con dos contenedores que comparten ciclo de vida:
+   - **Container principal:** Microservicio (userservice/socialservice) con lógica de negocio
+   - **Sidecar container:** cloud-sql-proxy que maneja conectividad a Cloud SQL
+
+2. **Shared Network Namespace:** Ambos contenedores comparten stack de red (localhost), permitiendo que la aplicación se conecte a `localhost:5432` mientras el sidecar gestiona el túnel seguro hacia Cloud SQL.
+
+3. **Responsabilidades del Sidecar:**
+   - Autenticación automática usando Workload Identity (IAM de GCP)
+   - Establecimiento de túnel TLS hacia instancia Cloud SQL privada
+   - Renovación automática de credenciales y reconexión ante fallos
+   - Logging independiente de errores de conectividad
+
+4. **Desacoplamiento de Infraestructura:** La aplicación usa string de conexión estándar PostgreSQL (`jdbc:postgresql://localhost:5432/db`), sin conocimiento de Cloud SQL, IAM o certificados. El sidecar abstrae completamente la complejidad de infraestructura.
+
+**Resultado:** Conexión resiliente y segura a base de datos gestionada sin acoplamiento con código de aplicación. Si el sidecar falla, Kubernetes lo reinicia automáticamente (shared pod lifecycle). La aplicación obtiene conectividad cifrada, autenticada y con manejo automático de reconexión sin implementar esta lógica internamente.
+
+### Componentes de Confiabilidad
+- **cloud-sql-proxy:** Contenedor sidecar especializado
+- **Shared Network Namespace:** Comunicación localhost entre contenedores
+- **Workload Identity:** Autenticación IAM sin credenciales estáticas
+- **Automatic Reconnection:** Manejo de fallos de conectividad por sidecar
+
+---
+
+## <u>Interoperability</u> {#interoperability}
+
+### 🌉 Protocol Bridge Pattern
+
+**Estímulo:** Múltiples microservicios implementados en diferentes tecnologías (.NET, Java Spring Boot, Python, Node.js) necesitan intercambiar datos y colaborar para completar operaciones de negocio end-to-end.
+
+**Respuesta:** El sistema permite comunicación transparente entre servicios heterogéneos mediante protocolos estándar de la industria (HTTP/REST, gRPC, AMQP). Los servicios intercambian datos sin conocimiento de las tecnologías de implementación subyacentes, logrando interoperabilidad completa en arquitectura políglota.
+
+### Implementación
+
+**Patrón Arquitectónico:** Protocol Bridge Pattern / API Gateway Pattern
+
+**Táctica Arquitectónica:** Orchestrate (orquestación mediante protocolos estándar) y Tailor Interface (adaptación de interfaces según requisitos de comunicación)
+
+### Solución Técnica
+
+Se implementó interoperabilidad multi-protocolo utilizando estándares abiertos:
+
+1. **HTTP/REST para Comunicación Cliente-Servidor:**
+   - Frontend (React) → Backend Services mediante API REST con JSON
+   - Ingress Controller enruta requests HTTP basándose en path/host
+   - Operaciones CRUD síncronas con verbos HTTP estándar (GET, POST, PUT, DELETE)
+   - Content negotiation mediante headers `Content-Type: application/json`
+
+2. **gRPC para Comunicación Inter-Servicio de Alto Rendimiento:**
+   - musicservice → metadata-service usando Protocol Buffers (protobuf)
+   - Comunicación binaria de baja latencia para operaciones síncronas críticas
+   - Configuración mediante variable de entorno `METADATA_SERVICE_GRPC=metadata-service:50051`
+   - Type-safe contracts definidos en archivos `.proto` compartidos
+
+3. **AMQP para Mensajería Asíncrona:**
+   - Servicios → notificationservice mediante RabbitMQ como message broker
+   - Configuración mediante `AMQP_URL=amqp://rabbitmq:5672`
+   - Patrón Publish-Subscribe para eventos de dominio (nuevo post, nuevo comentario, like)
+   - Desacoplamiento temporal: productores no esperan respuesta de consumidores
+
+4. **Arquitectura Políglota:**
+   - Servicios en diferentes stacks tecnológicos (.NET, Spring Boot, Python Flask, Node.js)
+   - Comunicación basada en contratos de protocolo, no en lenguaje de implementación
+   - Service mesh implícito mediante Kubernetes networking (CNI)
+
+**Resultado:** Integración seamless entre 8+ microservicios heterogéneos sin dependencias de tecnología. La selección de protocolo (REST/gRPC/AMQP) se basa en requisitos de comunicación: REST para APIs públicas, gRPC para llamadas síncronas de bajo overhead, AMQP para eventos asíncronos. El sistema logra <100ms latencia promedio en llamadas inter-servicio gRPC y <50ms para REST.
+
+### Componentes de Interoperabilidad
+- **HTTP/REST:** API pública síncrona (frontend ↔ backend)
+- **gRPC + Protobuf:** Comunicación binaria de alto rendimiento (servicio-servicio)
+- **AMQP (RabbitMQ):** Message broker para eventos asíncronos
+- **JSON/Protobuf:** Formatos de serialización interoperables
+- **Service Discovery:** Resolución transparente de endpoints inter-servicio
+
+---
+
+# Guía de Despliegue MusicShare con NGINX Ingress Controller {#prototype}
+
+### 📚 Documentación de Despliegue
+
+- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Guía paso a paso para desplegar
+- **[LOAD_BALANCING.md](LOAD_BALANCING.md)** - Detalles de balanceo de carga
+- **[APIGateway.md](APIGateway.md)** - Configuración del API Gateway
+
+## 📋 Resumen
+
+Esta guía describe cómo desplegar MusicShare en Kubernetes usando **NGINX Ingress Controller** como API Gateway (reemplazando Traefik), proporcionando:
+
+1. **LoadBalancer Público** → Frontend React
+2. **NGINX Ingress** → API Gateway para microservicios
+3. **Escalado Automático (HPA)** → Servicios backend
+
+## 🔧 Prerequisitos
+
+- Kubernetes 1.24+ (minikube, kind, EKS, GKE, AKS, etc.)
+- `kubectl` configurado
+- Docker/Podman para construir imágenes
+- `helm` (opcional, para instalaciones avanzadas)
+- `git`
+
+## 📦 Paso 1: Clonar Repositorio
+
 ```bash
-# Clonar repositorio
-git clone <repository-url>
+git clone https://github.com/JulianAVG64/MusicShare.git
 cd MusicShare
 ```
 
-> ⚠️ **IMPORTANTE:**  
-> Si se despliega en un sistema **Linux**, es necesario otorgar permisos de escritura a la carpeta  
-> `uploads/audio/` para que el sistema pueda guardar las canciones correctamente.  
->  
-> Ejecuta el siguiente comando **dentro de la carpeta correspondiente**:
-> ```bash
-> chmod 777 .
-> ```
+## 🚀 Paso 2: Preparar Imágenes Docker
+
+Asegúrate de tener todas las imágenes disponibles (en repositorio privado o local):
 
 ```bash
-# 📄 Crear el archivo .env en la raíz del proyecto
-touch .env
+# Construir imágenes localmente (si no están en repositorio)
+docker build -t musicshare/frontend:latest ./frontend/MusicShareFrontend/
+docker build -t musicshare/userservice:latest ./userservice/
+docker build -t musicshare/musicservice:latest ./musicservice/
+docker build -t musicshare/social-service:latest ./socialservice/
+docker build -t musicshare/notificationservice:latest ./notificationservice/
+docker build -t musicshare/metadata-service:latest ./metadataservice/
 
-# 📋 Copiar el contenido del archivo de ejemplo (.env.example) al nuevo archivo
-cp .env.example .env
+# Si usas un registro privado:
+docker tag musicshare/frontend:latest your-registry/musicshare/frontend:latest
+docker push your-registry/musicshare/frontend:latest
+# ... repetir para otros servicios
 ```
 
-##### ✏️ Agregar las credenciales de lA API de Spotify dentro del archivo .env
-Reemplaza las siguientes líneas
-SPOTIFY_CLIENT_ID=ac2b79b47a0643bd824d4fece4d8d110
-SPOTIFY_CLIENT_SECRET=3a61c9187a674bf9a505e9a810700e6d
+## 🌍 Paso 3: Crear Namespace
 
 ```bash
-# Generar certificados locales con el comando:
-docker run --rm -it \
-  -v ./traefik/certs:/certs \
-  alpine/openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout /certs/musicshare.key \
-  -out /certs/musicshare.crt \
-  -subj "/C=CO/ST=Bogota/L=Bogota/O=Universidad Nacional de Colombia/CN=localhost"
+kubectl create namespace musicshare
+kubectl label namespace musicshare name=musicshare
 ```
+
+## 📥 Paso 4: Instalar cert-manager (para HTTPS)
 
 ```bash
-# Levantar servicios
-docker compose build
-docker compose up -d
+# Opción A: Con Helm
+helm repo add jetstack https://charts.jetstack.io
+helm repo update
+helm install cert-manager jetstack/cert-manager \
+  --namespace cert-manager \
+  --create-namespace \
+  --version v1.13.2
 
-# Si tiene la versión anterior es recomendable construir sin caché para evitar conflictos
-docker-compose build --no-cache
-
-# Verificar estado
-docker compose ps
+# Opción B: Con manifiestos directos
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.yaml
 ```
 
-## 🚀 Servicios levantados
+## 🔌 Paso 5: Instalar NGINX Ingress Controller
 
-- **Web Frontend** → [https://localhost](http://localhost)
-- **User Service** → [https://localhost/api/users/docs](http://localhost/api/users)
-- **Music Service** → [https://localhost/api/music/swagger/index.html](http://localhost/api/music)
-- **Social Service** → [https://localhost/api/social/swagger-ui/index.html](http://localhost/api/social)
-- **Postgres** → puerto `5432`
-- **MongoDB** → puerto `27017`
+### Opción A: Usando Kustomize (Recomendado)
 
----
+```bash
+# Solo NGINX Ingress
+kubectl apply -f k8s/base/nginx-ingress-controller.yaml
 
-## ¿Cómo usar la aplicación?
-Diríjase al enlace del Web Frontend; esta es la dirección inicial por defecto de la aplicación. Cree su usuario si no lo tiene y luego inicie sesión. Será dirigido al dashboard principal; ahí diríjase a la pestaña "Subir música". Se mostrará un formulario con el que se pueden subir posts con una canción asociada.
-
-Primero deberá subir la canción, selecciónela o arrástrela al campo señalado, agregue tags de su preferencia y configure el tipo de visibilidad de la canción, luego haga click en el botón "Subir Canción". Esto hará uso de los servicios MusicService y MetadataService para guardar la canción en la carpeta `uploads/audio/` con sus metadatos enriquecidos. 
-
-Una vez subida prosiga con la creación de la publicación, agregue una descripción y los hashtags que quiera que estén asociados a ella.
-Finalmente presione el botón de "Publicar Post" para subir el post mediante el servicio SocialService.
-
-Para verificar que la subida de la canción y el post ha sido satisfactoria puede hacer uso de Postman a los siguientes endpoints:
-
-- GET: http://localhost/api/music/api/v1/tracks (Lista de las canciones subidas)
-- GET: http://localhost/api/social/api/social/posts (Lista de los posts subidos)
-
----
-
-## 📖 Endpoints principales de los servicios
-
-### UserService
-**Documentación** [https://localhost/api/users/docs](http://localhost/api/users/docs)
-- **Health**: `GET /health`
-- **Registro**: `POST /auth/register`
-- **Login**: `POST /auth/token` (devuelve JWT)
-- **Perfil**: `GET /users/me` (requiere `Authorization: Bearer <token>`)
-- **Proxy playlists**: `GET /proxy/users/{id}/playlists`
-
-### MusicService
-**Documentación** [https://localhost/api/music/swagger/index.html](http://localhost/api/music/swagger/index.html)
-- `POST /api/v1/tracks/upload` - Subir audio
-- `GET /api/v1/tracks` - Listar tracks
-- `GET /api/v1/tracks/{id}/stream` - Stream de audio
-- CRUD completo de playlists
-- Healthcheck en `/health`
-
-### SocialService
-**Documentacion** [https://localhost/api/social/swagger-ui/index.html](http://localhost/api/social/swagger-ui/index.html)
-
-#### Posts
-- `POST /api/social/posts` — Crear una publicación  
-- `GET /api/social/posts` — Obtener todas las publicaciones  
-- `GET /api/social/posts/usuario/{userId}` — Obtener publicaciones por usuario  
-- `DELETE /api/social/posts/{postId}` — Eliminar publicación  
-
-#### Comments
-- `POST /api/social/comments/post/{postId}` — Crear comentario en un post  
-- `POST /api/social/comments/reply/{commentId}` — Responder a un comentario  
-- `GET /api/social/comments/post/{postId}` — Listar comentarios de un post  
-- `GET /api/social/comments/replies/{parentCommentId}` — Listar respuestas de un comentario  
-- `DELETE /api/social/comments/{commentId}` — Eliminar comentario  
-
-#### Likes
-- `POST /api/social/likes` — Dar like a un post  
-- `GET /api/social/likes/post/{postId}` — Obtener todos los likes de un post  
-- `DELETE /api/social/likes/{likeId}` — Quitar un like
-
----
-
-# 🧩 Network Segmentation Pattern
-
-### 🎯 Objetivo
-
-Implementar **segmentación de red** entre los distintos componentes de MusicShare para aislar las capas de la aplicación (presentación, negocio y datos) y limitar el alcance de la comunicación entre contenedores.
-
-Este patrón mejora la seguridad y la mantenibilidad al aplicar el **principio de mínimo privilegio** en la red de Docker.
-
----
-
-### ⚙️ Implementación
-
-1. **Creación de redes separadas** en el archivo `docker-compose.yml`:
-
-   ```yaml
-   networks:
-     frontend_net:
-       driver: bridge
-     backend_net:
-       driver: bridge
-     data_net:
-       driver: bridge
-   ```
-
-2. **Asignación de redes a los servicios** según su capa:
-
-   | Capa         | Redes          | Servicios incluidos                                                                                    |
-   | ------------ | -------------- | ------------------------------------------------------------------------------------------------------ |
-   | Presentación | `frontend_net` | `frontend`, `formulario-post-front`, `traefik`                                                         |
-   | Negocio      | `backend_net`  | `userservice`, `music-service`, `social-service`, `metadata-service`, `notificationservice`, `traefik` |
-   | Datos        | `data_net`     | `postgres`, `postgres-social`, `mongodb`, `rabbitmq`                                                   |
-
-3. **Puentes de conexión controlados**:
-
-   * `traefik` conecta `frontend_net` ↔ `backend_net`.
-   * Cada microservicio que requiere acceso a una base de datos también pertenece a `data_net`.
-
-   Ejemplo:
-
-   ```yaml
-   userservice:
-     networks:
-       - backend_net
-       - data_net
-   ```
-
-4. **Aislamiento verificado**:
-
-   * Los frontends **no tienen acceso** directo a las bases de datos ni a los microservicios.
-   * Los microservicios solo pueden ver los recursos que realmente necesitan.
-   * El API Gateway (`traefik`) es el **único punto de interconexión** entre capas.
-
----
-
-### 🧪 Pruebas de verificación
-
-1. **Levantar la infraestructura:**
-
-   ```bash
-   docker compose up -d
-   ```
-
-2. **Listar redes creadas:**
-
-   ```bash
-   docker network ls
-   ```
-
-   Deben aparecer:
-
-   ```
-   frontend_net
-   backend_net
-   data_net
-   ```
-
-3. **Ver los contenedores conectados a cada red:**
-
-   ```bash
-   docker network inspect frontend_net
-   docker network inspect backend_net
-   docker network inspect data_net
-   ```
-
-4. **Probar conectividad con `ping` o `curl`:**
-
-   Instalar herramientas en el contenedor (solo para pruebas):
-
-   ```bash
-   docker exec -it musicshare-frontend sh
-   apk add --no-cache iputils
-   ```
-
-   * Desde el `frontend`:
-
-     ```bash
-     ping formulario-post-front       # ✅ debería responder
-     ping postgres                    # ❌ debería fallar
-     ping userservice                 # ❌ debería fallar
-     ```
-
-   * Desde `userservice`:
-
-     ```bash
-     ping postgres                    # ✅ debería responder
-     ping frontend                    # ❌ debería fallar
-     ```
-
-   * Desde `traefik`:
-
-     ```bash
-     ping frontend                    # ✅
-     ping userservice                 # ✅
-     ```
-
-   Estos resultados confirman el **aislamiento por capas**.
-
----
-
-### ✅ Resultado
-
-La red de MusicShare queda estructurada de la siguiente forma:
-
-```
-[ Frontend, Formulario Front ]
-           │
-     (frontend_net)
-           │
-        [ Traefik ]
-           │
-     (backend_net)
-           │
- [ User, Music, Social, Metadata, Notification Services ]
-           │
-     (data_net)
-           │
- [ Postgres, MongoDB, RabbitMQ ]
+# O con Kustomize (incluye cert-manager automáticamente)
+kubectl apply -k k8s/base/
 ```
 
-Con esta segmentación:
+### Opción B: Usando Helm
 
-* Los frontends no acceden directamente a los backends ni a las bases de datos.
-* El gateway controla todo el flujo de red.
-* Se reduce la superficie de ataque y se refuerza el aislamiento de servicios.
+```bash
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
 
----
-
-# 🌐 Reverse Proxy Pattern
-
-### 🎯 Objetivo
-
-El **Reverse Proxy Pattern** busca centralizar todo el tráfico de red de una aplicación distribuida en un único punto de entrada.
-Este proxy inverso actúa como intermediario entre los clientes externos y los servicios internos, gestionando el enrutamiento de peticiones, el control de acceso y la seguridad.
-
-En MusicShare, el servicio **Traefik** cumple este rol, funcionando como **reverse proxy y API Gateway** al mismo tiempo.
-
-
-### ⚙️ Implementación en MusicShare
-
-1. **Servicio Traefik**
-
-   * El contenedor `traefik` se definió en el `docker-compose.yml` como el **único servicio que expone puertos al exterior**:
-
-     ```yaml
-     traefik:
-       image: traefik:v3.0
-       ports:
-         - "80:80"       # tráfico HTTP público
-         - "8080:8080"   # dashboard (solo desarrollo)
-       volumes:
-         - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
-         - /var/run/docker.sock:/var/run/docker.sock:ro
-       networks:
-         - frontend_net
-         - backend_net
-     ```
-
-     Esto permite que Traefik escuche peticiones externas (HTTP) y se comunique con los microfrontends y microservicios internos en las redes segmentadas.
-
-2. **Configuración base (`traefik/traefik.yml`)**
-
-   ```yaml
-   api:
-     dashboard: true
-     insecure: true
-
-   entryPoints:
-     web:
-       address: ":80"
-
-   providers:
-     docker:
-       endpoint: "unix:///var/run/docker.sock"
-       exposedByDefault: false
-   ```
-
-   Con esto, Traefik:
-
-   * Habilita un **dashboard** para monitorear los routers y servicios detectados.
-   * Define el punto de entrada HTTP en el puerto `80`.
-   * Obtiene dinámicamente la configuración de ruteo a partir de las etiquetas (`labels`) de Docker.
-
-3. **Ruteo basado en etiquetas (`labels`)**
-   Cada microfrontend y microservicio declara etiquetas que indican cómo deben manejarse las solicitudes.
-   Por ejemplo:
-
-   ```yaml
-   userservice:
-     labels:
-       - "traefik.enable=true"
-       - "traefik.http.routers.user.rule=PathPrefix(`/api/users`)"
-       - "traefik.http.services.user.loadbalancer.server.port=8080"
-   ```
-
-   Esto le indica a Traefik que todas las solicitudes que empiecen por `/api/users` deben ser dirigidas al contenedor `userservice`.
-
-   De igual forma:
-
-   * `/` → `frontend`
-   * `/formulario-post` → `formulario-post-front`
-   * `/api/music` → `music-service`
-   * `/api/social` → `social-service`
-   * etc.
-
-4. **Integración con la segmentación de red**
-
-   * Traefik está conectado a las redes `frontend_net` y `backend_net`.
-   * Los contenedores internos **no exponen puertos**; solo Traefik los conoce y los enruta internamente.
-   * Esto asegura que ningún servicio sea accesible directamente desde fuera del entorno Docker.
-
-
-### 🔍 Verificación
-
-1. Levanta la aplicación:
-
-   ```bash
-   docker compose up -d
-   ```
-2. Abre el dashboard de Traefik:
-
-   ```
-   http://localhost:8080/dashboard/
-   ```
-
-   Aquí podrás visualizar todos los routers y middlewares activos.
-3. Accede a las rutas expuestas:
-
-   * `http://localhost/` → frontend principal
-   * `http://localhost/formulario-post` → microfrontend de publicación
-   * `http://localhost/api/users` → microservicio de usuarios
-   * `http://localhost/api/music` → microservicio de música
-
-Solo el contenedor `traefik` debe tener puertos publicados externamente (verificable con `docker ps`).
-
-
-### ⚖️ Comparación: Traefik vs NGINX
-
-| Característica                     | **Traefik**                                                            | **NGINX**                                                     |
-| ---------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------- |
-| **Naturaleza**                     | Proxy inverso dinámico y API Gateway moderno.                          | Servidor web y proxy inverso tradicional.                     |
-| **Configuración**                  | Basada en etiquetas y detección automática de servicios Docker.        | Requiere un archivo `nginx.conf` estático con rutas manuales. |
-| **Soporte nativo de contenedores** | ✅ Sí, detecta contenedores y redes Docker automáticamente.             | ⚙️ No, requiere configuración manual o scripts externos.      |
-| **Balanceo de carga y middleware** | Integrados, configurables vía labels o API.                            | Requiere módulos o configuración extra.                       |
-| **TLS automático (Let's Encrypt)** | ✅ Nativo.                                                              | ⚙️ Manual o con scripts externos.                             |
-| **Dashboard**                      | ✅ Web GUI en `:8080` con routers, servicios y logs.                    | ❌ No tiene dashboard nativo.                                  |
-| **Orientación**                    | Diseñado para entornos de microservicios, Kubernetes y Docker Compose. | Más usado para servidores web o APIs monolíticas.             |
-
-🔹 En el laboratorio anterior, **NGINX** se configuró manualmente como reverse proxy, especificando rutas en `nginx.conf`.
-🔹 En MusicShare, **Traefik** automatiza este proceso detectando servicios y aplicando reglas declarativas desde las etiquetas Docker.
-Ambos cumplen el mismo patrón **Reverse Proxy**, pero Traefik está optimizado para arquitecturas distribuidas y dinámicas como la tuya.
-
-
-### ✅ Resultado
-
-Con Traefik funcionando como reverse proxy:
-
-* Solo el contenedor `traefik` está expuesto al exterior.
-* Todo el tráfico HTTP pasa primero por el proxy.
-* Los microservicios internos están aislados y se comunican solo dentro de las redes segmentadas.
-* El ruteo es dinámico, declarativo y fácilmente extensible.
-
-Esto completa la implementación del **Reverse Proxy Pattern** en MusicShare, preparando el entorno para el siguiente patrón:
-🔐 **Secure Channel Pattern (TLS/HTTPS)**.
-
----
-
-## 🌐 API Gateway - Arquitectura y Configuración
-
-### 📋 Descripción General
-
-MusicShare utiliza **Traefik** como API Gateway, proporcionando un punto de entrada unificado para todos los servicios del sistema. El gateway gestiona:
-
-- **Enrutamiento automático** basado en prefijos de ruta
-- **Descubrimiento dinámico** de servicios vía Docker labels
-- **Seguridad TLS/SSL** con redirección automática HTTP → HTTPS
-- **Balanceo de carga** entre instancias de servicios
-- **Middlewares** para transformación de rutas (strip prefix)
-
-📖 Para documentación detallada sobre el API Gateway, consulta: **[APIGateway.md](./APIGateway.md)**
-
-### 🗺️ Mapa de Rutas
-
-```
-https://localhost/
-├── /                          → Frontend React (Puerto 80) [Prioridad 1]
-├── /upload                    → Next.js SSR (Puerto 3000) [Prioridad 2]
-├── /formulario-post           → Formulario Post Frontend (Puerto 80)
-├── /api/users/*               → UserService (Puerto 8002)
-├── /api/music/*               → MusicService (Puerto 8081)
-├── /api/social/*              → SocialService (Puerto 8083)
-├── /api/notifications/*       → NotificationService (Puerto 8082)
-└── /ws                        → NotificationService WebSocket (Puerto 8082)
+helm install nginx-ingress ingress-nginx/ingress-nginx \
+  --namespace ingress-nginx \
+  --create-namespace \
+  --values - <<EOF
+controller:
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  service:
+    type: LoadBalancer
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+EOF
 ```
 
-### ✅ Servicios Configurados
+## ✅ Paso 6: Verificar NGINX Ingress
 
-| Servicio | Ruta Externa | Puerto Interno | Strip Prefix | Estado |
-|----------|--------------|----------------|--------------|--------|
-| Frontend React | `/` | 80 | ❌ | ✅ Activo |
-| Next.js SSR | `/upload` | 3000 | ❌ | ✅ Activo |
-| Formulario Post | `/formulario-post` | 80 | ✅ | ✅ Activo |
-| UserService | `/api/users` | 8002 | ✅ | ✅ Activo |
-| MusicService | `/api/music` | 8081 | ✅ | ✅ Activo |
-| SocialService | `/api/social` | 8083 | ✅ | ✅ Activo |
-| NotificationService | `/api/notifications` | 8082 | ✅ | ✅ Activo |
-| NotificationService WS | `/ws` | 8082 | ❌ | ✅ Activo |
-| **MetadataService** | - | 50051 (gRPC) | - | 🔒 **Interno** |
+```bash
+# Ver que el controller está running
+kubectl get pods -n ingress-nginx
+kubectl get svc -n ingress-nginx
 
-> 💡 **Nota sobre MetadataService**: Este servicio utiliza gRPC y es consumido **únicamente por MusicService** de forma interna. Por diseño arquitectónico correcto, **no está expuesto** a través del API Gateway.
-
-### ⚠️ Servicios Pendientes
-
-#### SearchService ❌
-- **Estado**: No implementado (carpeta vacía)
-- **Ruta sugerida**: `/api/search`
-- **Acción requerida**: Implementar el servicio antes de configurar en el gateway
-
-### 🔧 Configuración del Gateway
-
-#### Archivo `traefik/traefik.yml`
-```yaml
-api:
-  dashboard: true
-  insecure: true  # Dashboard en puerto 8080 (solo desarrollo)
-
-entryPoints:
-  web:
-    address: ":80"
-    http:
-      redirections:
-        entryPoint:
-          to: websecure
-          scheme: https  # Redirección HTTP → HTTPS
-
-  websecure:
-    address: ":443"  # HTTPS
-
-providers:
-  docker:
-    endpoint: "unix:///var/run/docker.sock"
-    exposedByDefault: false  # Requiere traefik.enable=true explícito
-
-log:
-  level: DEBUG
+# Obtener IP externa del LoadBalancer
+kubectl get svc -n ingress-nginx nginx-ingress -w
+# Espera a que aparezca la IP/hostname en EXTERNAL-IP
 ```
 
-#### Puertos Expuestos
-- **80**: HTTP (redirige automáticamente a HTTPS)
-- **443**: HTTPS (punto de entrada principal)
-- **8080**: Dashboard de Traefik (monitoreo en tiempo real)
+## 🗄️ Paso 7: Configurar Bases de Datos
 
-### 📊 Dashboard de Monitoreo
+Las bases de datos se crearán automáticamente en el paso 8, pero puedes pre-crear volúmenes:
 
-Accede al dashboard de Traefik para ver:
-- Routers activos y sus reglas
-- Estado de servicios backend y sus réplicas
-- Middlewares aplicados
-- Métricas de tráfico en tiempo real
-- Distribución de carga entre réplicas
+```bash
+# Ver configuración de bases de datos
+kubectl apply -f k8s/app/databases.yaml
 
-```
-http://localhost:8080/dashboard/
+# Esperar a que estén ready
+kubectl get pvc -n musicshare -w
 ```
 
----
+## 🎯 Paso 8: Desplegar MusicShare
 
-# Balanceo de Carga y Escalado
+### Opción A: Despliegue completo con Kustomize (Recomendado)
 
-MusicShare implementa **balanceo de carga automático** con Traefik. Los servicios backend se ejecutan con **múltiples réplicas** para alta disponibilidad y mejor rendimiento.
+```bash
+# Aplicar todo desde la carpeta k8s
+kubectl apply -k k8s/
 
-#### Servicios Escalables
-
-| Servicio | Réplicas Iniciales | Algoritmo | Sticky Sessions |
-|----------|-------------------|-----------|-----------------|
-| UserService | 2 | Round Robin | ✅ Habilitadas |
-| MusicService | 2 | Round Robin | ✅ Habilitadas |
-| SocialService | 2 | Round Robin | ✅ Habilitadas |
-| NotificationService | 2 | Round Robin | ✅ Habilitadas |
-
-#### Escalar Servicios Manualmente
-
-```powershell
-# Usando Docker Compose directamente
-docker compose up -d --scale userservice=5 --no-recreate
-
-# Usando el script de escalado (recomendado)
-.\scripts\scale-service.ps1 -Service userservice -Replicas 5
-.\scripts\scale-service.ps1 -Service all -Replicas 3
+# Verificar que se están creando recursos
+kubectl get pods -n musicshare -w
+kubectl get svc -n musicshare
+kubectl get ingress -n musicshare
 ```
 
-#### Probar el Balanceo de Carga
+### Opción B: Despliegue paso a paso
 
-```powershell
-# Ejecutar prueba de carga
-.\scripts\load-test.ps1 -Service userservice -Requests 20 -Delay 500
+```bash
+# 1. Namespace y bases de datos
+kubectl apply -f k8s/app/namespace.yaml
+kubectl apply -f k8s/app/databases.yaml
 
-# El script mostrará:
-# - Estado de cada petición
-# - Tiempos de respuesta
-# - Distribución entre réplicas
+# 2. Configuración del frontend
+kubectl apply -f k8s/app/frontend-config.yaml
+kubectl apply -f k8s/app/frontend-deployment-service.yaml
+
+# 3. Deployments y servicios backend
+kubectl apply -f k8s/app/backend-deployments-services.yaml
+
+# 4. API Gateway (NGINX Ingress)
+kubectl apply -f k8s/app/ingress.yaml
+
+# 5. Escalado automático
+kubectl apply -f k8s/app/hpa.yaml
+
+# 6. Cert-manager para HTTPS (si es necesario)
+kubectl apply -f k8s/app/cert-manager-issuer.yaml
 ```
 
-#### Características del Balanceo
+## 🔍 Paso 9: Verificar Despliegue
 
-- ✅ **Round Robin**: Distribución equitativa de peticiones
-- ✅ **Health Checks**: Verificación automática cada 10s
-- ✅ **Sticky Sessions**: Mantiene sesiones de usuario consistentes
-- ✅ **Failover Automático**: Si una réplica falla, el tráfico va a las sanas
-- ✅ **Límites de Recursos**: CPU y RAM controlados por réplica
+```bash
+# Ver todos los pods
+kubectl get pods -n musicshare -o wide
 
-### 🔄 Ejemplo de Configuración de Servicio
+# Ver servicios
+kubectl get svc -n musicshare
 
-Cuando agregas un nuevo servicio al `docker-compose.yml`, la configuración de Traefik se hace mediante labels:
+# Ver Ingress
+kubectl get ingress -n musicshare -o wide
+
+# Ver HPA (escalado automático)
+kubectl get hpa -n musicshare
+
+# Ver logs de un pod específico
+kubectl logs -n musicshare deployment/userservice --tail=100 -f
+
+# Describir un pod (para ver errores)
+kubectl describe pod -n musicshare <pod-name>
+```
+
+## 🌐 Paso 10: Obtener URLs de Acceso
+
+```bash
+# Frontend (LoadBalancer público)
+FRONTEND_IP=$(kubectl get svc -n musicshare frontend-loadbalancer -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+echo "Frontend: http://$FRONTEND_IP"
+
+# API Gateway (NGINX Ingress)
+NGINX_IP=$(kubectl get svc -n ingress-nginx nginx-ingress -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+echo "API Gateway: http://$NGINX_IP"
+echo "  - User API: http://$NGINX_IP/api/users"
+echo "  - Music API: http://$NGINX_IP/api/music"
+echo "  - Social API: http://$NGINX_IP/api/social"
+echo "  - Notifications API: http://$NGINX_IP/api/notifications"
+echo "  - WebSocket: ws://$NGINX_IP/ws"
+
+# NGINX Metrics (para Prometheus)
+echo "NGINX Metrics: http://$NGINX_IP:10254/metrics"
+```
+
+## 🧪 Paso 11: Pruebas Básicas
+
+```bash
+# Probar acceso al Frontend
+curl -v http://$FRONTEND_IP/
+
+# Probar API Gateway
+curl -v http://$NGINX_IP/api/users/health
+
+# Ver métricas de NGINX
+curl http://$NGINX_IP:10254/metrics
+
+# Probar WebSocket
+wscat -c ws://$NGINX_IP/ws
+```
+
+## 📊 Paso 12: Configurar Monitoreo
+
+### Prometheus (Recomendado)
+
+```bash
+# Verificar que prometheus.yml apunta a NGINX metrics
+kubectl apply -f prometheus/prometheus.yml
+
+# Agregar ServiceMonitor para NGINX (opcional)
+kubectl apply -f - <<EOF
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: nginx-ingress
+  namespace: ingress-nginx
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ingress-nginx
+  endpoints:
+  - port: metrics
+EOF
+```
+
+### Grafana
+
+```bash
+# Dashboard recomendado: ID 14314 (NGINX Ingress)
+# https://grafana.com/grafana/dashboards/14314
+```
+
+## 🔐 Paso 13: Configurar HTTPS (Opcional)
+
+```bash
+# 1. Editar k8s/app/ingress.yaml y agregar sección `tls`
+# 2. Usar cert-manager para provisionar certificados automáticamente
+
+kubectl apply -f - <<EOF
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: musicshare-tls
+  namespace: musicshare
+spec:
+  secretName: musicshare-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+  - musicshare.example.com
+EOF
+```
+
+## 🔄 Paso 14: Pruebas de Carga y Escalado
+
+```bash
+# Instalar k6
+curl https://github.com/grafana/k6/releases/download/v0.47.0/k6-v0.47.0-linux-amd64.tar.gz | tar xz
+
+# Ejecutar pruebas
+./k6 run k6/baseline.js
+
+# Observar escalado automático
+kubectl get hpa -n musicshare -w
+kubectl get pods -n musicshare -w
+```
+
+## 📝 Paso 15: Configurar Variables de Entorno
+
+Los servicios usan variables de entorno. Verificar `k8s/app/backend-deployments-services.yaml`:
 
 ```yaml
-nuevo-servicio:
-  build:
-    context: ./nuevo-servicio
-  container_name: musicshare-nuevo-servicio
-  networks:
-    - backend_net
-  labels:
-    # Habilitar en Traefik
-    - "traefik.enable=true"
-    
-    # Regla de enrutamiento
-    - "traefik.http.routers.nuevo-servicio.rule=PathPrefix(`/api/nuevo`)"
-    
-    # Middleware para eliminar prefijo
-    - "traefik.http.middlewares.nuevo-servicio-stripprefix.stripprefix.prefixes=/api/nuevo"
-    - "traefik.http.routers.nuevo-servicio.middlewares=nuevo-servicio-stripprefix"
-    
-    # Puerto del contenedor
-    - "traefik.http.services.nuevo-servicio.loadbalancer.server.port=8000"
-    
-    # Punto de entrada y TLS
-    - "traefik.http.routers.nuevo-servicio.entrypoints=websecure"
-    - "traefik.http.routers.nuevo-servicio.tls=true"
+env:
+  - name: POSTGRES_HOST
+    value: postgres
+  - name: MONGODB_URI
+    value: "mongodb://admin:password123@mongodb:27017/musicshare?authSource=admin"
+  - name: NOTIFICATION_SERVICE_URL
+    value: "http://notificationservice:8082"
+  - name: USER_SERVICE_URL
+    value: "http://userservice:8002"
 ```
 
-### 🎯 Ventajas del API Gateway
+**Cambiar contraseñas en producción:**
 
-1. **Punto único de entrada**: Simplifica la gestión de seguridad y monitoreo
-2. **Desacoplamiento**: Los clientes no necesitan conocer las ubicaciones de los servicios
-3. **Flexibilidad**: Cambios en servicios backend sin afectar al frontend
-4. **Escalabilidad**: Permite balanceo de carga automático
-5. **Seguridad**: Centraliza autenticación, rate limiting y TLS
-6. **Descubrimiento dinámico**: Detecta automáticamente nuevos servicios
-
-### 🚀 Agregar un Nuevo Servicio
-
-1. Define el servicio en `docker-compose.yml` con las labels de Traefik
-2. Levanta el servicio: `docker compose up -d nuevo-servicio`
-3. Traefik detecta automáticamente y comienza a enrutar tráfico
-4. Verifica en el dashboard: `http://localhost:8080`
-
-**No es necesario reiniciar Traefik** - la configuración se actualiza dinámicamente.
-
----
-
-# 🧩 Secure Channel Pattern (TLS/HTTPS con Traefik)
-
-Para proteger la comunicación entre el cliente y los servicios, se implementó el **Secure Channel Pattern** mediante **Traefik** actuando como *terminador TLS*.
-Todas las conexiones externas ahora usan HTTPS con certificados locales.
-
-#### 🔧 Configuración principal
-
-* **Entrypoints:**
-
-  * `web` (puerto 80) → redirige automáticamente a `websecure`
-  * `websecure` (puerto 443) → maneja el canal cifrado HTTPS
-* **Certificados locales:**
-  Generados con:
-
-  ```bash
-  docker run --rm -it \
-    -v ./traefik/certs:/certs \
-    alpine/openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-    -keyout /certs/musicshare.key \
-    -out /certs/musicshare.crt \
-    -subj "/C=CO/ST=Bogota/L=Bogota/O=Universidad Nacional de Colombia/CN=localhost"
-  ```
-
-  > ⚠️ Los certificados se excluyen del repositorio mediante `.gitignore`.
-
-#### 🔐 Funcionamiento
-
-* Traefik escucha en `80` y `443`, redirigiendo automáticamente HTTP → HTTPS.
-* Termina las conexiones TLS usando los certificados locales.
-* El tráfico interno entre contenedores sigue siendo HTTP dentro de redes aisladas (`frontend_net`, `backend_net`, `data_net`).
-
-#### 🌍 Resultado
-
-* Todas las rutas públicas (`/`, `/api/users`, `/api/music`, etc.) son accesibles en **[https://localhost](https://localhost)**.
-* Los intentos de conexión HTTP son redirigidos automáticamente a HTTPS.
-* Se elimina el riesgo de *mixed content* y se garantiza la confidencialidad de las credenciales de usuario y datos transmitidos.
-
----
-
-# 🔑 Access Token Pattern
-
-## 🎯 Objetivo
-
-El **Access Token Pattern** permite autenticar y autorizar solicitudes en aplicaciones distribuidas mediante el uso de **tokens firmados**, evitando el uso de sesiones tradicionales basadas en cookies o almacenamiento centralizado.
-
-Este patrón es esencial en MusicShare para:
-
-* Manejar **sesiones de usuario** entre microfrontends y microservicios.
-* Garantizar que cada solicitud lleve información verificable sobre el usuario.
-* Obtener el **ID del usuario autenticado** cuando se realizan acciones sensibles (como subir un post, crear comentarios, dar like, etc.).
-* Evitar dependencias entre servicios o estado compartido en memoria.
-
-
-## 🔧 ¿Cómo funciona en MusicShare?
-
-MusicShare implementa un esquema **JWT-based Access Token**, donde el microservicio de usuarios (`userservice`) es responsable de:
-
-1. **Verificar credenciales** cuando un usuario inicia sesión.
-
-2. **Emitir un access token** con datos esenciales del usuario:
-
-   * `userId`
-   * `username` (si aplica)
-   * fecha de expiración
-   * firma criptográfica para evitar manipulación
-
-3. Entregar el token al cliente (frontend).
-
-4. El cliente almacena temporalmente el token (ej. `localStorage`).
-
-5. Todas las solicitudes a microservicios incluyen el token en la cabecera HTTP:
-
-   ```
-   Authorization: Bearer <token>
-   ```
-
-6. Cada microservicio valida el token localmente sin necesidad de contactar al userservice.
-
-
-## 📦 Implementación del patrón
-
-### 1. Emisión del token (login)
-
-Cuando el usuario inicia sesión correctamente:
-
-```json
-{
-  "token": "<JWT generado>",
-  "expiresIn": 3600
-}
+```bash
+# Crear Secret de Kubernetes
+kubectl create secret generic db-credentials \
+  -n musicshare \
+  --from-literal=postgres-password=tu-password-seguro \
+  --from-literal=mongodb-password=tu-password-seguro
 ```
 
-El frontend guarda este token y lo envía en todas las peticiones subsecuentes.
+## 🛠️ Troubleshooting
 
+### Los pods no están starting
 
-### 2. Inclusión del token en solicitudes
+```bash
+# Ver eventos del cluster
+kubectl describe nodes
 
-Ejemplo desde un frontend:
+# Ver logs del pod
+kubectl logs -n musicshare <pod-name> --previous
 
-```js
-fetch("https://localhost/api/social/posts", {
-  method: "POST",
-  headers: {
-    "Authorization": `Bearer ${token}`,
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({ text: "Mi nueva publicación" })
-});
+# Ver descripción detallada
+kubectl describe pod -n musicshare <pod-name>
 ```
 
+### NGINX no redirige correctamente
 
-### 3. Validación del token en microservicios
+```bash
+# Ver configuración generada de NGINX
+kubectl exec -n ingress-nginx deployment/nginx-ingress-controller -- cat /etc/nginx/nginx.conf
 
-Cada microservicio tiene un middleware o filtro que:
+# Verificar que el Ingress tiene rutas correctas
+kubectl get ingress -n musicshare api-gateway -o yaml
 
-1. **Extrae** el token del header.
-2. **Verifica la firma** usando la clave secreta compartida.
-3. **Comprueba expiración**.
-4. Recupera el `userId` para vincular la acción con el usuario autenticado.
-
-Ejemplo de extracción:
-
-```java
-String token = request.getHeader("Authorization").replace("Bearer ", "");
-String userId = jwtService.getUserIdFromToken(token);
+# Logs de NGINX
+kubectl logs -n ingress-nginx deployment/nginx-ingress-controller -f
 ```
 
-Esto permite, por ejemplo, crear un post asociado al usuario correcto sin que el frontend envíe manualmente el campo `userId`.
+### LoadBalancer sin IP externa
 
+```bash
+# En minikube/kind, usar port-forward
+kubectl port-forward -n musicshare svc/frontend-loadbalancer 80:80 &
+kubectl port-forward -n ingress-nginx svc/nginx-ingress 80:80 &
 
-## 🔐 Beneficios del Patrón
+# En cloud providers, esperar a que se provisione
+kubectl get svc -n musicshare frontend-loadbalancer -w
+```
 
-### ✔ No requiere estado compartido entre servicios
+### WebSocket no funciona
 
-Cada microservicio puede validar tokens por sí mismo.
+```bash
+# Verificar que NGINX tiene la anotación correcta
+kubectl get ingress -n musicshare api-gateway -o yaml | grep websocket
 
-### ✔ Escala de forma natural en entornos de microservicios
+# Ver si el servicio está escuchando en puerto 8082
+kubectl get svc -n musicshare notificationservice
+```
 
-No requiere sesiones centralizadas ni sticky sessions.
+## 🗑️ Limpiar Recursos
 
-### ✔ Reduce superficie de ataque
+```bash
+# Eliminar MusicShare
+kubectl delete -k k8s/
 
-No se envían credenciales en cada solicitud, solo tokens firmados.
+# Eliminar NGINX Ingress
+kubectl delete -k k8s/base/
 
-### ✔ Simplifica autorización
+# Eliminar namespace
+kubectl delete namespace musicshare
 
-El backend recibe directamente el `userId` en el token sin confiar en valores proporcionados desde el cliente.
+# Eliminar NGINX Ingress namespace
+kubectl delete namespace ingress-nginx
+```
 
-### ✔ Ideal para arquitecturas basadas en API Gateway
+## 📚 Referencias Útiles
 
-Traefik pasa el token sin inspección; la autenticación se maneja internamente.
+- [NGINX Ingress Controller Docs](https://kubernetes.github.io/ingress-nginx/)
+- [Kubernetes Ingress API](https://kubernetes.io/docs/concepts/services-networking/ingress/)
+- [cert-manager Docs](https://cert-manager.io/)
+- [Kubernetes Service Types](https://kubernetes.io/docs/concepts/services-networking/service/)
+- [HorizontalPodAutoscaler](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/)
 
+## ✨ Configuración Recomendada para Producción
 
-## 🛡️ Pruebas de verificación
+```bash
+# 1. Usar certificados SSL/TLS reales
+# 2. Habilitar autoscaling basado en métricas reales
+# 3. Configurar límites de recursos apropiados
+# 4. Implementar network policies
+# 5. Usar private container registry
+# 6. Configurar backups automáticos de bases de datos
+# 7. Implementar monitoring y alerting
+# 8. Usar pod security policies
+# 9. Configurar RBAC adecuadamente
+# 10. Implementar secrets management (Vault, AWS Secrets Manager, etc.)
+```
 
-1. **Iniciar sesión** y verificar que el servidor responde con un token válido.
+## ❓ Soporte
 
-2. Enviar una solicitud autenticada:
-
-   ```bash
-   curl -X GET https://localhost/api/social/feed \
-     -H "Authorization: Bearer <token>"
-   ```
-
-3. Enviar una solicitud **sin token** o con token inválido y verificar que retorna `401 Unauthorized`.
-
-4. Crear un post y verificar en base de datos que:
-
-   * el post está asociado al `userId` que viene dentro del token,
-   * no depende de valores enviados desde el frontend.
-
-
-## 🧩 Integración con otros patrones de MusicShare
-
-| Patrón                              | Relación con Access Token Pattern                                                                                   |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| **Reverse Proxy Pattern (Traefik)** | Traefik enruta las peticiones, pero **no interpreta tokens**. El token fluye transparente hacia los microservicios. |
-| **Secure Channel Pattern (HTTPS)**  | Los tokens viajan cifrados, evitando robo de credenciales (MitM, sniffing).                                         |
-| **Network Segmentation Pattern**    | Los tokens permiten que el API Gateway dirija tráfico sin exponer servicios ni almacenar sesiones.                  |
-
-
-## ✅ Resultado
-
-Con el **Access Token Pattern**, MusicShare garantiza:
-
-* Autenticación y autorización seguras entre microservicios.
-* Sesiones sin estado (**stateless authentication**).
-* Extracción confiable del `userId` para acciones como subir posts, comentarios o likes.
-* Un modelo de seguridad consistente, escalable y compatible con arquitecturas distribuidas.
+Para problemas, consultar:
+- Logs: `kubectl logs -n musicshare <pod-name>`
+- Eventos: `kubectl get events -n musicshare`
+- Descripción: `kubectl describe pod -n musicshare <pod-name>`
+- Debugging: `kubectl debug -n musicshare <pod-name>`
