@@ -1,0 +1,145 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: db-postgres-auth
+  namespace: tasknotes
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres-auth
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: auth-service
+      ports:
+        - protocol: TCP
+          port: 5432
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: db-postgres-tasks
+  namespace: tasknotes
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres-tasks
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: tasks-service
+      ports:
+        - protocol: TCP
+          port: 5432
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: db-postgres-tags
+  namespace: tasknotes
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres-tags
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: tags-service
+      ports:
+        - protocol: TCP
+          port: 5432
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: db-postgres-categories
+  namespace: tasknotes
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres-categories
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: categories-service
+      ports:
+        - protocol: TCP
+          port: 5432
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: db-postgres-userprofile
+  namespace: tasknotes
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres-userprofile
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: user-profile-service
+      ports:
+        - protocol: TCP
+          port: 5432
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: db-mongodb-notes
+  namespace: tasknotes
+spec:
+  podSelector:
+    matchLabels:
+      app: mongodb
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: notes-service
+      ports:
+        - protocol: TCP
+          port: 27017
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: db-mongodb-logs
+  namespace: tasknotes
+spec:
+  podSelector:
+    matchLabels:
+      app: mongo-logs
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: logs-service
+      ports:
+        - protocol: TCP
+          port: 27017

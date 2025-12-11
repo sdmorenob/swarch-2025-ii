@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: search-service
+  namespace: tasknotes
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: search-service
+  template:
+    metadata:
+      labels:
+        app: search-service
+    spec:
+      containers:
+        - name: search-service
+          image: 602223305716.dkr.ecr.us-east-1.amazonaws.com/search-service:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8008
+          env:
+            - name: REDIS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: tasknotes-search-cache
+                  key: REDIS_URL
+            - name: CACHE_TTL_SECONDS
+              valueFrom:
+                configMapKeyRef:
+                  name: tasknotes-search-cache
+                  key: CACHE_TTL_SECONDS
+            - name: RABBITMQ_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: tasknotes-search-cache
+                  key: RABBITMQ_URL
+            - name: NOTES_GRPC_ADDR
+              value: "notes-service:50051"
+            - name: TASKS_GRPC_ADDR
+              value: "tasks-service:50052"
+            - name: GRPC_TLS_ENABLE
+              value: "true"
+            - name: GRPC_TLS_CA_CERT
+              value: /etc/grpc-certs/ca.crt
+            - name: GRPC_TLS_CLIENT_CERT
+              value: /etc/grpc-certs/search-client.crt
+            - name: GRPC_TLS_CLIENT_KEY
+              value: /etc/grpc-certs/search-client.key
+            - name: GRPC_TLS_SERVER_NAME_NOTES
+              value: notes-service
+            - name: GRPC_TLS_SERVER_NAME_TASKS
+              value: tasks-service
+          volumeMounts:
+            - name: grpc-certs
+              mountPath: /etc/grpc-certs
+              readOnly: true
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8008
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8008
+            initialDelaySeconds: 10
+            periodSeconds: 20
+      volumes:
+        - name: grpc-certs
+          secret:
+            secretName: grpc-certs-secret

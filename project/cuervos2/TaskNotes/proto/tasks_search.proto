@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package tasknotes.tasks;
+
+import "common.proto";
+
+option go_package = "github.com/tasknotes/proto/tasks";
+
+// Servicio gRPC para búsqueda de tareas
+service TasksSearchService {
+  rpc SearchTasks(SearchTasksRequest) returns (SearchTasksResponse);
+}
+
+// Request para búsqueda de tareas
+message SearchTasksRequest {
+  string query = 1;        // Texto a buscar en title/description
+  int32 user_id = 2;       // ID del usuario (filtro obligatorio)
+  int32 limit = 3;         // Límite de resultados (default: 20, max: 100)
+  int32 skip = 4;          // Offset para paginación
+  string category = 5;     // Filtro opcional por categoría
+  repeated string tags = 6; // Filtro opcional por tags
+}
+
+// Response con resultados de búsqueda
+message SearchTasksResponse {
+  repeated TaskSearchResult tasks = 1;
+  int64 total = 2;         // Total de resultados (sin paginación)
+}
+
+// Resultado individual de búsqueda de tarea
+message TaskSearchResult {
+  int32 id = 1;
+  string title = 2;
+  string description = 3;
+  bool completed = 4;
+  string priority = 5;     // low, medium, high
+  string due_date = 6;     // ISO 8601 format (opcional)
+  tasknotes.common.CategorySummary category = 7;
+  repeated tasknotes.common.TagSummary tags = 8;
+  int32 user_id = 9;
+  string created_at = 10;  // ISO 8601 format
+  string updated_at = 11;  // ISO 8601 format
+}

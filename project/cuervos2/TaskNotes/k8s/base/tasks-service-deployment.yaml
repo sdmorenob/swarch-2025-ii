@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tasks-service
+  namespace: tasknotes
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: tasks-service
+  template:
+    metadata:
+      labels:
+        app: tasks-service
+    spec:
+      containers:
+        - name: tasks-service
+          image: 602223305716.dkr.ecr.us-east-1.amazonaws.com/tasks-service:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8003
+            - containerPort: 50052
+          env:
+            - name: TASKS_GRPC_PORT
+              value: "50052"
+            - name: DATABASE_URL
+              value: postgresql+psycopg2://postgres:postgres@postgres-tasks:5432/tasknotes
+            - name: GRPC_TLS_ENABLE
+              value: "true"
+            - name: GRPC_TLS_CERT_PATH
+              value: /etc/grpc-certs/tasks.crt
+            - name: GRPC_TLS_KEY_PATH
+              value: /etc/grpc-certs/tasks.key
+            - name: GRPC_TLS_CLIENT_CA_PATH
+              value: /etc/grpc-certs/ca.crt
+          volumeMounts:
+            - name: grpc-certs
+              mountPath: /etc/grpc-certs
+              readOnly: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8003
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8003
+            initialDelaySeconds: 10
+            periodSeconds: 20
+      volumes:
+        - name: grpc-certs
+          secret:
+            secretName: grpc-certs-secret

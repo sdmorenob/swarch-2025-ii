@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tasknotes-gateway-upstreams
+  namespace: tasknotes
+data:
+  AUTH_SERVICE_URL: http://auth-service:8002
+  TASKS_SERVICE_URL: http://tasks-service:8003
+  NOTES_SERVICE_URL: http://notes-service:8004
+  TAGS_SERVICE_URL: http://tags-service:8005
+  CATEGORIES_SERVICE_URL: http://categories-service:8006
+  USER_PROFILE_SERVICE_URL: http://user-profile-service:8007
+  SEARCH_SERVICE_URL: http://search-service:8008

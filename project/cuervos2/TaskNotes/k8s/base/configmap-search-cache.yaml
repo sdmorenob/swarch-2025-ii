@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tasknotes-search-cache
+  namespace: tasknotes
+data:
+  REDIS_URL: "redis.tasknotes.svc.cluster.local:6379"
+  CACHE_TTL_SECONDS: "120"
+  RABBITMQ_URL: "amqp://tasknotes:tasknotes@rabbitmq.tasknotes.svc.cluster.local:5672"

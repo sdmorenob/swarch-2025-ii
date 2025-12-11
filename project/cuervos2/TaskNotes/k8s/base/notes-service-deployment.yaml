@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notes-service
+  namespace: tasknotes
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: notes-service
+  template:
+    metadata:
+      labels:
+        app: notes-service
+    spec:
+      containers:
+        - name: notes-service
+          image: 602223305716.dkr.ecr.us-east-1.amazonaws.com/notes-service:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8004
+            - containerPort: 50051
+          env:
+            - name: NOTES_GRPC_PORT
+              value: "50051"
+            - name: MONGODB_URL
+              value: "mongodb://admin:password@mongodb-0.mongodb.tasknotes.svc.cluster.local,mongodb-1.mongodb.tasknotes.svc.cluster.local,mongodb-2.mongodb.tasknotes.svc.cluster.local:27017/tasknotes?authSource=admin&replicaSet=rs0"
+            - name: GRPC_TLS_ENABLE
+              value: "true"
+            - name: GRPC_TLS_CERT_PATH
+              value: /etc/grpc-certs/notes.crt
+            - name: GRPC_TLS_KEY_PATH
+              value: /etc/grpc-certs/notes.key
+            - name: GRPC_TLS_CLIENT_CA_PATH
+              value: /etc/grpc-certs/ca.crt
+            # TODO: Configurar POSTGRES_URL cuando se despliegue postgres-notes
+            # - name: POSTGRES_URL
+            #   value: "postgresql+psycopg2://postgres:postgres@postgres-notes:5432/tasknotes"
+          volumeMounts:
+            - name: grpc-certs
+              mountPath: /etc/grpc-certs
+              readOnly: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8004
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8004
+            initialDelaySeconds: 10
+            periodSeconds: 20
+      volumes:
+        - name: grpc-certs
+          secret:
+            secretName: grpc-certs-secret
