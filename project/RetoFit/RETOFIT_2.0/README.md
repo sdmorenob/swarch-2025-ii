@@ -729,6 +729,9 @@ Cuando un servicio falla y el Circuit Breaker se activa (estado OPEN), el sistem
 4. **Prevención de cascada:** Evita que fallos en un servicio tumben todo el sistema
 5. **Experiencia de usuario:** Mensajes claros en lugar de timeouts largos
 
+### Prueba de estrés
+<div align="center"><img width="80%" alt="resultado del test de rate limit" src="diagramas/prueba_estres.png" /></div>
+
 ---
 
 ## Prototipo

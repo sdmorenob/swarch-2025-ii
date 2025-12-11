@@ -10,8 +10,14 @@ spec:
         - name: k6
           image: grafana/k6:latest
           env:
+            - name: K6_INSECURE_SKIP_TLS_VERIFY
+              value: "true"
             - name: K6_PROMETHEUS_RW_SERVER_URL
               value: "http://prometheus.default.svc.cluster.local:9090/api/v1/write"
+            # Producción. Comentar si se ejecuta en local
+            - name: TARGET_URL
+              value: "https://136.112.28.155/api/users/health"
+
           command: ["k6"]
           args:
             [

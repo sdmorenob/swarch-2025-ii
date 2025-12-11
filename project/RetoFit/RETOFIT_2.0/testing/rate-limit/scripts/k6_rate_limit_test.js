@@ -30,11 +30,13 @@ function randomIp(seed) {
 export default function () {
   const url = __ENV.TARGET_URL || 'http://api-gateway:8080/api/users/health';
 
+  console.log(`[DEBUG] Intentando conectar a: ${url}`);
+
   // create a user and ip per vu
   const vu = __VU;
   const ip = randomIp(vu);
   const headers = {
-    'X-Forwarded-For': ip,
+    'X-Forwarded-For': '192.168.1.50',
     'Accept': 'application/json',
     // If testing authenticated behavior, set Authorization:
     // 'Authorization': `Bearer ${__ENV.TEST_JWT || ''}`
@@ -51,5 +53,5 @@ export default function () {
     rejected.add(1);
   }
 
-  sleep(1);
+  sleep(0.01);
 }
