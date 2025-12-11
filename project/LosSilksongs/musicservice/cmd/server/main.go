@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -71,8 +72,18 @@ func main() {
 	trackRepo := mongodb.NewTrackRepository(mongoClient, cfg.MongoDB.Database)
 	playlistRepo := mongodb.NewPlaylistRepository(mongoClient, cfg.MongoDB.Database)
 
-	// Initialize storage
-	fileStorage := storage.NewLocalStorage(cfg.Storage.BasePath)
+	// Initialize storage (default to GCS when configured)
+	var fileStorage storage.FileStorage
+	if strings.EqualFold(cfg.Storage.Type, "cloud") || strings.EqualFold(cfg.Storage.Type, "gcs") {
+		gcsStorage, err := storage.NewGCSStorage(context.Background(), "musicshare-media")
+		if err != nil {
+			logger.Fatalf("Failed to initialize Google Cloud Storage: %v", err)
+		}
+		fileStorage = gcsStorage
+		defer gcsStorage.Close()
+	} else {
+		fileStorage = storage.NewLocalStorage(cfg.Storage.BasePath)
+	}
 
 	// Initialize gRPC client for Metadata Service (optional for MVP)
 	var metadataClient grpc.MetadataClient
@@ -126,7 +137,7 @@ func main() {
 	// Swagger documentation
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	// API routes
+	// API routes (canonical)
 	v1 := router.Group("/api/v1")
 	{
 		// Track routes
@@ -158,8 +169,38 @@ func main() {
 		}
 	}
 
-	// Static file serving for uploaded files
-	router.Static("/uploads", cfg.Storage.BasePath)
+	// Compatibility routes when the ingress forwards with /api/music prefix without rewriting
+	musicPrefixed := router.Group("/api/music/api/v1")
+	{
+		tracks := musicPrefixed.Group("/tracks")
+		{
+			tracks.POST("/upload", trackHandler.UploadTrack)
+			tracks.GET("/:id", trackHandler.GetTrack)
+			tracks.GET("/", trackHandler.ListTracks)
+			tracks.DELETE("/:id", trackHandler.DeleteTrack)
+			tracks.GET("/:id/stream", trackHandler.StreamTrack)
+		}
+
+		playlists := musicPrefixed.Group("/playlists")
+		{
+			playlists.POST("/", playlistHandler.CreatePlaylist)
+			playlists.GET("/:id", playlistHandler.GetPlaylist)
+			playlists.GET("/", playlistHandler.ListPlaylists)
+			playlists.PUT("/:id", playlistHandler.UpdatePlaylist)
+			playlists.DELETE("/:id", playlistHandler.DeletePlaylist)
+			playlists.POST("/:id/tracks", playlistHandler.AddTrackToPlaylist)
+			playlists.DELETE("/:id/tracks/:trackId", playlistHandler.RemoveTrackFromPlaylist)
+		}
+
+		users := musicPrefixed.Group("/users")
+		{
+			users.GET("/:userId/playlists", playlistHandler.GetUserPlaylists)
+		}
+	}
+
+	// Extra compatibility shims for misconfigured path rewrites (accept common variants)
+	router.POST("/api/music/tracks/upload", trackHandler.UploadTrack)
+	router.POST("/tracks/upload", trackHandler.UploadTrack)
 
 	// Create HTTP server
 	srv := &http.Server{

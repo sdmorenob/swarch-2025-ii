@@ -39,6 +39,11 @@ function App() {
               <Route path="/perfil" element={<ExampleProfile />} />
               <Route path="/editar-perfil" element={<EditProfile />} />
               <Route path="/post" element={<ProfileFeed />} />
+              {/*
+                Soportamos ambas rutas por compatibilidad con el gateway y enlaces existentes.
+                /upload fue usado por el SSR previo y /upload-music es el menú actual.
+              */}
+              <Route path="/upload" element={<UploadMusic />} />
               <Route path="/upload-music" element={<UploadMusic />} />
             </Route>
           </Route>

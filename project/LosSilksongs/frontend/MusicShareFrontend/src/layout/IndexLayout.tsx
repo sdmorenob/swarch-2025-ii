@@ -107,7 +107,9 @@ export default function IndexLayout({ setTheme }: Props) {
                     navigate("/perfil");
                   }
                   if (item.id === "crear") {
-                    navigate("/upload-music");
+                    // Compatibilidad con la ruta esperada por el gateway (/upload)
+                    // y con la ruta interna previa (/upload-music)
+                    navigate("/upload");
                   }
                   if (item.id === "mensajes") {
                     setNotifications([]);

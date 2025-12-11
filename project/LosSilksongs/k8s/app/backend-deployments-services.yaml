@@ -107,11 +107,31 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8081
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
           env:
             - name: MONGODB_URI
               value: "mongodb://admin:password123@mongodb:27017/musicshare?authSource=admin"
             - name: METADATA_SERVICE_GRPC
               value: metadata-service:50051
+            - name: STORAGE_TYPE
+              value: "gcs"
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "/secrets/gcs/bucket.json"
+            - name: GCS_BUCKET_NAME
+              value: "musicshare-media"
+          volumeMounts:
+            - name: gcs-key
+              mountPath: "/secrets/gcs"
+              readOnly: true
+
+      volumes:
+        - name: gcs-key
+          secret:
+            secretName: gcs-credentials
+
 ---
 apiVersion: v1
 kind: Service
@@ -184,7 +204,7 @@ metadata:
   labels:
     app: social-service
 spec:
-  replicas: 1  # Dejémoslo en 1 por ahora para ahorrar recursos
+  replicas: 1
   selector:
     matchLabels:
       app: social-service
@@ -197,16 +217,21 @@ spec:
       - ip: "127.0.0.1"
         hostnames:
         - "postgres"
+      
       containers:
+        # --- CONTENEDOR 1: APP JAVA ---
         - name: social-service
           image: us-central1-docker.pkg.dev/musicshare-480712/musicshare-docker/social-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8083
           env:
-            # ========================================================
-            # SOBRESCRITURA DE DATASOURCE 1: social_db
-            # ========================================================
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "/secrets/gcs/bucket.json" # Ojo: Asegúrate que la key en el secret sea 'bucket.json'
+            - name: GCS_BUCKET_NAME
+              value: "musicshare-media"
+            
+            # Variables de Base de Datos
             - name: SPRING_DATASOURCE_SOCIAL_JDBC_URL
               value: "jdbc:postgresql://127.0.0.1:5432/social_db"
             - name: SPRING_DATASOURCE_SOCIAL_USERNAME
@@ -220,9 +245,6 @@ spec:
                   name: cloudsql-db-credentials
                   key: password
             
-            # ========================================================
-            # SOBRESCRITURA DE DATASOURCE 2: relations_db
-            # ========================================================
             - name: SPRING_DATASOURCE_RELATIONS_JDBC_URL
               value: "jdbc:postgresql://127.0.0.1:5432/relations_db"
             - name: SPRING_DATASOURCE_RELATIONS_USERNAME
@@ -235,7 +257,14 @@ spec:
                 secretKeyRef:
                   name: cloudsql-db-credentials
                   key: password
+          
+          # Montaje para el Storage (Solo en este contenedor)
+          volumeMounts:
+            - name: gcs-key
+              mountPath: "/secrets/gcs"
+              readOnly: true
 
+        # --- CONTENEDOR 2: PROXY SQL ---
         - name: cloudsql-proxy-social
           image: gcr.io/cloudsql-docker/gce-proxy:1.28.0
           command:
@@ -245,39 +274,28 @@ spec:
           securityContext:
             runAsUser: 2
             allowPrivilegeEscalation: false
-          volumeMounts:
-            - name: cloudsql-instance-credentials
-              mountPath: /secrets/cloudsql
-              readOnly: true
           resources:
             requests:
               cpu: "100m"
               memory: "128Mi"
-      volumes:
-        - name: cloudsql-instance-credentials
-          secret:
-            secretName: cloudsql-instance-credentials
-        - name: cloudsql-proxy-social
-          image: gcr.io/cloudsql-docker/gce-proxy:1.28.0
-          command:
-            - "/cloud_sql_proxy"
-            - "-instances=musicshare-480712:us-central1:ms111sql=tcp:5432"
-            - "-credential_file=/secrets/cloudsql/credentials.json"
-          securityContext:
-            runAsUser: 2
-            allowPrivilegeEscalation: false
+          # Montaje para el Proxy (Solo en este contenedor)
           volumeMounts:
             - name: cloudsql-instance-credentials
               mountPath: /secrets/cloudsql
               readOnly: true
-          resources:
-            requests:
-              cpu: "100m"
-              memory: "128Mi"
+
+      # --- VOLÚMENES GLOBALES DEL POD (Todos juntos al final) ---
       volumes:
+        # Volumen 1: Credenciales SQL
         - name: cloudsql-instance-credentials
           secret:
             secretName: cloudsql-instance-credentials
+        
+        # Volumen 2: Credenciales Storage
+        - name: gcs-key
+          secret:
+            secretName: gcs-credentials
+
 ---
 apiVersion: v1
 kind: Service
@@ -316,6 +334,10 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8082
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
           env:
             - name: AMQP_URL
               value: "amqp://guest:guest@rabbitmq:5672/"

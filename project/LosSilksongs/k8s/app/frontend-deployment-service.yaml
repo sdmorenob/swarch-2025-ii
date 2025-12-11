@@ -73,6 +73,73 @@ spec:
               - key: env-config.js
                 path: env-config.js
 ---
+# SSR music-upload (Next.js) - sirve la página /upload-music
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: music-upload
+  namespace: musicshare
+  labels:
+    app: music-upload
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: music-upload
+  template:
+    metadata:
+      labels:
+        app: music-upload
+    spec:
+      containers:
+        - name: music-upload
+          image: us-central1-docker.pkg.dev/musicshare-480712/musicshare-docker/music-upload:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3000"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: music-upload
+  namespace: musicshare
+  labels:
+    app: music-upload
+spec:
+  selector:
+    app: music-upload
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+      name: http
+  type: ClusterIP
+---
 apiVersion: v1
 kind: Service
 metadata:

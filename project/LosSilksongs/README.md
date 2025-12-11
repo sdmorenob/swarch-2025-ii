@@ -5,31 +5,31 @@
 
 ## Tabla de Contenidos
 
-* [**Team**](#team)
-  * [Team name](#team)
-  * [Full names and team members](#team)
-* [**Software System**](#software-system)
-  * [Name](#software-system)
-  * [Logo](#software-system)
-  * [Description](#software-system)
-* [Functional Requirements](#functional-requirements)
-* [Non-Functional Requirements](#non-functional-requirements)
-* [**Architectural Structures**](#architectural-structures)
-  * [Component-and Connector (C&C) Structure](#component-and-connector-cc-structure)
-  * [Layered Structure](#layered-structure)
-  * [Deployment Structure](#deployment-structure)
-  * [Decomposition Structure](#decomposition-structure)
-* [**Quality Attributes**](#quality-attributes)
-  * [Security](#security)
-  * [Performance and Scalability](#performance-and-scalability)
-  * [Reliability](#reliability)
-  * [Interoperability](#interoperability)
-* [**Prototype**](#prototype)
-  * [Implementing and deploying the software system prototype](#prototype)
+* **Team**
+  * Team name
+  * Full names and team members
+* **Software System**
+  * Name
+  * Logo
+  * Description
+* Functional Requirements
+* Non-Functional Requirements
+* **Architectural Structures**
+  * Component-and Connector (C&C) Structure
+  * Layered Structure
+  * Deployment Structure
+  * Decomposition Structure
+* **Quality Attributes**
+  * Security
+  * Performance and Scalability
+  * Reliability
+  * Interoperability
+* **Prototype**
+  * Implementing and deploying the software system prototype
 
 ---
 
-## Team {#team}
+## Team
 - **Team name**: Los SilkSongs
 - **Full name and team members**
   - Julian David Rodriguez Fernandez
@@ -39,7 +39,7 @@
   - Andrés Felipe Perdomo Uruburu
   - Andrés Felipe Poveda Bellón
 
-## Software System {#software-system}
+## Software System
  - **Name:** MusicShare
  - **Logo**
 
@@ -51,7 +51,7 @@
 
 ---
 
-# Functional Requirements {#functional-requirements}
+# Functional Requirements
 ### RF01 - Gestión de Usuarios
 ### RF02 - Subida y Gestión de Música
 - El sistema debe permitir subir archivos de audio (MP3, WAV) al cloud storage
@@ -79,7 +79,7 @@
 - El sistema debe mostrar publicaciones populares/trending
 - El sistema debe permitir búsqueda simple por usuario o título de canción
 
-## Non-Functional Requirements {#non-functional-requirements}
+## Non-Functional Requirements
 
 MusicShare es una aplicación web que funciona como red social especializada donde los usuarios pueden compartir su música favorita, crear playlists y descubrir nueva música a través de una experiencia social interactiva.
 ### RNF-5.1: Diseño responsivo
@@ -159,8 +159,8 @@ Cada servicio expondrá un endpoint /health para chequeos automáticos por parte
 
 ---
 
-# Architectural Structures {#architectural-structures}
-## Component-and Connector (C&C) Structure {#component-and-connector-cc-structure}
+# Architectural Structures
+## Component-and Connector (C&C) Structure
 C&C View:
 ![C&C View](CyC_prototipo3.png)
 
@@ -201,7 +201,7 @@ C&C View:
 ### gRPC:
   - Conexión MusicService con MetadataService
 
-## Layered Structure {#layered-structure}
+## Layered Structure
 ### Layered View:
 ![Diagrama de capas](Diagrama_Capas_2.png)
 
@@ -245,7 +245,7 @@ Proporciona soporte de ejecución y despliegue mediante Docker, Kubernetes, pipe
 
 Las relaciones entre capas son estrictamente descendentes (allowed-to-use), lo que asegura modularidad y evita dependencias circulares. Esta organización favorece el mantenimiento, permite reemplazar tecnologías en capas inferiores y facilita la escalabilidad independiente de los servicios.
 
-## Deployment Structure {#deployment-structure}
+## Deployment Structure
 Deployment View:
 ![Vista de despliegue](Despliegue_segmentado.png)
 
@@ -474,7 +474,7 @@ El sistema está desplegado en **Google Cloud Platform (GCP)** utilizando una ar
 ## Decomposition Structure
 ![Diagrama de descomposición de Dominio](general.png)
 
-## Description {#decomposition-structure}
+## Description
 🎵 Estructura de Descomposición de Dominio — MusicShare
 Dominio Raíz: MusicShare
 
@@ -602,9 +602,9 @@ Registro de eventos relevantes para los usuarios.
 
 ---
 
-# QUALITY ATTRIBUTES {#quality-attributes}
+# QUALITY ATTRIBUTES
 
-## <u>Security</u> {#security}
+## <u>Security</u>
 
 ### 🔒 Secure Channel Pattern
 
@@ -753,7 +753,7 @@ Se implementó un esquema de autenticación stateless basado en JWT con la sigui
 
 ---
 
-## <u>Performance and Scalability</u> {#performance-and-scalability}
+## <u>Performance and Scalability</u>
 
 ### ⚖️ Load Balancer Pattern
 
@@ -834,7 +834,7 @@ Se implementó escalado horizontal automático utilizando Horizontal Pod Autosca
 
 ---
 
-## <u>Reliability</u> {#reliability}
+## <u>Reliability</u>
 
 ### 🗄️ Replication Pattern
 
@@ -977,7 +977,7 @@ Se implementó el patrón Sidecar mediante contenedores auxiliares cloud-sql-pro
 
 ---
 
-## <u>Interoperability</u> {#interoperability}
+## <u>Interoperability</u>
 
 ### 🌉 Protocol Bridge Pattern
 
@@ -1029,7 +1029,7 @@ Se implementó interoperabilidad multi-protocolo utilizando estándares abiertos
 
 ---
 
-# Guía de Despliegue MusicShare con NGINX Ingress Controller {#prototype}
+# Guía de Despliegue MusicShare con NGINX Ingress Controller
 
 ### 📚 Documentación de Despliegue
 
