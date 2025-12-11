@@ -94,7 +94,7 @@ RETOFIT es una plataforma diseñada para ayudar y hacer un seguimiento a los eje
 ### Estructura de componentes y conectores
 ---
 #### C&C View
-![Diagrama de Componentes](diagramas/componentes.png)
+![Diagrama de Componentes](diagramas/Diagrama_Componentes.png)
 
 #### **Estilos y patrones arquitectónicos usados**
 
@@ -253,7 +253,7 @@ Utilizado para datos con mayor flexibilidad, esquemas dinámicos o alta volúmen
 ---
 
 #### Deployment View
-<div align="center"><img width="80%" alt="image" src=diagramas/Diagrama_Despliegue.png /></div>
+<div align="center"><img width="80%" alt="image" src=diagramas/Diagrama_Despliegue_4.png /></div>
 
 La vista de despliegue (Deployment View) de RETOFIT 2.0 ilustra la distribución física del sistema en contenedores Docker y servicios externos.
 
@@ -1125,7 +1125,7 @@ kubectl rollout status deployment/auth-service
 ```
 
 ## Despliegue
-**Link:** https://136.112.28.155
+**Link:** https://34.69.186.15
 
 ---
 
@@ -1274,3 +1274,4 @@ NEXT_PUBLIC_FRONTEND_URL=https://localhost
 
 **Frontend Principal**: Configurado en `docker-compose.yaml`
 ```
+
